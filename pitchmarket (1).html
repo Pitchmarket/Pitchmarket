@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PitchMarket — Trade the Table</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0A1410;
+  --panel:#101E19;
+  --panel2:#152A22;
+  --border:#213027;
+  --border-soft:#1A2820;
+  --gilt:#E7B54B;
+  --surge:#17D9A3;
+  --drop:#FF5C55;
+  --chalk:#EEF3EE;
+  --steel:#7E9089;
+  --steel-dim:#4C5C55;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:var(--bg);
+  color:var(--chalk);
+  font-family:'Inter',sans-serif;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+.display{font-family:'Big Shoulders Display',sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:0.01em;}
+a{color:inherit; text-decoration:none;}
+img,svg{display:block;}
+
+/* ===== Ticker tape ===== */
+.ticker-wrap{
+  background:#0D1712;
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+  white-space:nowrap;
+  position:sticky; top:0; z-index:50;
+  padding:9px 0;
+}
+.ticker-track{
+  display:inline-flex;
+  animation:scroll 55s linear infinite;
+}
+.ticker-wrap:hover .ticker-track{ animation-play-state:paused; }
+@keyframes scroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+.tick{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:0 22px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+  border-right:1px solid var(--border-soft);
+}
+.tick .sym{color:var(--steel); font-weight:500;}
+.tick .px{color:var(--chalk); font-weight:600;}
+.tick .up{color:var(--surge);}
+.tick .down{color:var(--drop);}
+
+/* ===== Nav ===== */
+nav{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 44px;
+  border-bottom:1px solid var(--border-soft);
+}
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand-mark{
+  width:30px; height:30px; border:1.5px solid var(--gilt); border-radius:3px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Big Shoulders Display'; font-weight:900; color:var(--gilt); font-size:16px;
+}
+.brand-name{ font-family:'Big Shoulders Display'; font-weight:800; font-size:21px; letter-spacing:0.02em; text-transform:uppercase; }
+.brand-name span{ color:var(--gilt); }
+.nav-links{ display:flex; gap:34px; align-items:center; }
+.nav-links a{ font-size:13.5px; color:var(--steel); font-weight:500; transition:color .15s; }
+.nav-links a:hover{ color:var(--chalk); }
+.nav-cta{
+  background:var(--gilt); color:#241906; padding:9px 18px; border-radius:3px;
+  font-size:13px; font-weight:700;
+}
+.nav-mobile-hide{display:flex; gap:34px; align-items:center;}
+@media(max-width:860px){ .nav-mobile-hide{display:none;} nav{padding:16px 20px;} }
+
+/* ===== Hero ===== */
+.hero{
+  display:grid; grid-template-columns:1.15fr 1fr; gap:0;
+  padding:64px 44px 56px;
+  border-bottom:1px solid var(--border-soft);
+  position:relative;
+}
+.hero::before{
+  content:""; position:absolute; inset:0;
+  background-image:
+    linear-gradient(var(--border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+  background-size:64px 64px;
+  opacity:0.35; pointer-events:none;
+  mask-image:radial-gradient(ellipse at 30% 20%, black, transparent 70%);
+}
+.hero-copy{ position:relative; z-index:1; padding-right:40px; }
+.eyebrow{
+  font-family:'JetBrains Mono'; font-size:12px; color:var(--surge); letter-spacing:0.14em;
+  display:flex; align-items:center; gap:8px; margin-bottom:20px;
+}
+.eyebrow::before{ content:""; width:6px; height:6px; background:var(--surge); border-radius:50%; box-shadow:0 0 0 3px rgba(23,217,163,0.18); }
+.hero h1{
+  font-size:clamp(42px,5.4vw,68px); line-height:0.96; margin-bottom:22px;
+}
+.hero h1 .line2{ color:var(--gilt); }
+.hero p{ font-size:16.5px; color:var(--steel); max-width:480px; margin-bottom:30px; }
+.hero-actions{ display:flex; gap:14px; margin-bottom:36px; }
+.btn-primary{ background:var(--surge); color:#04241A; padding:13px 24px; border-radius:3px; font-weight:700; font-size:14px; }
+.btn-ghost{ border:1px solid var(--border); padding:13px 24px; border-radius:3px; font-weight:600; font-size:14px; color:var(--chalk); }
+.hero-stats{ display:flex; gap:36px; }
+.hstat .n{ font-family:'JetBrains Mono'; font-size:22px; font-weight:700; }
+.hstat .l{ font-size:11.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+
+.hero-chart{ position:relative; z-index:1; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:22px 22px 12px; align-self:center; }
+.hc-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+.hc-title{ font-family:'JetBrains Mono'; font-size:12px; color:var(--steel); letter-spacing:0.06em; }
+.hc-value{ font-family:'JetBrains Mono'; font-size:26px; font-weight:700; margin-top:4px; }
+.hc-chg{ font-family:'JetBrains Mono'; font-size:13px; font-weight:600; background:rgba(23,217,163,0.12); color:var(--surge); padding:4px 9px; border-radius:3px; }
+.hc-sub{ font-size:11.5px; color:var(--steel-dim); margin-bottom:8px; }
+
+/* ===== Section shell ===== */
+section{ padding:56px 44px; border-bottom:1px solid var(--border-soft); }
+.sec-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px; flex-wrap:wrap; gap:10px; }
+.sec-eyebrow{ font-family:'JetBrains Mono'; font-size:11.5px; color:var(--gilt); letter-spacing:0.14em; margin-bottom:8px; }
+.sec-title{ font-size:30px; }
+.sec-desc{ color:var(--steel); font-size:14.5px; max-width:460px; text-align:right; }
+@media(max-width:760px){ .sec-desc{ text-align:left; } }
+
+/* ===== Index cards ===== */
+.index-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border-soft); border:1px solid var(--border-soft); border-radius:6px; overflow:hidden; }
+.index-card{ background:var(--panel); padding:20px 20px 16px; }
+.ic-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.ic-name{ font-size:13px; font-weight:600; }
+.ic-tier{ font-family:'JetBrains Mono'; font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; }
+.ic-value{ font-family:'JetBrains Mono'; font-size:21px; font-weight:700; margin-bottom:4px; }
+.ic-chg{ font-family:'JetBrains Mono'; font-size:12px; font-weight:600; }
+.spark{ width:100%; height:34px; margin-top:8px; }
+@media(max-width:900px){ .index-grid{ grid-template-columns:repeat(2,1fr); } }
+@media(max-width:520px){ .index-grid{ grid-template-columns:1fr; } }
+
+/* ===== Cup Watch feature ===== */
+.cupwatch{ background:radial-gradient(120% 160% at 0% 0%, rgba(231,181,75,0.07), transparent 55%), var(--panel); border:1px solid var(--border); border-radius:8px; padding:32px; display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.cw-badge{ display:inline-flex; align-items:center; gap:7px; background:rgba(231,181,75,0.12); color:var(--gilt); font-family:'JetBrains Mono'; font-size:11px; padding:5px 10px; border-radius:3px; margin-bottom:16px; letter-spacing:.05em; }
+.cw-badge::before{ content:"●"; font-size:8px; }
+.cw-name{ font-size:26px; margin-bottom:4px; }
+.cw-meta{ color:var(--steel); font-size:13.5px; margin-bottom:20px; }
+.cw-price-row{ display:flex; align-items:baseline; gap:14px; margin-bottom:22px; }
+.cw-price{ font-family:'JetBrains Mono'; font-size:38px; font-weight:700; color:var(--surge); }
+.cw-price-chg{ font-family:'JetBrains Mono'; font-size:15px; font-weight:600; color:var(--surge); }
+.cw-stages{ display:flex; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
+.cw-stage{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); border:1px solid var(--border); border-radius:3px; padding:4px 8px; }
+.cw-stage.now{ color:var(--gilt); border-color:var(--gilt); }
+.cw-chart-wrap{ position:relative; height:230px; }
+.mini-caps{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border-soft); border:1px solid var(--border-soft); border-radius:6px; overflow:hidden; margin-top:22px; }
+.mc-item{ background:var(--panel2); padding:14px 16px; }
+.mc-name{ font-size:12px; color:var(--steel); margin-bottom:4px; }
+.mc-price{ font-family:'JetBrains Mono'; font-size:16px; font-weight:700; }
+@media(max-width:860px){ .cupwatch{ grid-template-columns:1fr; } }
+
+/* ===== Asset classes ===== */
+.classes{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.class-card{ border:1px solid var(--border); border-radius:6px; padding:26px; background:var(--panel); }
+.cc-icon{ width:40px; height:40px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; font-weight:700; font-size:15px; margin-bottom:18px; }
+.cc-icon.eq{ background:rgba(23,217,163,0.12); color:var(--surge); }
+.cc-icon.nt{ background:rgba(126,144,137,0.15); color:var(--chalk); }
+.cc-icon.mc{ background:rgba(231,181,75,0.12); color:var(--gilt); }
+.class-card h3{ font-size:18px; margin-bottom:10px; font-family:'Inter'; text-transform:none; font-weight:600; }
+.class-card p{ color:var(--steel); font-size:14px; margin-bottom:18px; }
+.cc-stats{ display:flex; gap:20px; border-top:1px solid var(--border-soft); padding-top:14px; }
+.cc-stat .n{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; }
+.cc-stat .l{ font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; }
+@media(max-width:860px){ .classes{ grid-template-columns:1fr; } }
+
+/* ===== League explorer ===== */
+.tabs{ display:flex; gap:4px; margin-bottom:20px; flex-wrap:wrap; border-bottom:1px solid var(--border-soft); }
+.tab-btn{ font-family:'JetBrains Mono'; font-size:12.5px; padding:11px 16px; color:var(--steel); border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:none; border-left:none; border-right:none; transition:.15s; }
+.tab-btn:hover{ color:var(--chalk); }
+.tab-btn.active{ color:var(--gilt); border-bottom-color:var(--gilt); }
+table{ width:100%; border-collapse:collapse; }
+thead th{ text-align:left; font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; padding:0 14px 10px; font-weight:500; }
+thead th.num{ text-align:right; }
+tbody tr{ border-top:1px solid var(--border-soft); transition:background .12s; }
+tbody tr:hover{ background:var(--panel); }
+tbody td{ padding:13px 14px; font-size:13.5px; }
+td.num{ text-align:right; font-family:'JetBrains Mono'; }
+.team-name{ font-weight:600; }
+.team-tier{ font-size:11px; color:var(--steel-dim); margin-top:1px; }
+.chip{ font-family:'JetBrains Mono'; font-size:12px; padding:3px 8px; border-radius:3px; display:inline-block; min-width:64px; text-align:center; }
+.chip.up{ background:rgba(23,217,163,0.12); color:var(--surge); }
+.chip.down{ background:rgba(255,92,85,0.12); color:var(--drop); }
+.trow-spark{ width:90px; height:26px; }
+td.spark-cell{ width:100px; }
+.buy-btn{ font-family:'JetBrains Mono'; font-size:11px; border:1px solid var(--border); color:var(--steel); padding:5px 12px; border-radius:3px; }
+.buy-btn:hover{ border-color:var(--surge); color:var(--surge); }
+
+/* ===== Wallet chip ===== */
+.wallet-chip{
+  display:flex; align-items:center; gap:9px;
+  background:var(--panel); border:1px solid var(--border); border-radius:20px;
+  padding:7px 14px 7px 8px;
+}
+.wallet-icon{ width:20px; height:20px; border-radius:50%; background:var(--gilt); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#241906; }
+.wallet-amt{ font-family:'JetBrains Mono'; font-size:13px; font-weight:600; }
+.wallet-label{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; }
+
+/* ===== Ad units ===== */
+.ad-banner{
+  margin:0 44px; border:1px dashed var(--border); border-radius:6px;
+  background:var(--panel); padding:14px 20px;
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+}
+.ad-tag{ font-family:'JetBrains Mono'; font-size:9.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.08em; border:1px solid var(--border); border-radius:3px; padding:2px 6px; }
+.ad-body{ display:flex; align-items:center; gap:14px; flex:1; }
+.ad-copy{ font-size:13px; color:var(--steel); }
+.ad-copy b{ color:var(--chalk); }
+.ad-cta{ font-family:'JetBrains Mono'; font-size:11.5px; color:var(--surge); border:1px solid var(--border); border-radius:3px; padding:6px 12px; white-space:nowrap; }
+.ad-native{ background:var(--panel2); border:1px dashed var(--border); }
+@media(max-width:760px){ .ad-banner{ margin:0 20px; flex-direction:column; align-items:flex-start; } }
+
+/* ===== Pro section ===== */
+.pro-band{ background:linear-gradient(180deg, rgba(231,181,75,0.05), transparent); }
+.pro-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.pro-card{ border:1px solid var(--border); border-radius:6px; padding:26px; background:var(--panel); position:relative; }
+.pro-card.featured{ border-color:var(--gilt); }
+.pro-tier{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel-dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
+.pro-price{ font-size:32px; font-family:'JetBrains Mono'; font-weight:700; margin-bottom:4px; }
+.pro-price span{ font-size:13px; color:var(--steel-dim); font-weight:400; }
+.pro-feats{ list-style:none; margin:18px 0 22px; }
+.pro-feats li{ font-size:13px; color:var(--steel); padding:7px 0; border-top:1px solid var(--border-soft); }
+.pro-feats li:first-child{ border-top:none; }
+.pro-btn{ display:block; text-align:center; padding:11px; border-radius:3px; font-weight:700; font-size:13.5px; }
+.pro-btn.ghost{ border:1px solid var(--border); color:var(--chalk); }
+.pro-btn.filled{ background:var(--gilt); color:#241906; }
+.badge-pop{ position:absolute; top:-11px; right:20px; background:var(--gilt); color:#241906; font-family:'JetBrains Mono'; font-size:10px; font-weight:700; padding:3px 9px; border-radius:3px; letter-spacing:.04em; }
+@media(max-width:860px){ .pro-grid{ grid-template-columns:1fr; } }
+
+/* ===== Coin shop ===== */
+.shop-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.shop-card{ border:1px solid var(--border); border-radius:6px; padding:20px 18px; background:var(--panel); text-align:center; }
+.shop-card.best{ border-color:var(--surge); }
+.shop-coins{ font-family:'JetBrains Mono'; font-size:22px; font-weight:700; color:var(--gilt); margin:8px 0 2px; }
+.shop-label{ font-size:11.5px; color:var(--steel-dim); margin-bottom:16px; }
+.shop-price{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; border:1px solid var(--border); border-radius:3px; padding:9px; }
+.shop-card.best .shop-price{ border-color:var(--surge); color:var(--surge); }
+.shop-note{ font-size:12.5px; color:var(--steel-dim); margin-top:20px; text-align:center; }
+@media(max-width:860px){ .shop-grid{ grid-template-columns:repeat(2,1fr); } }
+
+/* ===== Disclaimer bar ===== */
+.disclaimer-bar{ background:#0D1712; border-top:1px solid var(--border); padding:16px 44px; }
+.disclaimer-bar p{ font-size:11.5px; color:var(--steel-dim); max-width:900px; line-height:1.6; }
+@media(max-width:760px){ .disclaimer-bar{ padding:16px 20px; } }
+
+/* ===== Footer ===== */
+footer{ padding:36px 44px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'; }
+.foot-links{ display:flex; gap:22px; }
+.foot-links a{ font-size:12.5px; color:var(--steel); }
+.foot-links a:hover{ color:var(--chalk); }
+
+@media(max-width:900px){
+  .hero{ grid-template-columns:1fr; }
+  .hero-copy{ padding-right:0; margin-bottom:36px; }
+  section{ padding:44px 20px; }
+  nav{padding:16px 20px;}
+}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap"><div class="ticker-track mono" id="tickerTrack"></div></div>
+
+<nav>
+  <div class="brand">
+    <div class="brand-mark">P</div>
+    <div class="brand-name">Pitch<span>Market</span></div>
+  </div>
+  <div class="nav-mobile-hide">
+    <div class="nav-links">
+      <a href="#markets">Markets</a>
+      <a href="#cupwatch">Cup Watch</a>
+      <a href="#classes">Asset Classes</a>
+      <a href="#explorer">Explorer</a>
+    </div>
+    <div class="wallet-chip">
+      <div class="wallet-icon">¢</div>
+      <div>
+        <div class="wallet-amt mono">12,450</div>
+        <div class="wallet-label">Fan Coins</div>
+      </div>
+    </div>
+    <a href="#shop" class="nav-cta">Get coins</a>
+  </div>
+</nav>
+
+<section class="hero" style="border-bottom:1px solid var(--border-soft); padding-top:64px;">
+  <div class="hero-copy">
+    <div class="eyebrow">LIVE MARKET · 47,208 traders online</div>
+    <h1 class="display">Every club<br>has a price.<br><span class="line2">Trade the table.</span></h1>
+    <p>Buy and sell equity in football clubs from the Premier League down to non-league minnows, hold national teams like bonds, and speculate on cup micro-caps before they either 10x or go to zero.</p>
+    <div class="hero-actions">
+      <a href="#explorer" class="btn-primary">Start trading</a>
+      <a href="#classes" class="btn-ghost">How it works</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="n mono">2,318</div><div class="l">Listed clubs</div></div>
+      <div class="hstat"><div class="n mono">31</div><div class="l">Leagues covered</div></div>
+      <div class="hstat"><div class="n mono">£184M</div><div class="l">Traded today</div></div>
+    </div>
+  </div>
+  <div class="hero-chart">
+    <div class="hc-top">
+      <div>
+        <div class="hc-title">EPL-20 · TOP FLIGHT COMPOSITE</div>
+        <div class="hc-value mono">438.62</div>
+      </div>
+      <div class="hc-chg">▲ 12.4%</div>
+    </div>
+    <div class="hc-sub">Season to date</div>
+    <div style="position:relative; height:190px;"><canvas id="heroChart"></canvas></div>
+  </div>
+</section>
+
+<div style="padding:20px 0 0;">
+  <div class="ad-banner">
+    <div class="ad-body">
+      <span class="ad-tag">Sponsored</span>
+      <div class="ad-copy"><b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.</div>
+    </div>
+    <a href="#" class="ad-cta">Shop now ↗</a>
+  </div>
+</div>
+
+<section id="markets">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">MARKET INDICES</div>
+      <div class="sec-title display">Composites, by competition</div>
+    </div>
+    <div class="sec-desc">Every top-flight European league, the major American leagues, and a blended index for the international game.</div>
+  </div>
+  <div class="index-grid" id="indexGrid"></div>
+</section>
+
+<div style="padding:0;">
+  <div class="ad-banner ad-native">
+    <div class="ad-body">
+      <span class="ad-tag">Sponsored</span>
+      <div class="ad-copy"><b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.</div>
+    </div>
+    <a href="#" class="ad-cta">Try free ↗</a>
+  </div>
+</div>
+
+<section id="cupwatch">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">CUP WATCH</div>
+      <div class="sec-title display">Penny stocks of the football pyramid</div>
+    </div>
+    <div class="sec-desc">Non-league clubs trade for pennies until a cup run changes everything. One replay away from a 400% move.</div>
+  </div>
+  <div class="cupwatch">
+    <div>
+      <div class="cw-badge">ROCKETING · ROUND 2 PROPER</div>
+      <div class="cw-name display">Marine AFC</div>
+      <div class="cw-meta">Northern Premier League · Merseyside · Ticker MRAF</div>
+      <div class="cw-price-row">
+        <div class="cw-price mono">£1.85</div>
+        <div class="cw-price-chg">▲ 1,441% since Q1</div>
+      </div>
+      <div class="cw-stages">
+        <div class="cw-stage">Prelim</div>
+        <div class="cw-stage">Q1</div>
+        <div class="cw-stage">Q2</div>
+        <div class="cw-stage">Q3</div>
+        <div class="cw-stage">Q4</div>
+        <div class="cw-stage">R1</div>
+        <div class="cw-stage now">R2 · drawn vs Tottenham</div>
+      </div>
+      <div class="mini-caps" id="miniCaps"></div>
+    </div>
+    <div class="cw-chart-wrap"><canvas id="cupChart"></canvas></div>
+  </div>
+</section>
+
+<section id="classes">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">ASSET CLASSES</div>
+      <div class="sec-title display">Three ways to hold the game</div>
+    </div>
+  </div>
+  <div class="classes">
+    <div class="class-card">
+      <div class="cc-icon eq">EQ</div>
+      <h3>Club equities</h3>
+      <p>Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.</p>
+      <div class="cc-stats">
+        <div class="cc-stat"><div class="n">±4.8%</div><div class="l">Avg. matchday move</div></div>
+        <div class="cc-stat"><div class="n">2,140</div><div class="l">Clubs listed</div></div>
+      </div>
+    </div>
+    <div class="class-card">
+      <div class="cc-icon nt">NT</div>
+      <h3>National team bonds</h3>
+      <p>Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.</p>
+      <div class="cc-stats">
+        <div class="cc-stat"><div class="n">±0.6%</div><div class="l">Avg. daily move</div></div>
+        <div class="cc-stat"><div class="n">86</div><div class="l">Federations listed</div></div>
+      </div>
+    </div>
+    <div class="class-card">
+      <div class="cc-icon mc">MC</div>
+      <h3>Cup micro-caps</h3>
+      <p>Sub-£5 stock in clubs outside the top four tiers, unlocked once they enter a major cup competition. Illiquid, binary, and capable of multiplying overnight on a single result.</p>
+      <div class="cc-stats">
+        <div class="cc-stat"><div class="n">0–∞%</div><div class="l">Round-on-round range</div></div>
+        <div class="cc-stat"><div class="n">612</div><div class="l">Micro-caps live</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pro-band" id="pro">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">GO PRO</div>
+      <div class="sec-title display">Trade with sharper information</div>
+    </div>
+    <div class="sec-desc">Free to play, forever. Pro removes ads and unlocks the data serious traders actually use.</div>
+  </div>
+  <div class="pro-grid">
+    <div class="pro-card">
+      <div class="pro-tier">Free</div>
+      <div class="pro-price mono">£0<span>/mo</span></div>
+      <ul class="pro-feats">
+        <li>Full market access, all leagues</li>
+        <li>Unlimited free trades</li>
+        <li>5 watchlist slots</li>
+        <li>Standard ticker delay</li>
+      </ul>
+      <a href="#" class="pro-btn ghost">Current plan</a>
+    </div>
+    <div class="pro-card featured">
+      <div class="badge-pop">Most popular</div>
+      <div class="pro-tier">Pro</div>
+      <div class="pro-price mono">£4.99<span>/mo</span></div>
+      <ul class="pro-feats">
+        <li>Everything in Free, no ads</li>
+        <li>Unlimited watchlist slots</li>
+        <li>Live line movement alerts</li>
+        <li>Deep cup-run probability data</li>
+      </ul>
+      <a href="#" class="pro-btn filled">Upgrade to Pro</a>
+    </div>
+    <div class="pro-card">
+      <div class="pro-tier">Pro Annual</div>
+      <div class="pro-price mono">£39<span>/yr</span></div>
+      <ul class="pro-feats">
+        <li>Everything in Pro</li>
+        <li>2 months free vs. monthly</li>
+        <li>Early access to new leagues</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#" class="pro-btn ghost">Upgrade to Annual</a>
+    </div>
+  </div>
+</section>
+
+<section id="shop">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">FAN COIN SHOP</div>
+      <div class="sec-title display">Top up your bench</div>
+    </div>
+    <div class="sec-desc">Fan Coins are for trading inside PitchMarket only — no cash value, not withdrawable or redeemable.</div>
+  </div>
+  <div class="shop-grid">
+    <div class="shop-card">
+      <div class="shop-coins mono">5,000</div>
+      <div class="shop-label">Starter pack</div>
+      <div class="shop-price">£1.99</div>
+    </div>
+    <div class="shop-card best">
+      <div class="shop-coins mono">15,000</div>
+      <div class="shop-label">+10% bonus coins</div>
+      <div class="shop-price">£4.99</div>
+    </div>
+    <div class="shop-card">
+      <div class="shop-coins mono">35,000</div>
+      <div class="shop-label">+20% bonus coins</div>
+      <div class="shop-price">£9.99</div>
+    </div>
+    <div class="shop-card">
+      <div class="shop-coins mono">100,000</div>
+      <div class="shop-label">+35% bonus coins</div>
+      <div class="shop-price">£24.99</div>
+    </div>
+  </div>
+  <div class="shop-note">Coins unlock cosmetic upgrades too — club crest badges, portfolio themes and custom alert tones.</div>
+</section>
+
+<section id="explorer">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">MARKET EXPLORER</div>
+      <div class="sec-title display">Browse listed clubs and teams</div>
+    </div>
+  </div>
+  <div class="tabs" id="tabBar"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Club / team</th>
+        <th class="num">Price</th>
+        <th class="num">24h</th>
+        <th>Trend</th>
+        <th class="num">Volume</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</section>
+
+<div class="disclaimer-bar">
+  <p>PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value, cannot be purchased for the purpose of investment, and cannot be redeemed, exchanged, withdrawn, or cashed out for real money or any other item of value under any circumstance. Optional purchases unlock in-app currency and cosmetic items only.</p>
+</div>
+
+<footer>
+  <div class="fl">PITCHMARKET · A SIMULATED EXCHANGE · PRICES ARE FOR ILLUSTRATION, NOT REAL QUOTES</div>
+  <div class="foot-links">
+    <a href="#">About</a>
+    <a href="#">Rules of trading</a>
+    <a href="#">Risk disclosure</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return Math.abs(h); }
+function genSeries(current, chgPct, n){
+  const rand = mulberry32(hash(current+'_'+chgPct+'_'+n));
+  const start = current/(1+chgPct/100);
+  const arr=[];
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    const trend = start + (current-start)*t;
+    const noise = (rand()-0.5) * Math.abs(current) * 0.05;
+    arr.push(Math.max(0.01, trend+noise));
+  }
+  arr[n-1]=current;
+  return arr;
+}
+function sparkSVG(data, color){
+  const w=100,h=30;
+  const min=Math.min(...data), max=Math.max(...data);
+  const range=(max-min)||1;
+  const pts=data.map((d,i)=> (i/(data.length-1)*w).toFixed(1)+','+(h-((d-min)/range)*h).toFixed(1)).join(' ');
+  return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/></svg>';
+}
+function fmtChg(chg){ return (chg>=0?'▲ ':'▼ ')+Math.abs(chg).toFixed(1)+'%'; }
+
+const leagues = {
+  epl: { label:'Premier League', teams:[
+    {name:'Manchester City', tier:'ENG · TIER 1', price:420.15, chg:3.2},
+    {name:'Arsenal', tier:'ENG · TIER 1', price:385.40, chg:5.8},
+    {name:'Liverpool', tier:'ENG · TIER 1', price:410.90, chg:-1.4},
+    {name:'Manchester United', tier:'ENG · TIER 1', price:290.20, chg:-4.6},
+    {name:'Chelsea', tier:'ENG · TIER 1', price:260.75, chg:2.1},
+    {name:'Tottenham Hotspur', tier:'ENG · TIER 1', price:245.30, chg:1.7},
+    {name:'Newcastle United', tier:'ENG · TIER 1', price:198.60, chg:6.3},
+    {name:'Aston Villa', tier:'ENG · TIER 1', price:205.10, chg:-2.2},
+  ]},
+  laliga: { label:'La Liga', teams:[
+    {name:'Real Madrid', tier:'ESP · TIER 1', price:455.80, chg:4.1},
+    {name:'Barcelona', tier:'ESP · TIER 1', price:430.25, chg:2.9},
+    {name:'Atlético Madrid', tier:'ESP · TIER 1', price:240.15, chg:-1.1},
+    {name:'Athletic Bilbao', tier:'ESP · TIER 1', price:130.90, chg:7.4},
+    {name:'Real Sociedad', tier:'ESP · TIER 1', price:120.40, chg:-0.8},
+    {name:'Villarreal', tier:'ESP · TIER 1', price:95.60, chg:3.0},
+  ]},
+  seriea: { label:'Serie A', teams:[
+    {name:'Inter Milan', tier:'ITA · TIER 1', price:275.30, chg:2.4},
+    {name:'AC Milan', tier:'ITA · TIER 1', price:260.10, chg:-1.9},
+    {name:'Juventus', tier:'ITA · TIER 1', price:250.75, chg:0.6},
+    {name:'Napoli', tier:'ITA · TIER 1', price:245.90, chg:5.2},
+    {name:'AS Roma', tier:'ITA · TIER 1', price:175.20, chg:-2.6},
+    {name:'Atalanta', tier:'ITA · TIER 1', price:165.40, chg:3.8},
+  ]},
+  bundesliga: { label:'Bundesliga', teams:[
+    {name:'Bayern Munich', tier:'GER · TIER 1', price:400.60, chg:1.3},
+    {name:'Borussia Dortmund', tier:'GER · TIER 1', price:230.15, chg:-3.1},
+    {name:'Bayer Leverkusen', tier:'GER · TIER 1', price:210.80, chg:4.4},
+    {name:'RB Leipzig', tier:'GER · TIER 1', price:190.45, chg:0.9},
+    {name:'Eintracht Frankfurt', tier:'GER · TIER 1', price:110.30, chg:2.7},
+    {name:'VfB Stuttgart', tier:'GER · TIER 1', price:105.90, chg:-1.5},
+  ]},
+  national: { label:'National Bonds', teams:[
+    {name:'Brazil', tier:'CONMEBOL · SENIOR', price:95.60, chg:0.7},
+    {name:'Argentina', tier:'CONMEBOL · SENIOR', price:97.20, chg:0.9},
+    {name:'France', tier:'UEFA · SENIOR', price:92.15, chg:0.4},
+    {name:'England', tier:'UEFA · SENIOR', price:88.40, chg:0.3},
+    {name:'Spain', tier:'UEFA · SENIOR', price:86.75, chg:1.1},
+    {name:'Germany', tier:'UEFA · SENIOR', price:84.30, chg:-0.2},
+    {name:'Portugal', tier:'UEFA · SENIOR', price:83.10, chg:0.5},
+    {name:'Netherlands', tier:'UEFA · SENIOR', price:80.55, chg:0.6},
+  ]},
+  nonleague: { label:'Non-League / Cup', teams:[
+    {name:'Marine AFC', tier:'NPL · TIER 8', price:1.85, chg:38.8},
+    {name:'Brackley Town', tier:'NL PREMIER · TIER 6', price:0.51, chg:12.4},
+    {name:'Chorley', tier:'NL NORTH · TIER 6', price:0.38, chg:-6.2},
+    {name:'Blyth Spartans', tier:'NPL · TIER 7', price:0.29, chg:4.1},
+    {name:'Spennymoor Town', tier:'NPL · TIER 7', price:0.33, chg:9.7},
+    {name:'Alfreton Town', tier:'NPL · TIER 7', price:0.42, chg:-3.4},
+  ]},
+  portugal: { label:'Primeira Liga', teams:[
+    {name:'Benfica', tier:'POR · TIER 1', price:182.40, chg:4.6},
+    {name:'FC Porto', tier:'POR · TIER 1', price:168.90, chg:-2.1},
+    {name:'Sporting CP', tier:'POR · TIER 1', price:154.30, chg:6.8},
+    {name:'Sporting Braga', tier:'POR · TIER 1', price:78.60, chg:2.4},
+    {name:'Vitória SC', tier:'POR · TIER 1', price:52.10, chg:-1.7},
+    {name:'Famalicão', tier:'POR · TIER 1', price:31.85, chg:5.3},
+  ]},
+  turkey: { label:'Süper Lig', teams:[
+    {name:'Galatasaray', tier:'TUR · TIER 1', price:145.70, chg:5.1},
+    {name:'Fenerbahçe', tier:'TUR · TIER 1', price:138.20, chg:-3.4},
+    {name:'Beşiktaş', tier:'TUR · TIER 1', price:97.50, chg:1.9},
+    {name:'Trabzonspor', tier:'TUR · TIER 1', price:64.30, chg:3.6},
+    {name:'İstanbul Başakşehir', tier:'TUR · TIER 1', price:38.90, chg:-0.8},
+    {name:'Konyaspor', tier:'TUR · TIER 1', price:29.40, chg:2.2},
+  ]},
+  saudi: { label:'Saudi Pro League', teams:[
+    {name:'Al-Hilal', tier:'KSA · TIER 1', price:168.50, chg:7.2},
+    {name:'Al-Nassr', tier:'KSA · TIER 1', price:161.90, chg:3.5},
+    {name:'Al-Ittihad', tier:'KSA · TIER 1', price:142.30, chg:-1.9},
+    {name:'Al-Ahli', tier:'KSA · TIER 1', price:126.70, chg:4.8},
+    {name:'Al-Shabab', tier:'KSA · TIER 1', price:58.20, chg:1.3},
+    {name:'Al-Taawoun', tier:'KSA · TIER 1', price:33.60, chg:-2.5},
+  ]},
+  netherlands: { label:'Eredivisie', teams:[
+    {name:'Ajax', tier:'NED · TIER 1', price:118.40, chg:-3.8},
+    {name:'PSV Eindhoven', tier:'NED · TIER 1', price:109.75, chg:4.2},
+    {name:'Feyenoord', tier:'NED · TIER 1', price:96.30, chg:2.6},
+    {name:'AZ Alkmaar', tier:'NED · TIER 1', price:52.10, chg:1.4},
+    {name:'FC Twente', tier:'NED · TIER 1', price:44.80, chg:-1.1},
+    {name:'FC Utrecht', tier:'NED · TIER 1', price:36.20, chg:3.0},
+  ]},
+};
+
+const indices = [
+  { name:'EPL-20', tier:'ENGLAND · TOP FLIGHT', value:438.62, chg:12.4 },
+  { name:'LALIGA-20', tier:'SPAIN · TOP FLIGHT', value:294.10, chg:6.7 },
+  { name:'SERIE-A-20', tier:'ITALY · TOP FLIGHT', value:238.90, chg:-2.3 },
+  { name:'BUNDES-18', tier:'GERMANY · TOP FLIGHT', value:210.55, chg:3.8 },
+  { name:'PRIMEIRA-18', tier:'PORTUGAL · TOP FLIGHT', value:94.20, chg:5.4 },
+  { name:'SUPERLIG-20', tier:'TÜRKIYE · TOP FLIGHT', value:75.60, chg:2.1 },
+  { name:'SPL-18', tier:'SAUDI ARABIA · TOP FLIGHT', value:101.90, chg:8.6 },
+  { name:'NONLEAGUE-100', tier:'ENGLAND · TIER 5-10', value:14.85, chg:22.6 },
+];
+
+function up(v){ return v>=0; }
+
+// ticker tape
+const tickerItems = [];
+Object.values(leagues).forEach(l=> l.teams.forEach(t=> tickerItems.push(t)));
+function buildTicker(){
+  const html = tickerItems.map(t=>
+    '<span class="tick"><span class="sym">'+t.name.toUpperCase().slice(0,4)+'</span><span class="px">£'+t.price.toFixed(2)+'</span><span class="'+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></span>'
+  ).join('');
+  document.getElementById('tickerTrack').innerHTML = html + html;
+}
+buildTicker();
+
+// index grid
+function buildIndices(){
+  const grid = document.getElementById('indexGrid');
+  grid.innerHTML = indices.map(ix=>{
+    const series = genSeries(ix.value, ix.chg, 24);
+    const color = up(ix.chg)?'#17D9A3':'#FF5C55';
+    return '<div class="index-card">'+
+      '<div class="ic-top"><div class="ic-name">'+ix.name+'</div></div>'+
+      '<div class="ic-tier">'+ix.tier+'</div>'+
+      '<div class="ic-value mono">'+ix.value.toFixed(2)+'</div>'+
+      '<div class="ic-chg" style="color:'+color+'">'+fmtChg(ix.chg)+'</div>'+
+      sparkSVG(series,color)+
+    '</div>';
+  }).join('');
+}
+buildIndices();
+
+// mini caps
+function buildMiniCaps(){
+  const list = leagues.nonleague.teams.slice(1,4);
+  document.getElementById('miniCaps').innerHTML = list.map(t=>
+    '<div class="mc-item"><div class="mc-name">'+t.name+'</div><div class="mc-price mono" style="color:'+(up(t.chg)?'#17D9A3':'#FF5C55')+'">£'+t.price.toFixed(2)+'</div></div>'
+  ).join('');
+}
+buildMiniCaps();
+
+// tabs + table
+const tabBar = document.getElementById('tabBar');
+const tableBody = document.getElementById('tableBody');
+function renderTable(key){
+  const data = leagues[key].teams;
+  tableBody.innerHTML = data.map(t=>{
+    const series = genSeries(t.price, t.chg, 20);
+    const color = up(t.chg)?'#17D9A3':'#FF5C55';
+    return '<tr>'+
+      '<td><div class="team-name">'+t.name+'</div><div class="team-tier">'+t.tier+'</div></td>'+
+      '<td class="num mono">'+(t.price<1?'£'+t.price.toFixed(3):'£'+t.price.toFixed(2))+'</td>'+
+      '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
+      '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
+      '<td class="num mono">'+(Math.round(hash(t.name)%900+100))+'K</td>'+
+      '<td><button class="buy-btn">Trade</button></td>'+
+    '</tr>';
+  }).join('');
+}
+function buildTabs(){
+  tabBar.innerHTML = Object.keys(leagues).map((k,i)=>
+    '<button class="tab-btn'+(i===0?' active':'')+'" data-key="'+k+'">'+leagues[k].label+'</button>'
+  ).join('');
+  tabBar.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tabBar.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable(btn.dataset.key);
+    });
+  });
+  renderTable(Object.keys(leagues)[0]);
+}
+buildTabs();
+
+// hero chart
+const heroSeries = genSeries(438.62, 12.4, 10);
+new Chart(document.getElementById('heroChart'), {
+  type:'line',
+  data:{ labels:['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'],
+    datasets:[{ data:heroSeries, borderColor:'#17D9A3', borderWidth:2, pointRadius:0, tension:0.35,
+      fill:true, backgroundColor:'rgba(23,217,163,0.08)' }] },
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#101E19', borderColor:'#213027', borderWidth:1, titleColor:'#7E9089', bodyColor:'#EEF3EE' } },
+    scales:{ x:{ grid:{display:false}, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10} } },
+      y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10} } } } }
+});
+
+// cup chart
+const cupSeries = [0.12,0.14,0.19,0.31,0.58,0.94,1.85];
+new Chart(document.getElementById('cupChart'), {
+  type:'line',
+  data:{ labels:['Prelim','Q1','Q2','Q3','Q4','R1','R2'],
+    datasets:[{ data:cupSeries, borderColor:'#E7B54B', borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#E7B54B',
+      tension:0.3, fill:true, backgroundColor:'rgba(231,181,75,0.08)' }] },
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#101E19', borderColor:'#213027', borderWidth:1, titleColor:'#7E9089', bodyColor:'#EEF3EE',
+      callbacks:{ label:(ctx)=> '£'+ctx.parsed.y.toFixed(2) } } },
+    scales:{ x:{ grid:{display:false}, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10} } },
+      y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10}, callback:(v)=>'£'+v } } } }
+});
+</script>
+</body>
+</html>
