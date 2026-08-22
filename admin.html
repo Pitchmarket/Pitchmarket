@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PitchMarket Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --bg:#0A1410; --panel:#101E19; --panel2:#152A22; --border:#213027; --border-soft:#1A2820;
+  --gilt:#E7B54B; --surge:#17D9A3; --drop:#FF5C55; --chalk:#EEF3EE; --steel:#7E9089; --steel-dim:#4C5C55;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ background:var(--bg); color:var(--chalk); font-family:'Inter',sans-serif; }
+.mono{ font-family:'JetBrains Mono',monospace; }
+.display{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; text-transform:uppercase; }
+input,button,select{ font-family:inherit; }
+
+/* Gate screen */
+#gate{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.gate-card{ width:100%; max-width:360px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:32px; }
+.gate-title{ font-size:26px; margin-bottom:6px; }
+.gate-sub{ color:var(--steel); font-size:13px; margin-bottom:24px; }
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:11.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+.field input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; }
+.field input:focus{ outline:none; border-color:var(--surge); }
+.btn{ width:100%; padding:11px; border-radius:4px; font-weight:700; font-size:14px; border:none; cursor:pointer; }
+.btn.primary{ background:var(--surge); color:#04241A; }
+.btn.ghost{ background:none; border:1px solid var(--border); color:var(--chalk); margin-top:8px; }
+.toggle-row{ text-align:center; margin-top:16px; font-size:12.5px; color:var(--steel); }
+.toggle-row a{ color:var(--surge); cursor:pointer; }
+.gate-msg{ font-size:12.5px; padding:10px 12px; border-radius:4px; margin-bottom:14px; display:none; }
+.gate-msg.err{ background:rgba(255,92,85,0.12); color:var(--drop); display:block; }
+.gate-msg.ok{ background:rgba(23,217,163,0.12); color:var(--surge); display:block; }
+
+/* Dashboard */
+#dash{ display:none; }
+nav{ display:flex; justify-content:space-between; align-items:center; padding:18px 32px; border-bottom:1px solid var(--border-soft); }
+.brand{ font-family:'Big Shoulders Display'; font-weight:800; font-size:19px; text-transform:uppercase; }
+.brand span{ color:var(--gilt); }
+.who{ display:flex; align-items:center; gap:14px; }
+.who span{ font-size:12.5px; color:var(--steel); }
+.signout{ font-size:12px; border:1px solid var(--border); border-radius:4px; padding:7px 12px; color:var(--steel); cursor:pointer; background:none; }
+main{ padding:28px 32px; max-width:1100px; margin:0 auto; }
+.bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
+.bar h1{ font-size:24px; }
+.bar .desc{ font-size:13px; color:var(--steel); }
+.refresh{ font-size:12px; border:1px solid var(--border); border-radius:4px; padding:8px 14px; color:var(--chalk); cursor:pointer; background:var(--panel); }
+table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+thead th{ text-align:left; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; padding:12px 14px; border-bottom:1px solid var(--border); font-weight:500; }
+tbody td{ padding:9px 14px; border-bottom:1px solid var(--border-soft); font-size:13.5px; }
+tbody tr:last-child td{ border-bottom:none; }
+.t-name{ font-weight:600; }
+.t-league{ font-size:11px; color:var(--steel-dim); }
+.edit-input{ width:90px; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:6px 8px; color:var(--chalk); font-size:13px; }
+.edit-input:focus{ outline:none; border-color:var(--surge); }
+.save-btn{ font-size:11.5px; border:1px solid var(--surge); color:var(--surge); background:none; border-radius:3px; padding:6px 11px; cursor:pointer; }
+.save-btn:disabled{ opacity:0.4; cursor:default; }
+.row-status{ font-size:11px; color:var(--steel-dim); margin-left:8px; }
+.row-status.ok{ color:var(--surge); }
+.row-status.err{ color:var(--drop); }
+.filters{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.filter-btn{ font-family:'JetBrains Mono'; font-size:11.5px; padding:7px 12px; border:1px solid var(--border); border-radius:4px; color:var(--steel); background:var(--panel); cursor:pointer; }
+.filter-btn.active{ color:var(--gilt); border-color:var(--gilt); }
+.config-warning{ background:rgba(231,181,75,0.1); border:1px solid var(--gilt); color:var(--gilt); font-size:12.5px; padding:12px 16px; border-radius:6px; margin-bottom:20px; }
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIG: paste your Supabase project values here ============ -->
+<script>
+  const SUPABASE_URL = "https://ljpwxujlyqhlznasnhfk.supabase.co/rest/v1/";
+  const SUPABASE_ANON_KEY = "sb_publishable_4gQiPEP2dmJH99ZwTjTRTQ_dxZtWqFn";
+</script>
+<!-- =========================================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-title display">Admin</div>
+    <div class="gate-sub">Sign in with the exact email you put in the SQL policy.</div>
+    <div id="gateMsg" class="gate-msg"></div>
+    <div class="field"><label>Email</label><input id="email" type="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input id="password" type="password" placeholder="••••••••"></div>
+    <button class="btn primary" id="signInBtn">Sign in</button>
+    <button class="btn ghost" id="signUpBtn">First time — create admin account</button>
+  </div>
+</div>
+
+<div id="dash">
+  <nav>
+    <div class="brand">Pitch<span>Market</span> Admin</div>
+    <div class="who"><span id="whoEmail"></span><button class="signout" id="signOutBtn">Sign out</button></div>
+  </nav>
+  <main>
+    <div id="configWarning" class="config-warning" style="display:none;">
+      You haven't pasted your Supabase URL and anon key into the CONFIG block at the top of this file yet — edit admin.html and add them before this will work.
+    </div>
+    <div class="bar">
+      <div>
+        <h1 class="display">Team prices</h1>
+        <div class="desc">Edit price / 24h change and hit Save on a row. Changes go live on the main site instantly.</div>
+      </div>
+      <button class="refresh" id="refreshBtn">↻ Refresh</button>
+    </div>
+    <div class="filters" id="filters"></div>
+    <table>
+      <thead>
+        <tr><th>Team</th><th>Price</th><th>24h chg %</th><th></th></tr>
+      </thead>
+      <tbody id="teamRows"></tbody>
+    </table>
+  </main>
+</div>
+
+<script>
+let supabase, currentLeague = 'all', allTeams = [];
+
+function initSupabase(){
+  if(SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')){
+    document.getElementById('configWarning').style.display = 'block';
+    return false;
+  }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return true;
+}
+
+function showMsg(text, type){
+  const el = document.getElementById('gateMsg');
+  el.textContent = text;
+  el.className = 'gate-msg ' + type;
+}
+
+async function signIn(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if(!supabase){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if(error){ showMsg(error.message, 'err'); return; }
+  onAuthed(data.user);
+}
+
+async function signUp(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if(!supabase){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
+  if(password.length < 6){ showMsg('Password needs at least 6 characters.', 'err'); return; }
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if(error){ showMsg(error.message, 'err'); return; }
+  showMsg('Account created. If email confirmation is on in your Supabase project, check your inbox, then sign in. Otherwise you are signed in already — click Sign in.', 'ok');
+}
+
+function onAuthed(user){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('dash').style.display = 'block';
+  document.getElementById('whoEmail').textContent = user.email;
+  loadTeams();
+}
+
+async function loadTeams(){
+  const { data, error } = await supabase.from('teams').select('*').order('league').order('price', { ascending:false });
+  if(error){ alert('Could not load teams: ' + error.message + '\\n\\nThis usually means your email does not match the admin email in the SQL policy, or the schema has not been run yet.'); return; }
+  allTeams = data;
+  buildFilters();
+  renderRows();
+}
+
+function buildFilters(){
+  const leagues = ['all', ...new Set(allTeams.map(t=>t.league))];
+  document.getElementById('filters').innerHTML = leagues.map(l=>
+    '<button class="filter-btn'+(l===currentLeague?' active':'')+'" data-l="'+l+'">'+(l==='all'?'All':allTeams.find(t=>t.league===l).league_label)+'</button>'
+  ).join('');
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{ currentLeague = b.dataset.l; buildFilters(); renderRows(); });
+  });
+}
+
+function renderRows(){
+  const rows = currentLeague==='all' ? allTeams : allTeams.filter(t=>t.league===currentLeague);
+  document.getElementById('teamRows').innerHTML = rows.map(t=>
+    '<tr data-id="'+t.id+'">'+
+      '<td><div class="t-name">'+t.name+'</div><div class="t-league">'+t.league_label+' · '+t.tier+'</div></td>'+
+      '<td><input class="edit-input mono price-input" value="'+t.price+'" step="0.01"></td>'+
+      '<td><input class="edit-input mono chg-input" value="'+t.chg+'" step="0.1"></td>'+
+      '<td><button class="save-btn">Save</button><span class="row-status"></span></td>'+
+    '</tr>'
+  ).join('');
+  document.querySelectorAll('.save-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const tr = e.target.closest('tr');
+      const id = tr.dataset.id;
+      const price = parseFloat(tr.querySelector('.price-input').value);
+      const chg = parseFloat(tr.querySelector('.chg-input').value);
+      const status = tr.querySelector('.row-status');
+      btn.disabled = true; status.textContent='Saving…'; status.className='row-status';
+      const { error } = await supabase.from('teams').update({ price, chg, updated_at: new Date().toISOString() }).eq('id', id);
+      btn.disabled = false;
+      if(error){ status.textContent = 'Failed: ' + error.message; status.className='row-status err'; }
+      else { status.textContent = 'Saved ✓'; status.className='row-status ok'; setTimeout(()=>status.textContent='',2000); }
+    });
+  });
+}
+
+document.getElementById('signInBtn').addEventListener('click', signIn);
+document.getElementById('signUpBtn').addEventListener('click', signUp);
+document.getElementById('refreshBtn').addEventListener('click', loadTeams);
+document.getElementById('signOutBtn').addEventListener('click', async ()=>{
+  await supabase.auth.signOut();
+  location.reload();
+});
+
+(async function boot(){
+  if(!initSupabase()) return;
+  const { data } = await supabase.auth.getSession();
+  if(data.session){ onAuthed(data.session.user); }
+})();
+</script>
+</body>
+</html>
