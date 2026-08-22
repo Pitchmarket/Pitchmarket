@@ -243,21 +243,58 @@ td.spark-cell{ width:100px; }
 .badge-pop{ position:absolute; top:-11px; right:20px; background:var(--gilt); color:#241906; font-family:'JetBrains Mono'; font-size:10px; font-weight:700; padding:3px 9px; border-radius:3px; letter-spacing:.04em; }
 @media(max-width:860px){ .pro-grid{ grid-template-columns:1fr; } }
 
-/* ===== Coin shop ===== */
-.shop-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-.shop-card{ border:1px solid var(--border); border-radius:6px; padding:20px 18px; background:var(--panel); text-align:center; }
-.shop-card.best{ border-color:var(--surge); }
-.shop-coins{ font-family:'JetBrains Mono'; font-size:22px; font-weight:700; color:var(--gilt); margin:8px 0 2px; }
-.shop-label{ font-size:11.5px; color:var(--steel-dim); margin-bottom:16px; }
-.shop-price{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; border:1px solid var(--border); border-radius:3px; padding:9px; }
-.shop-card.best .shop-price{ border-color:var(--surge); color:var(--surge); }
-.shop-note{ font-size:12.5px; color:var(--steel-dim); margin-top:20px; text-align:center; }
-@media(max-width:860px){ .shop-grid{ grid-template-columns:repeat(2,1fr); } }
-
 /* ===== Disclaimer bar ===== */
 .disclaimer-bar{ background:#0D1712; border-top:1px solid var(--border); padding:16px 44px; }
 .disclaimer-bar p{ font-size:11.5px; color:var(--steel-dim); max-width:900px; line-height:1.6; }
 @media(max-width:760px){ .disclaimer-bar{ padding:16px 20px; } }
+
+/* ===== Modals (auth + trade) ===== */
+.modal-overlay{ position:fixed; inset:0; background:rgba(6,10,8,0.72); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal-overlay.open{ display:flex; }
+.modal{ width:100%; max-width:380px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:28px; position:relative; }
+.modal-close{ position:absolute; top:14px; right:16px; color:var(--steel); background:none; border:none; font-size:18px; cursor:pointer; }
+.modal h2{ font-size:22px; margin-bottom:6px; font-family:'Inter'; text-transform:none; font-weight:600; }
+.modal .sub{ font-size:13px; color:var(--steel); margin-bottom:20px; }
+.m-field{ margin-bottom:14px; }
+.m-field label{ display:block; font-size:11px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+.m-field input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; font-family:inherit; }
+.m-field input:focus{ outline:none; border-color:var(--surge); }
+.m-btn{ width:100%; padding:11px; border-radius:4px; font-weight:700; font-size:14px; border:none; cursor:pointer; margin-top:4px; }
+.m-btn.primary{ background:var(--surge); color:#04241A; }
+.m-btn.ghost{ background:none; border:1px solid var(--border); color:var(--chalk); margin-top:8px; }
+.m-msg{ font-size:12.5px; padding:9px 11px; border-radius:4px; margin-bottom:14px; display:none; }
+.m-msg.err{ background:rgba(255,92,85,0.12); color:var(--drop); display:block; }
+.m-msg.ok{ background:rgba(23,217,163,0.12); color:var(--surge); display:block; }
+.m-toggle{ text-align:center; margin-top:14px; font-size:12.5px; color:var(--steel); }
+.m-toggle a{ color:var(--surge); cursor:pointer; }
+.trade-summary{ background:var(--panel2); border:1px solid var(--border-soft); border-radius:6px; padding:14px; margin-bottom:16px; }
+.trade-summary .tr-name{ font-weight:600; font-size:15px; margin-bottom:2px; }
+.trade-summary .tr-price{ font-family:'JetBrains Mono'; color:var(--surge); font-size:13px; }
+.trade-tabs{ display:flex; gap:6px; margin-bottom:16px; }
+.trade-tab{ flex:1; padding:9px; text-align:center; border:1px solid var(--border); border-radius:4px; font-size:13px; font-weight:600; cursor:pointer; color:var(--steel); background:none; }
+.trade-tab.active.buy{ border-color:var(--surge); color:var(--surge); background:rgba(23,217,163,0.08); }
+.trade-tab.active.sell{ border-color:var(--drop); color:var(--drop); background:rgba(255,92,85,0.08); }
+.trade-cost{ display:flex; justify-content:space-between; font-size:13px; color:var(--steel); margin:12px 0 4px; }
+.trade-cost b{ color:var(--chalk); font-family:'JetBrains Mono'; }
+.config-banner{ background:rgba(231,181,75,0.1); border-bottom:1px solid var(--gilt); color:var(--gilt); font-size:12.5px; padding:10px 44px; text-align:center; display:none; }
+
+/* ===== Leaderboard ===== */
+.lb-rules{ display:flex; gap:14px; margin-bottom:22px; flex-wrap:wrap; }
+.lb-rule{ flex:1; min-width:200px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px 16px; font-size:13px; color:var(--steel); }
+.lb-rule b{ color:var(--chalk); display:block; margin-bottom:2px; font-size:13.5px; }
+
+/* ===== Sidebar ad rails ===== */
+.ad-rail{
+  position:fixed; top:50%; transform:translateY(-50%);
+  width:160px; height:400px;
+  border:1px dashed var(--border); border-radius:6px; background:var(--panel);
+  display:flex; align-items:center; justify-content:center;
+  z-index:10;
+}
+.ad-rail-left{ left:16px; }
+.ad-rail-right{ right:16px; }
+.ad-rail span{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel-dim); text-align:center; padding:0 12px; }
+@media(max-width:1400px){ .ad-rail{ display:none; } }
 
 /* ===== Footer ===== */
 footer{ padding:36px 44px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
@@ -273,10 +310,21 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   nav{padding:16px 20px;}
 }
 </style>
+<!-- ============ CONFIG: paste your Supabase project values here ============ -->
+<script>
+  const SUPABASE_URL = "https://ljpwxujlyqhlznasnhfk.supabase.co/rest/v1/";
+  const SUPABASE_ANON_KEY = "sb_publishable_4gQiPEP2dmJH99ZwTjTRTQ_dxZtWqFn";
+</script>
+<!-- =========================================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
+<div class="ad-rail ad-rail-left"><span>AD SPACE<br>160×400</span></div>
+<div class="ad-rail ad-rail-right"><span>AD SPACE<br>160×400</span></div>
+
 <div class="ticker-wrap"><div class="ticker-track mono" id="tickerTrack"></div></div>
+<div class="config-banner" id="configBanner">Add your Supabase URL and anon key to the CONFIG block near the top of this file to enable real sign-in and trading.</div>
 
 <nav>
   <div class="brand">
@@ -286,18 +334,18 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   <div class="nav-mobile-hide">
     <div class="nav-links">
       <a href="#markets">Markets</a>
-      <a href="#cupwatch">Cup Watch</a>
-      <a href="#classes">Asset Classes</a>
-      <a href="#explorer">Explorer</a>
+      <a href="#spotlight">Spotlight</a>
+      <a href="#leaderboard">Leaderboard</a>
+      <a href="#pro">Go Pro</a>
     </div>
-    <div class="wallet-chip">
+    <div class="wallet-chip" id="walletChip" style="display:none;">
       <div class="wallet-icon">¢</div>
       <div>
-        <div class="wallet-amt mono">12,450</div>
+        <div class="wallet-amt mono" id="walletAmt">—</div>
         <div class="wallet-label">Fan Coins</div>
       </div>
     </div>
-    <a href="#shop" class="nav-cta">Get coins</a>
+    <button class="nav-cta" id="authBtn" style="border:none; cursor:pointer;">Sign in to trade</button>
   </div>
 </nav>
 
@@ -305,15 +353,15 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   <div class="hero-copy">
     <div class="eyebrow">LIVE MARKET · 47,208 traders online</div>
     <h1 class="display">Every club<br>has a price.<br><span class="line2">Trade the table.</span></h1>
-    <p>Buy and sell equity in football clubs from the Premier League down to non-league minnows, hold national teams like bonds, and speculate on cup micro-caps before they either 10x or go to zero.</p>
+    <p>Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.</p>
     <div class="hero-actions">
       <a href="#explorer" class="btn-primary">Start trading</a>
       <a href="#classes" class="btn-ghost">How it works</a>
     </div>
     <div class="hero-stats">
-      <div class="hstat"><div class="n mono">2,318</div><div class="l">Listed clubs</div></div>
-      <div class="hstat"><div class="n mono">31</div><div class="l">Leagues covered</div></div>
-      <div class="hstat"><div class="n mono">£184M</div><div class="l">Traded today</div></div>
+      <div class="hstat"><div class="n mono">82</div><div class="l">Listed clubs & teams</div></div>
+      <div class="hstat"><div class="n mono">9</div><div class="l">Markets covered</div></div>
+      <div class="hstat"><div class="n mono">12,450</div><div class="l">Starting coins, everyone</div></div>
     </div>
   </div>
   <div class="hero-chart">
@@ -360,31 +408,28 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   </div>
 </div>
 
-<section id="cupwatch">
+<section id="spotlight">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">CUP WATCH</div>
-      <div class="sec-title display">Penny stocks of the football pyramid</div>
+      <div class="sec-eyebrow">SPOTLIGHT · HAPPENING THIS WEEK</div>
+      <div class="sec-title display">Qualifying is where fortunes turn</div>
     </div>
-    <div class="sec-desc">Non-league clubs trade for pennies until a cup run changes everything. One replay away from a 400% move.</div>
+    <div class="sec-desc">Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.</div>
   </div>
   <div class="cupwatch">
     <div>
-      <div class="cw-badge">ROCKETING · ROUND 2 PROPER</div>
-      <div class="cw-name display">Marine AFC</div>
-      <div class="cw-meta">Northern Premier League · Merseyside · Ticker MRAF</div>
+      <div class="cw-badge">CONFIRMED · WON PLAY-OFF ROUND</div>
+      <div class="cw-name display">Bodø/Glimt (UCL)</div>
+      <div class="cw-meta">Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL</div>
       <div class="cw-price-row">
-        <div class="cw-price mono">£1.85</div>
-        <div class="cw-price-chg">▲ 1,441% since Q1</div>
+        <div class="cw-price mono">£38.60</div>
+        <div class="cw-price-chg">▲ 612% since 1st Qualifying Round</div>
       </div>
       <div class="cw-stages">
-        <div class="cw-stage">Prelim</div>
-        <div class="cw-stage">Q1</div>
-        <div class="cw-stage">Q2</div>
-        <div class="cw-stage">Q3</div>
-        <div class="cw-stage">Q4</div>
-        <div class="cw-stage">R1</div>
-        <div class="cw-stage now">R2 · drawn vs Tottenham</div>
+        <div class="cw-stage">Q1 Round</div>
+        <div class="cw-stage">Q2 Round</div>
+        <div class="cw-stage">Q3 Round</div>
+        <div class="cw-stage now">Play-off won 6-5 agg · League phase secured</div>
       </div>
       <div class="mini-caps" id="miniCaps"></div>
     </div>
@@ -419,34 +464,53 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       </div>
     </div>
     <div class="class-card">
-      <div class="cc-icon mc">MC</div>
-      <h3>Cup micro-caps</h3>
-      <p>Sub-£5 stock in clubs outside the top four tiers, unlocked once they enter a major cup competition. Illiquid, binary, and capable of multiplying overnight on a single result.</p>
+      <div class="cc-icon mc">CL</div>
+      <h3>Continental campaigns</h3>
+      <p>A club's Champions League run trades as its own instrument, separate from its domestic price. Event-driven — each knockout leg can move it sharply either way.</p>
       <div class="cc-stats">
-        <div class="cc-stat"><div class="n">0–∞%</div><div class="l">Round-on-round range</div></div>
-        <div class="cc-stat"><div class="n">612</div><div class="l">Micro-caps live</div></div>
+        <div class="cc-stat"><div class="n">±18%</div><div class="l">Avg. move per leg</div></div>
+        <div class="cc-stat"><div class="n">32</div><div class="l">UCL instruments live</div></div>
       </div>
     </div>
   </div>
+</section>
+
+<section id="leaderboard">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">RANKED COMPETITION</div>
+      <div class="sec-title display">Same coins. Same odds. Real prizes.</div>
+    </div>
+    <div class="sec-desc">Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.</div>
+  </div>
+  <div class="lb-rules">
+    <div class="lb-rule"><b>Free to enter.</b> No purchase, ever, changes your standing.</div>
+    <div class="lb-rule"><b>Equal start.</b> Every account begins the season at the same balance.</div>
+    <div class="lb-rule"><b>Ranked by portfolio value.</b> Coins on hand plus the live value of everything you hold.</div>
+  </div>
+  <table>
+    <thead><tr><th>Rank</th><th>Trader</th><th class="num">Portfolio value</th></tr></thead>
+    <tbody id="leaderboardBody"><tr><td colspan="3" style="color:var(--steel-dim); padding:20px 14px;">Sign in and place a trade to appear here.</td></tr></tbody>
+  </table>
 </section>
 
 <section class="pro-band" id="pro">
   <div class="sec-head">
     <div>
       <div class="sec-eyebrow">GO PRO</div>
-      <div class="sec-title display">Trade with sharper information</div>
+      <div class="sec-title display">Better information, not better odds</div>
     </div>
-    <div class="sec-desc">Free to play, forever. Pro removes ads and unlocks the data serious traders actually use.</div>
+    <div class="sec-desc">Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.</div>
   </div>
   <div class="pro-grid">
     <div class="pro-card">
       <div class="pro-tier">Free</div>
       <div class="pro-price mono">£0<span>/mo</span></div>
       <ul class="pro-feats">
-        <li>Full market access, all leagues</li>
-        <li>Unlimited free trades</li>
+        <li>Full trading access, all leagues</li>
+        <li>Equal footing in the ranked competition</li>
         <li>5 watchlist slots</li>
-        <li>Standard ticker delay</li>
+        <li>Standard data, ads shown</li>
       </ul>
       <a href="#" class="pro-btn ghost">Current plan</a>
     </div>
@@ -455,10 +519,10 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <div class="pro-tier">Pro</div>
       <div class="pro-price mono">£4.99<span>/mo</span></div>
       <ul class="pro-feats">
-        <li>Everything in Free, no ads</li>
+        <li>Everything in Free, zero ads</li>
+        <li>Deeper club & competition data</li>
         <li>Unlimited watchlist slots</li>
-        <li>Live line movement alerts</li>
-        <li>Deep cup-run probability data</li>
+        <li>Early access to newly added leagues</li>
       </ul>
       <a href="#" class="pro-btn filled">Upgrade to Pro</a>
     </div>
@@ -468,45 +532,12 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <ul class="pro-feats">
         <li>Everything in Pro</li>
         <li>2 months free vs. monthly</li>
-        <li>Early access to new leagues</li>
         <li>Priority support</li>
+        <li>Still zero trading advantage</li>
       </ul>
       <a href="#" class="pro-btn ghost">Upgrade to Annual</a>
     </div>
   </div>
-</section>
-
-<section id="shop">
-  <div class="sec-head">
-    <div>
-      <div class="sec-eyebrow">FAN COIN SHOP</div>
-      <div class="sec-title display">Top up your bench</div>
-    </div>
-    <div class="sec-desc">Fan Coins are for trading inside PitchMarket only — no cash value, not withdrawable or redeemable.</div>
-  </div>
-  <div class="shop-grid">
-    <div class="shop-card">
-      <div class="shop-coins mono">5,000</div>
-      <div class="shop-label">Starter pack</div>
-      <div class="shop-price">£1.99</div>
-    </div>
-    <div class="shop-card best">
-      <div class="shop-coins mono">15,000</div>
-      <div class="shop-label">+10% bonus coins</div>
-      <div class="shop-price">£4.99</div>
-    </div>
-    <div class="shop-card">
-      <div class="shop-coins mono">35,000</div>
-      <div class="shop-label">+20% bonus coins</div>
-      <div class="shop-price">£9.99</div>
-    </div>
-    <div class="shop-card">
-      <div class="shop-coins mono">100,000</div>
-      <div class="shop-label">+35% bonus coins</div>
-      <div class="shop-price">£24.99</div>
-    </div>
-  </div>
-  <div class="shop-note">Coins unlock cosmetic upgrades too — club crest badges, portfolio themes and custom alert tones.</div>
 </section>
 
 <section id="explorer">
@@ -533,7 +564,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 </section>
 
 <div class="disclaimer-bar">
-  <p>PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value, cannot be purchased for the purpose of investment, and cannot be redeemed, exchanged, withdrawn, or cashed out for real money or any other item of value under any circumstance. Optional purchases unlock in-app currency and cosmetic items only.</p>
+  <p>PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.</p>
 </div>
 
 <footer>
@@ -607,55 +638,71 @@ const leagues = {
     {name:'Eintracht Frankfurt', tier:'GER · TIER 1', price:110.30, chg:2.7},
     {name:'VfB Stuttgart', tier:'GER · TIER 1', price:105.90, chg:-1.5},
   ]},
-  national: { label:'National Bonds', teams:[
+  ligue1: { label:'Ligue 1', teams:[
+    {name:'Paris Saint-Germain', tier:'FRA · TIER 1', price:365.20, chg:2.8},
+    {name:'Marseille', tier:'FRA · TIER 1', price:158.40, chg:-1.6},
+    {name:'Monaco', tier:'FRA · TIER 1', price:142.10, chg:3.4},
+    {name:'Lyon', tier:'FRA · TIER 1', price:98.75, chg:-2.3},
+    {name:'Lille', tier:'FRA · TIER 1', price:87.60, chg:1.9},
+    {name:'Nice', tier:'FRA · TIER 1', price:64.30, chg:0.8},
+  ]},
+  championsleague: { label:'Champions League', teams:[
+    {name:'Real Madrid (UCL)', tier:'ESP · LEAGUE PHASE', price:112.40, chg:1.2},
+    {name:'Manchester City (UCL)', tier:'ENG · LEAGUE PHASE', price:98.75, chg:0.8},
+    {name:'Bayern Munich (UCL)', tier:'GER · LEAGUE PHASE', price:94.30, chg:0.6},
+    {name:'Paris Saint-Germain (UCL)', tier:'FRA · LEAGUE PHASE', price:96.60, chg:1.0},
+    {name:'Arsenal (UCL)', tier:'ENG · LEAGUE PHASE', price:88.20, chg:0.9},
+    {name:'Barcelona (UCL)', tier:'ESP · LEAGUE PHASE', price:91.90, chg:0.7},
+    {name:'Liverpool (UCL)', tier:'ENG · LEAGUE PHASE', price:85.40, chg:0.5},
+    {name:'Inter Milan (UCL)', tier:'ITA · LEAGUE PHASE', price:74.10, chg:0.4},
+  ]},
+  europa: { label:'Europa League', teams:[
+    {name:'Bayer Leverkusen (UEL)', tier:'GER · LEAGUE PHASE', price:52.30, chg:0.6},
+    {name:'AC Milan (UEL)', tier:'ITA · LEAGUE PHASE', price:49.80, chg:0.4},
+    {name:'Real Sociedad (UEL)', tier:'ESP · LEAGUE PHASE', price:38.60, chg:0.3},
+    {name:'Juventus (UEL)', tier:'ITA · LEAGUE PHASE', price:47.20, chg:0.5},
+    {name:'Crystal Palace (UEL)', tier:'ENG · LEAGUE PHASE', price:31.40, chg:1.8},
+    {name:'Bournemouth (UEL)', tier:'ENG · DEBUT SEASON', price:24.90, chg:2.4},
+    {name:'Sunderland (UEL)', tier:'ENG · DEBUT SEASON', price:22.60, chg:2.1},
+    {name:'AZ Alkmaar (UEL)', tier:'NED · LEAGUE PHASE', price:26.30, chg:0.2},
+  ]},
+  cups: { label:'Domestic Cups', teams:[
+    {name:'Bayern Munich (DFB-Pokal)', tier:'GER · ROUND 1 TODAY', price:18.40, chg:0.0},
+    {name:'Borussia Dortmund (DFB-Pokal)', tier:'GER · ROUND 1 TODAY', price:15.60, chg:0.0},
+    {name:'Manchester City (FA Cup)', tier:'ENG · ENTERS JAN 9 (R3)', price:12.80, chg:0.0},
+    {name:'Arsenal (FA Cup)', tier:'ENG · ENTERS JAN 9 (R3)', price:12.20, chg:0.0},
+    {name:'Real Madrid (Copa del Rey)', tier:'ESP · ENTERS LATER RD', price:11.90, chg:0.0},
+    {name:'Barcelona (Copa del Rey)', tier:'ESP · ENTERS LATER RD', price:11.50, chg:0.0},
+    {name:'Juventus (Coppa Italia)', tier:'ITA · ENTERS DEC', price:9.80, chg:0.0},
+    {name:'Inter Milan (Coppa Italia)', tier:'ITA · ENTERS DEC', price:9.60, chg:0.0},
+    {name:'Paris Saint-Germain (Coupe de France)', tier:'FRA · ENTERS LATER RD', price:10.40, chg:0.0},
+    {name:'Marseille (Coupe de France)', tier:'FRA · ENTERS LATER RD', price:8.90, chg:0.0},
+  ]},
+  national: { label:'National Teams', teams:[
     {name:'Brazil', tier:'CONMEBOL · SENIOR', price:95.60, chg:0.7},
     {name:'Argentina', tier:'CONMEBOL · SENIOR', price:97.20, chg:0.9},
+    {name:'Uruguay', tier:'CONMEBOL · SENIOR', price:58.40, chg:0.3},
+    {name:'Colombia', tier:'CONMEBOL · SENIOR', price:52.10, chg:0.5},
     {name:'France', tier:'UEFA · SENIOR', price:92.15, chg:0.4},
     {name:'England', tier:'UEFA · SENIOR', price:88.40, chg:0.3},
     {name:'Spain', tier:'UEFA · SENIOR', price:86.75, chg:1.1},
     {name:'Germany', tier:'UEFA · SENIOR', price:84.30, chg:-0.2},
     {name:'Portugal', tier:'UEFA · SENIOR', price:83.10, chg:0.5},
     {name:'Netherlands', tier:'UEFA · SENIOR', price:80.55, chg:0.6},
-  ]},
-  nonleague: { label:'Non-League / Cup', teams:[
-    {name:'Marine AFC', tier:'NPL · TIER 8', price:1.85, chg:38.8},
-    {name:'Brackley Town', tier:'NL PREMIER · TIER 6', price:0.51, chg:12.4},
-    {name:'Chorley', tier:'NL NORTH · TIER 6', price:0.38, chg:-6.2},
-    {name:'Blyth Spartans', tier:'NPL · TIER 7', price:0.29, chg:4.1},
-    {name:'Spennymoor Town', tier:'NPL · TIER 7', price:0.33, chg:9.7},
-    {name:'Alfreton Town', tier:'NPL · TIER 7', price:0.42, chg:-3.4},
-  ]},
-  portugal: { label:'Primeira Liga', teams:[
-    {name:'Benfica', tier:'POR · TIER 1', price:182.40, chg:4.6},
-    {name:'FC Porto', tier:'POR · TIER 1', price:168.90, chg:-2.1},
-    {name:'Sporting CP', tier:'POR · TIER 1', price:154.30, chg:6.8},
-    {name:'Sporting Braga', tier:'POR · TIER 1', price:78.60, chg:2.4},
-    {name:'Vitória SC', tier:'POR · TIER 1', price:52.10, chg:-1.7},
-    {name:'Famalicão', tier:'POR · TIER 1', price:31.85, chg:5.3},
-  ]},
-  turkey: { label:'Süper Lig', teams:[
-    {name:'Galatasaray', tier:'TUR · TIER 1', price:145.70, chg:5.1},
-    {name:'Fenerbahçe', tier:'TUR · TIER 1', price:138.20, chg:-3.4},
-    {name:'Beşiktaş', tier:'TUR · TIER 1', price:97.50, chg:1.9},
-    {name:'Trabzonspor', tier:'TUR · TIER 1', price:64.30, chg:3.6},
-    {name:'İstanbul Başakşehir', tier:'TUR · TIER 1', price:38.90, chg:-0.8},
-    {name:'Konyaspor', tier:'TUR · TIER 1', price:29.40, chg:2.2},
-  ]},
-  saudi: { label:'Saudi Pro League', teams:[
-    {name:'Al-Hilal', tier:'KSA · TIER 1', price:168.50, chg:7.2},
-    {name:'Al-Nassr', tier:'KSA · TIER 1', price:161.90, chg:3.5},
-    {name:'Al-Ittihad', tier:'KSA · TIER 1', price:142.30, chg:-1.9},
-    {name:'Al-Ahli', tier:'KSA · TIER 1', price:126.70, chg:4.8},
-    {name:'Al-Shabab', tier:'KSA · TIER 1', price:58.20, chg:1.3},
-    {name:'Al-Taawoun', tier:'KSA · TIER 1', price:33.60, chg:-2.5},
-  ]},
-  netherlands: { label:'Eredivisie', teams:[
-    {name:'Ajax', tier:'NED · TIER 1', price:118.40, chg:-3.8},
-    {name:'PSV Eindhoven', tier:'NED · TIER 1', price:109.75, chg:4.2},
-    {name:'Feyenoord', tier:'NED · TIER 1', price:96.30, chg:2.6},
-    {name:'AZ Alkmaar', tier:'NED · TIER 1', price:52.10, chg:1.4},
-    {name:'FC Twente', tier:'NED · TIER 1', price:44.80, chg:-1.1},
-    {name:'FC Utrecht', tier:'NED · TIER 1', price:36.20, chg:3.0},
+    {name:'Italy', tier:'UEFA · SENIOR', price:74.20, chg:-0.4},
+    {name:'Belgium', tier:'UEFA · SENIOR', price:66.90, chg:0.2},
+    {name:'Croatia', tier:'UEFA · SENIOR', price:61.30, chg:0.8},
+    {name:'Denmark', tier:'UEFA · SENIOR', price:48.60, chg:0.3},
+    {name:'Switzerland', tier:'UEFA · SENIOR', price:41.20, chg:0.1},
+    {name:'Wales', tier:'UEFA · SENIOR', price:29.80, chg:-0.3},
+    {name:'Poland', tier:'UEFA · SENIOR', price:36.40, chg:0.4},
+    {name:'Mexico', tier:'CONCACAF · SENIOR', price:44.70, chg:0.6},
+    {name:'USA', tier:'CONCACAF · SENIOR', price:47.30, chg:0.9},
+    {name:'Morocco', tier:'CAF · SENIOR', price:39.60, chg:1.3},
+    {name:'Senegal', tier:'CAF · SENIOR', price:37.10, chg:0.7},
+    {name:'Nigeria', tier:'CAF · SENIOR', price:33.40, chg:0.5},
+    {name:'Japan', tier:'AFC · SENIOR', price:35.90, chg:0.6},
+    {name:'South Korea', tier:'AFC · SENIOR', price:32.20, chg:0.4},
   ]},
 };
 
@@ -664,10 +711,11 @@ const indices = [
   { name:'LALIGA-20', tier:'SPAIN · TOP FLIGHT', value:294.10, chg:6.7 },
   { name:'SERIE-A-20', tier:'ITALY · TOP FLIGHT', value:238.90, chg:-2.3 },
   { name:'BUNDES-18', tier:'GERMANY · TOP FLIGHT', value:210.55, chg:3.8 },
-  { name:'PRIMEIRA-18', tier:'PORTUGAL · TOP FLIGHT', value:94.20, chg:5.4 },
-  { name:'SUPERLIG-20', tier:'TÜRKIYE · TOP FLIGHT', value:75.60, chg:2.1 },
-  { name:'SPL-18', tier:'SAUDI ARABIA · TOP FLIGHT', value:101.90, chg:8.6 },
-  { name:'NONLEAGUE-100', tier:'ENGLAND · TIER 5-10', value:14.85, chg:22.6 },
+  { name:'LIGUE1-18', tier:'FRANCE · TOP FLIGHT', value:167.20, chg:1.9 },
+  { name:'UCL-36', tier:'CHAMPIONS LEAGUE · DRAW AUG 27', value:92.70, chg:0.8 },
+  { name:'UEL-36', tier:'EUROPA LEAGUE · DRAW AUG 28', value:36.90, chg:0.7 },
+  { name:'CUPS-10', tier:'DOMESTIC CUPS · EARLY ROUNDS', value:12.10, chg:0.0 },
+  { name:'INTL-50', tier:'NATIONAL TEAMS', value:60.30, chg:0.5 },
 ];
 
 function up(v){ return v>=0; }
@@ -700,14 +748,19 @@ function buildIndices(){
 }
 buildIndices();
 
-// mini caps
+// mini caps — other clubs with confirmed qualifying-round wins this week
 function buildMiniCaps(){
-  const list = leagues.nonleague.teams.slice(1,4);
+  const list = [
+    { name:'Hapoel Beer-Sheva', price:9.60 },
+    { name:'Dinamo Zagreb', price:22.40 },
+    { name:'Slovan Bratislava', price:15.80 },
+  ];
   document.getElementById('miniCaps').innerHTML = list.map(t=>
-    '<div class="mc-item"><div class="mc-name">'+t.name+'</div><div class="mc-price mono" style="color:'+(up(t.chg)?'#17D9A3':'#FF5C55')+'">£'+t.price.toFixed(2)+'</div></div>'
+    '<div class="mc-item"><div class="mc-name">'+t.name+'</div><div class="mc-price mono" style="color:#17D9A3">£'+t.price.toFixed(2)+'</div></div>'
   ).join('');
 }
 buildMiniCaps();
+
 
 // tabs + table
 const tabBar = document.getElementById('tabBar');
@@ -723,7 +776,7 @@ function renderTable(key){
       '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
       '<td class="num mono">'+(Math.round(hash(t.name)%900+100))+'K</td>'+
-      '<td><button class="buy-btn">Trade</button></td>'+
+      '<td><button class="buy-btn" data-id="'+(t.id||'')+'" data-name="'+t.name+'" data-price="'+t.price+'">Trade</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -742,6 +795,185 @@ function buildTabs(){
 }
 buildTabs();
 
+// ============================================================
+// Supabase: auth + live team data + trading
+// ============================================================
+let supabase = null;
+let currentSession = null;
+let authMode = 'signin'; // or 'signup'
+let tradeSide = 'buy';
+let tradeTeam = null; // { id, name, price }
+
+function supaConfigured(){
+  return !(SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_'));
+}
+
+function initSupabase(){
+  if(!supaConfigured()){
+    document.getElementById('configBanner').style.display = 'block';
+    return;
+  }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabase.auth.onAuthStateChange((event, session)=>{
+    currentSession = session;
+    updateAuthUI();
+    if(session) refreshWallet();
+  });
+}
+
+function updateAuthUI(){
+  const walletChip = document.getElementById('walletChip');
+  const authBtn = document.getElementById('authBtn');
+  if(currentSession){
+    walletChip.style.display = 'flex';
+    authBtn.textContent = 'Sign out';
+  } else {
+    walletChip.style.display = 'none';
+    authBtn.textContent = 'Sign in to trade';
+  }
+}
+
+async function refreshWallet(){
+  if(!supabase || !currentSession) return;
+  const { data, error } = await supabase.from('profiles').select('coin_balance').eq('id', currentSession.user.id).single();
+  if(!error && data){
+    document.getElementById('walletAmt').textContent = Math.round(data.coin_balance).toLocaleString();
+  }
+}
+
+async function loadTeamsFromDB(){
+  if(!supabase) return;
+  const { data, error } = await supabase.from('teams').select('*');
+  if(error || !data) return;
+  data.forEach(dbTeam=>{
+    const bucket = leagues[dbTeam.league];
+    if(!bucket) return;
+    const match = bucket.teams.find(t=> t.name.toLowerCase() === dbTeam.name.toLowerCase());
+    if(match){ match.id = dbTeam.id; match.price = dbTeam.price; match.chg = dbTeam.chg; }
+  });
+  // re-render whichever tab is active and refresh the ticker/index cards with live prices
+  const activeTab = tabBar.querySelector('.tab-btn.active');
+  if(activeTab) renderTable(activeTab.dataset.key);
+  buildTicker();
+}
+
+async function loadLeaderboard(){
+  if(!supabase) return;
+  const { data, error } = await supabase.rpc('get_leaderboard', { p_limit: 20 });
+  const body = document.getElementById('leaderboardBody');
+  if(error || !data || data.length === 0){
+    body.innerHTML = '<tr><td colspan="3" style="color:var(--steel-dim); padding:20px 14px;">No ranked trades yet — be the first on the board.</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map((row,i)=>
+    '<tr><td class="mono">#'+(i+1)+'</td><td>'+(row.display_name||'Trader')+'</td>'+
+    '<td class="num mono">'+Math.round(row.portfolio_value).toLocaleString()+' coins</td></tr>'
+  ).join('');
+}
+
+// ----- Auth modal wiring -----
+const authOverlay = document.getElementById('authOverlay');
+function openAuth(){ authOverlay.classList.add('open'); }
+function closeAuth(){ authOverlay.classList.remove('open'); document.getElementById('authMsg').className='m-msg'; }
+document.getElementById('authClose').addEventListener('click', closeAuth);
+document.getElementById('authOverlay').addEventListener('click', (e)=>{ if(e.target===authOverlay) closeAuth(); });
+
+document.getElementById('authToggle').addEventListener('click', ()=>{
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('authToggle').parentElement.innerHTML = authMode === 'signin'
+    ? 'No account? <a id="authToggle2">Create one</a>' : 'Have an account? <a id="authToggle2">Sign in</a>';
+  document.getElementById('authToggle2').addEventListener('click', ()=> document.getElementById('authToggle').click());
+});
+
+document.getElementById('authBtn').addEventListener('click', async ()=>{
+  if(currentSession){ await supabase.auth.signOut(); return; }
+  if(!supaConfigured()){ alert('Add your Supabase URL and anon key to the CONFIG block near the top of this file first.'); return; }
+  openAuth();
+});
+
+document.getElementById('authSubmit').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  if(!supabase){ msg.textContent='Supabase is not configured yet.'; msg.className='m-msg err'; return; }
+  const fn = authMode === 'signin' ? supabase.auth.signInWithPassword : supabase.auth.signUp;
+  const { data, error } = await fn.call(supabase.auth, { email, password });
+  if(error){ msg.textContent = error.message; msg.className = 'm-msg err'; return; }
+  if(authMode === 'signup' && !data.session){
+    msg.textContent = 'Account created — check your email to confirm, then sign in.'; msg.className='m-msg ok'; return;
+  }
+  closeAuth();
+  loadTeamsFromDB();
+});
+
+// ----- Trade modal wiring -----
+const tradeOverlay = document.getElementById('tradeOverlay');
+function openTrade(id, name, price){
+  if(!currentSession){ openAuth(); return; }
+  tradeTeam = { id, name, price: parseFloat(price) };
+  tradeSide = 'buy';
+  document.getElementById('tradeTeamName').textContent = name;
+  document.getElementById('tradeTeamPrice').textContent = 'Current price: £' + tradeTeam.price.toFixed(2);
+  document.getElementById('tabBuy').classList.add('active','buy'); document.getElementById('tabBuy').classList.remove('sell');
+  document.getElementById('tabSell').classList.remove('active','sell');
+  document.getElementById('tradeQty').value = 10;
+  document.getElementById('tradeMsg').className = 'm-msg';
+  updateTradeCost();
+  document.getElementById('tradeSubmit').textContent = 'Confirm Buy';
+  tradeOverlay.classList.add('open');
+}
+function closeTrade(){ tradeOverlay.classList.remove('open'); }
+document.getElementById('tradeClose').addEventListener('click', closeTrade);
+tradeOverlay.addEventListener('click', (e)=>{ if(e.target===tradeOverlay) closeTrade(); });
+
+document.getElementById('tabBuy').addEventListener('click', ()=>{
+  tradeSide='buy';
+  document.getElementById('tabBuy').classList.add('active','buy');
+  document.getElementById('tabSell').classList.remove('active','sell');
+  document.getElementById('tradeSubmit').textContent='Confirm Buy';
+});
+document.getElementById('tabSell').addEventListener('click', ()=>{
+  tradeSide='sell';
+  document.getElementById('tabSell').classList.add('active','sell');
+  document.getElementById('tabBuy').classList.remove('active','buy');
+  document.getElementById('tradeSubmit').textContent='Confirm Sell';
+});
+function updateTradeCost(){
+  if(!tradeTeam) return;
+  const qty = parseFloat(document.getElementById('tradeQty').value) || 0;
+  document.getElementById('tradeCost').textContent = (qty*tradeTeam.price).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + ' coins';
+}
+document.getElementById('tradeQty').addEventListener('input', updateTradeCost);
+
+// delegated click for every "Trade" button across all league tables
+tableBody.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.buy-btn');
+  if(!btn) return;
+  if(!btn.dataset.id){
+    alert('This team is not yet linked to the database. Configure Supabase and make sure supabase-schema.sql has been run.');
+    return;
+  }
+  openTrade(btn.dataset.id, btn.dataset.name, btn.dataset.price);
+});
+
+document.getElementById('tradeSubmit').addEventListener('click', async ()=>{
+  const qty = parseFloat(document.getElementById('tradeQty').value);
+  const msg = document.getElementById('tradeMsg');
+  if(!qty || qty <= 0){ msg.textContent='Enter a quantity greater than zero.'; msg.className='m-msg err'; return; }
+  const { error } = await supabase.rpc('trade', { p_team_id: tradeTeam.id, p_side: tradeSide, p_qty: qty });
+  if(error){ msg.textContent = error.message; msg.className='m-msg err'; return; }
+  msg.textContent = 'Trade complete ✓'; msg.className='m-msg ok';
+  refreshWallet();
+  loadLeaderboard();
+  setTimeout(closeTrade, 900);
+});
+
+initSupabase();
+loadTeamsFromDB();
+loadLeaderboard();
+
 // hero chart
 const heroSeries = genSeries(438.62, 12.4, 10);
 new Chart(document.getElementById('heroChart'), {
@@ -755,11 +987,11 @@ new Chart(document.getElementById('heroChart'), {
       y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10} } } } }
 });
 
-// cup chart
-const cupSeries = [0.12,0.14,0.19,0.31,0.58,0.94,1.85];
+// spotlight chart
+const cupSeries = [5.40,8.90,17.20,38.60];
 new Chart(document.getElementById('cupChart'), {
   type:'line',
-  data:{ labels:['Prelim','Q1','Q2','Q3','Q4','R1','R2'],
+  data:{ labels:['1st Qual. Round','2nd Qual. Round','3rd Qual. Round','Play-off (won 6-5 agg)'],
     datasets:[{ data:cupSeries, borderColor:'#E7B54B', borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#E7B54B',
       tension:0.3, fill:true, backgroundColor:'rgba(231,181,75,0.08)' }] },
   options:{ responsive:true, maintainAspectRatio:false,
@@ -769,5 +1001,39 @@ new Chart(document.getElementById('cupChart'), {
       y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10}, callback:(v)=>'£'+v } } } }
 });
 </script>
+<!-- Auth modal -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal">
+    <button class="modal-close" id="authClose">✕</button>
+    <h2 id="authTitle">Sign in</h2>
+    <div class="sub">Trade with 12,450 free Fan Coins to start. No cash value, ever.</div>
+    <div class="m-msg" id="authMsg"></div>
+    <div class="m-field"><label>Email</label><input id="authEmail" type="email" placeholder="you@example.com"></div>
+    <div class="m-field"><label>Password</label><input id="authPassword" type="password" placeholder="••••••••"></div>
+    <button class="m-btn primary" id="authSubmit">Sign in</button>
+    <div class="m-toggle">No account? <a id="authToggle">Create one</a></div>
+  </div>
+</div>
+
+<!-- Trade modal -->
+<div class="modal-overlay" id="tradeOverlay">
+  <div class="modal">
+    <button class="modal-close" id="tradeClose">✕</button>
+    <h2>Trade</h2>
+    <div class="trade-summary">
+      <div class="tr-name" id="tradeTeamName">—</div>
+      <div class="tr-price" id="tradeTeamPrice">—</div>
+    </div>
+    <div class="trade-tabs">
+      <button class="trade-tab buy active" id="tabBuy">Buy</button>
+      <button class="trade-tab sell" id="tabSell">Sell</button>
+    </div>
+    <div class="m-msg" id="tradeMsg"></div>
+    <div class="m-field"><label>Quantity</label><input id="tradeQty" type="number" min="1" step="1" value="10"></div>
+    <div class="trade-cost"><span>Estimated total</span><b id="tradeCost">—</b></div>
+    <button class="m-btn primary" id="tradeSubmit">Confirm Buy</button>
+  </div>
+</div>
+
 </body>
 </html>
