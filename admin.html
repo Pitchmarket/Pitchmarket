@@ -116,14 +116,14 @@ tbody tr:last-child td{ border-bottom:none; }
 </div>
 
 <script>
-let supabase, currentLeague = 'all', allTeams = [];
+let sb, currentLeague = 'all', allTeams = [];
 
 function initSupabase(){
   if(SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')){
     document.getElementById('configWarning').style.display = 'block';
     return false;
   }
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   return true;
 }
 
@@ -136,8 +136,8 @@ function showMsg(text, type){
 async function signIn(){
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  if(!supabase){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if(!sb){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if(error){ showMsg(error.message, 'err'); return; }
   onAuthed(data.user);
 }
@@ -145,9 +145,9 @@ async function signIn(){
 async function signUp(){
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  if(!supabase){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
+  if(!sb){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
   if(password.length < 6){ showMsg('Password needs at least 6 characters.', 'err'); return; }
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await sb.auth.signUp({ email, password });
   if(error){ showMsg(error.message, 'err'); return; }
   showMsg('Account created. If email confirmation is on in your Supabase project, check your inbox, then sign in. Otherwise you are signed in already — click Sign in.', 'ok');
 }
@@ -160,7 +160,7 @@ function onAuthed(user){
 }
 
 async function loadTeams(){
-  const { data, error } = await supabase.from('teams').select('*').order('league').order('price', { ascending:false });
+  const { data, error } = await sb.from('teams').select('*').order('league').order('price', { ascending:false });
   if(error){ alert('Could not load teams: ' + error.message + '\\n\\nThis usually means your email does not match the admin email in the SQL policy, or the schema has not been run yet.'); return; }
   allTeams = data;
   buildFilters();
@@ -195,7 +195,7 @@ function renderRows(){
       const chg = parseFloat(tr.querySelector('.chg-input').value);
       const status = tr.querySelector('.row-status');
       btn.disabled = true; status.textContent='Saving…'; status.className='row-status';
-      const { error } = await supabase.from('teams').update({ price, chg, updated_at: new Date().toISOString() }).eq('id', id);
+      const { error } = await sb.from('teams').update({ price, chg, updated_at: new Date().toISOString() }).eq('id', id);
       btn.disabled = false;
       if(error){ status.textContent = 'Failed: ' + error.message; status.className='row-status err'; }
       else { status.textContent = 'Saved ✓'; status.className='row-status ok'; setTimeout(()=>status.textContent='',2000); }
@@ -207,13 +207,13 @@ document.getElementById('signInBtn').addEventListener('click', signIn);
 document.getElementById('signUpBtn').addEventListener('click', signUp);
 document.getElementById('refreshBtn').addEventListener('click', loadTeams);
 document.getElementById('signOutBtn').addEventListener('click', async ()=>{
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   location.reload();
 });
 
 (async function boot(){
   if(!initSupabase()) return;
-  const { data } = await supabase.auth.getSession();
+  const { data } = await sb.auth.getSession();
   if(data.session){ onAuthed(data.session.user); }
 })();
 </script>
