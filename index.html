@@ -351,17 +351,17 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 
 <section class="hero" style="border-bottom:1px solid var(--border-soft); padding-top:64px;">
   <div class="hero-copy">
-    <div class="eyebrow">LIVE MARKET · 47,208 traders online</div>
-    <h1 class="display">Every club<br>has a price.<br><span class="line2">Trade the table.</span></h1>
-    <p>Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.</p>
+    <div class="eyebrow" id="heroEyebrow">LIVE MARKET · 47,208 traders online</div>
+    <h1 class="display"><span id="heroLine1">Every club</span><br><span id="heroLine2">has a price.</span><br><span class="line2" id="heroLine3">Trade the table.</span></h1>
+    <p id="heroSubhead">Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.</p>
     <div class="hero-actions">
       <a href="#explorer" class="btn-primary">Start trading</a>
       <a href="#classes" class="btn-ghost">How it works</a>
     </div>
     <div class="hero-stats">
-      <div class="hstat"><div class="n mono">82</div><div class="l">Listed clubs & teams</div></div>
-      <div class="hstat"><div class="n mono">9</div><div class="l">Markets covered</div></div>
-      <div class="hstat"><div class="n mono">12,450</div><div class="l">Starting coins, everyone</div></div>
+      <div class="hstat"><div class="n mono" id="heroStat1N">82</div><div class="l" id="heroStat1L">Listed clubs & teams</div></div>
+      <div class="hstat"><div class="n mono" id="heroStat2N">9</div><div class="l" id="heroStat2L">Markets covered</div></div>
+      <div class="hstat"><div class="n mono" id="heroStat3N">12,450</div><div class="l" id="heroStat3L">Starting coins, everyone</div></div>
     </div>
   </div>
   <div class="hero-chart">
@@ -380,10 +380,10 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <div style="padding:20px 0 0;">
   <div class="ad-banner">
     <div class="ad-body">
-      <span class="ad-tag">Sponsored</span>
-      <div class="ad-copy"><b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.</div>
+      <span class="ad-tag" id="adTopTag">Sponsored</span>
+      <div class="ad-copy" id="adTopCopy"><b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.</div>
     </div>
-    <a href="#" class="ad-cta">Shop now ↗</a>
+    <a href="#" class="ad-cta" id="adTopCta">Shop now ↗</a>
   </div>
 </div>
 
@@ -401,31 +401,31 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <div style="padding:0;">
   <div class="ad-banner ad-native">
     <div class="ad-body">
-      <span class="ad-tag">Sponsored</span>
-      <div class="ad-copy"><b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.</div>
+      <span class="ad-tag" id="adNativeTag">Sponsored</span>
+      <div class="ad-copy" id="adNativeCopy"><b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.</div>
     </div>
-    <a href="#" class="ad-cta">Try free ↗</a>
+    <a href="#" class="ad-cta" id="adNativeCta">Try free ↗</a>
   </div>
 </div>
 
 <section id="spotlight">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">SPOTLIGHT · HAPPENING THIS WEEK</div>
-      <div class="sec-title display">Qualifying is where fortunes turn</div>
+      <div class="sec-eyebrow" id="spotlightEyebrow">SPOTLIGHT · HAPPENING THIS WEEK</div>
+      <div class="sec-title display" id="spotlightTitle">Qualifying is where fortunes turn</div>
     </div>
-    <div class="sec-desc">Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.</div>
+    <div class="sec-desc" id="spotlightDesc">Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.</div>
   </div>
   <div class="cupwatch">
     <div>
-      <div class="cw-badge">CONFIRMED · WON PLAY-OFF ROUND</div>
-      <div class="cw-name display">Bodø/Glimt (UCL)</div>
-      <div class="cw-meta">Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL</div>
+      <div class="cw-badge" id="cwBadge">CONFIRMED · WON PLAY-OFF ROUND</div>
+      <div class="cw-name display" id="cwName">Bodø/Glimt (UCL)</div>
+      <div class="cw-meta" id="cwMeta">Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL</div>
       <div class="cw-price-row">
-        <div class="cw-price mono">£38.60</div>
-        <div class="cw-price-chg">▲ 612% since 1st Qualifying Round</div>
+        <div class="cw-price mono" id="cwPrice">£38.60</div>
+        <div class="cw-price-chg" id="cwPriceChg">▲ 612% since 1st Qualifying Round</div>
       </div>
-      <div class="cw-stages">
+      <div class="cw-stages" id="cwStages">
         <div class="cw-stage">Q1 Round</div>
         <div class="cw-stage">Q2 Round</div>
         <div class="cw-stage">Q3 Round</div>
@@ -444,50 +444,18 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <div class="sec-title display">Three ways to hold the game</div>
     </div>
   </div>
-  <div class="classes">
-    <div class="class-card">
-      <div class="cc-icon eq">EQ</div>
-      <h3>Club equities</h3>
-      <p>Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.</p>
-      <div class="cc-stats">
-        <div class="cc-stat"><div class="n">±4.8%</div><div class="l">Avg. matchday move</div></div>
-        <div class="cc-stat"><div class="n">2,140</div><div class="l">Clubs listed</div></div>
-      </div>
-    </div>
-    <div class="class-card">
-      <div class="cc-icon nt">NT</div>
-      <h3>National team bonds</h3>
-      <p>Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.</p>
-      <div class="cc-stats">
-        <div class="cc-stat"><div class="n">±0.6%</div><div class="l">Avg. daily move</div></div>
-        <div class="cc-stat"><div class="n">86</div><div class="l">Federations listed</div></div>
-      </div>
-    </div>
-    <div class="class-card">
-      <div class="cc-icon mc">CL</div>
-      <h3>Continental campaigns</h3>
-      <p>A club's Champions League run trades as its own instrument, separate from its domestic price. Event-driven — each knockout leg can move it sharply either way.</p>
-      <div class="cc-stats">
-        <div class="cc-stat"><div class="n">±18%</div><div class="l">Avg. move per leg</div></div>
-        <div class="cc-stat"><div class="n">32</div><div class="l">UCL instruments live</div></div>
-      </div>
-    </div>
-  </div>
+  <div class="classes" id="classesGrid"></div>
 </section>
 
 <section id="leaderboard">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">RANKED COMPETITION</div>
-      <div class="sec-title display">Same coins. Same odds. Real prizes.</div>
+      <div class="sec-eyebrow" id="lbEyebrow">RANKED COMPETITION</div>
+      <div class="sec-title display" id="lbTitle">Same coins. Same odds. Real prizes.</div>
     </div>
-    <div class="sec-desc">Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.</div>
+    <div class="sec-desc" id="lbDesc">Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.</div>
   </div>
-  <div class="lb-rules">
-    <div class="lb-rule"><b>Free to enter.</b> No purchase, ever, changes your standing.</div>
-    <div class="lb-rule"><b>Equal start.</b> Every account begins the season at the same balance.</div>
-    <div class="lb-rule"><b>Ranked by portfolio value.</b> Coins on hand plus the live value of everything you hold.</div>
-  </div>
+  <div class="lb-rules" id="lbRules"></div>
   <table>
     <thead><tr><th>Rank</th><th>Trader</th><th class="num">Portfolio value</th></tr></thead>
     <tbody id="leaderboardBody"><tr><td colspan="3" style="color:var(--steel-dim); padding:20px 14px;">Sign in and place a trade to appear here.</td></tr></tbody>
@@ -500,44 +468,9 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <div class="sec-eyebrow">GO PRO</div>
       <div class="sec-title display">Better information, not better odds</div>
     </div>
-    <div class="sec-desc">Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.</div>
+    <div class="sec-desc" id="proDesc">Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.</div>
   </div>
-  <div class="pro-grid">
-    <div class="pro-card">
-      <div class="pro-tier">Free</div>
-      <div class="pro-price mono">£0<span>/mo</span></div>
-      <ul class="pro-feats">
-        <li>Full trading access, all leagues</li>
-        <li>Equal footing in the ranked competition</li>
-        <li>5 watchlist slots</li>
-        <li>Standard data, ads shown</li>
-      </ul>
-      <a href="#" class="pro-btn ghost">Current plan</a>
-    </div>
-    <div class="pro-card featured">
-      <div class="badge-pop">Most popular</div>
-      <div class="pro-tier">Pro</div>
-      <div class="pro-price mono">£4.99<span>/mo</span></div>
-      <ul class="pro-feats">
-        <li>Everything in Free, zero ads</li>
-        <li>Deeper club & competition data</li>
-        <li>Unlimited watchlist slots</li>
-        <li>Early access to newly added leagues</li>
-      </ul>
-      <a href="#" class="pro-btn filled">Upgrade to Pro</a>
-    </div>
-    <div class="pro-card">
-      <div class="pro-tier">Pro Annual</div>
-      <div class="pro-price mono">£39<span>/yr</span></div>
-      <ul class="pro-feats">
-        <li>Everything in Pro</li>
-        <li>2 months free vs. monthly</li>
-        <li>Priority support</li>
-        <li>Still zero trading advantage</li>
-      </ul>
-      <a href="#" class="pro-btn ghost">Upgrade to Annual</a>
-    </div>
-  </div>
+  <div class="pro-grid" id="proGrid"></div>
 </section>
 
 <section id="explorer">
@@ -564,7 +497,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 </section>
 
 <div class="disclaimer-bar">
-  <p>PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.</p>
+  <p id="disclaimerText">PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.</p>
 </div>
 
 <footer>
@@ -603,7 +536,7 @@ function sparkSVG(data, color){
 }
 function fmtChg(chg){ return (chg>=0?'▲ ':'▼ ')+Math.abs(chg).toFixed(1)+'%'; }
 
-const leagues = {
+let leagues = {
   epl: { label:'Premier League', teams:[
     {name:'Manchester City', tier:'ENG · TIER 1', price:420.15, chg:3.2},
     {name:'Arsenal', tier:'ENG · TIER 1', price:385.40, chg:5.8},
@@ -706,7 +639,7 @@ const leagues = {
   ]},
 };
 
-const indices = [
+let indices = [
   { name:'EPL-20', tier:'ENGLAND · TOP FLIGHT', value:438.62, chg:12.4 },
   { name:'LALIGA-20', tier:'SPAIN · TOP FLIGHT', value:294.10, chg:6.7 },
   { name:'SERIE-A-20', tier:'ITALY · TOP FLIGHT', value:238.90, chg:-2.3 },
@@ -718,12 +651,131 @@ const indices = [
   { name:'INTL-50', tier:'NATIONAL TEAMS', value:60.30, chg:0.5 },
 ];
 
+// ============================================================
+// Default site content — used until (or unless) live settings
+// load from Supabase. Every field here is fully editable from
+// the admin dashboard's "Site Content" tab.
+// ============================================================
+let siteContent = {
+  hero: {
+    eyebrow:'LIVE MARKET · 47,208 traders online',
+    line1:'Every club', line2:'has a price.', line3:'Trade the table.',
+    subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
+    stat1_n:'82', stat1_l:'Listed clubs & teams',
+    stat2_n:'9', stat2_l:'Markets covered',
+    stat3_n:'12,450', stat3_l:'Starting coins, everyone',
+  },
+  ad_top: { tag:'Sponsored', copy:"<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.", cta_text:'Shop now ↗', cta_url:'#' },
+  ad_native: { tag:'Sponsored', copy:'<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.', cta_text:'Try free ↗', cta_url:'#' },
+  spotlight: {
+    eyebrow:'SPOTLIGHT · HAPPENING THIS WEEK', title:'Qualifying is where fortunes turn',
+    desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
+    badge:'CONFIRMED · WON PLAY-OFF ROUND', name:'Bodø/Glimt (UCL)',
+    meta:'Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL',
+    price:'£38.60', price_chg:'▲ 612% since 1st Qualifying Round',
+    stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'],
+  },
+  leaderboard: {
+    eyebrow:'RANKED COMPETITION', title:'Same coins. Same odds. Real prizes.',
+    desc:'Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
+    rules:[
+      {b:'Free to enter.', t:'No purchase, ever, changes your standing.'},
+      {b:'Equal start.', t:'Every account begins the season at the same balance.'},
+      {b:'Ranked by portfolio value.', t:'Coins on hand plus the live value of everything you hold.'},
+    ],
+  },
+  pro: {
+    desc:"Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.",
+    plans:[
+      { tier:'Free', price:'£0', period:'/mo', featured:false, badge:'', feats:['Full trading access, all leagues','Equal footing in the ranked competition','5 watchlist slots','Standard data, ads shown'], cta:'Current plan' },
+      { tier:'Pro', price:'£4.99', period:'/mo', featured:true, badge:'Most popular', feats:['Everything in Free, zero ads','Deeper club & competition data','Unlimited watchlist slots','Early access to newly added leagues'], cta:'Upgrade to Pro' },
+      { tier:'Pro Annual', price:'£39', period:'/yr', featured:false, badge:'', feats:['Everything in Pro','2 months free vs. monthly','Priority support','Still zero trading advantage'], cta:'Upgrade to Annual' },
+    ],
+  },
+  classes:[
+    { icon:'EQ', title:'Club equities', desc:'Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.', stat1_n:'±4.8%', stat1_l:'Avg. matchday move', stat2_n:'2,140', stat2_l:'Clubs listed' },
+    { icon:'NT', title:'National team bonds', desc:'Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.', stat1_n:'±0.6%', stat1_l:'Avg. daily move', stat2_n:'86', stat2_l:'Federations listed' },
+    { icon:'CL', title:'Continental campaigns', desc:"A club's Champions League run trades as its own instrument, separate from its domestic price. Event-driven — each knockout leg can move it sharply either way.", stat1_n:'±18%', stat1_l:'Avg. move per leg', stat2_n:'32', stat2_l:'UCL instruments live' },
+  ],
+  disclaimer:{ text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
+};
+
+function renderSiteContent(){
+  const c = siteContent;
+  // hero
+  document.getElementById('heroEyebrow').textContent = c.hero.eyebrow;
+  document.getElementById('heroLine1').textContent = c.hero.line1;
+  document.getElementById('heroLine2').textContent = c.hero.line2;
+  document.getElementById('heroLine3').textContent = c.hero.line3;
+  document.getElementById('heroSubhead').textContent = c.hero.subhead;
+  document.getElementById('heroStat1N').textContent = c.hero.stat1_n;
+  document.getElementById('heroStat1L').textContent = c.hero.stat1_l;
+  document.getElementById('heroStat2N').textContent = c.hero.stat2_n;
+  document.getElementById('heroStat2L').textContent = c.hero.stat2_l;
+  document.getElementById('heroStat3N').textContent = c.hero.stat3_n;
+  document.getElementById('heroStat3L').textContent = c.hero.stat3_l;
+  // ad banners
+  document.getElementById('adTopTag').textContent = c.ad_top.tag;
+  document.getElementById('adTopCopy').innerHTML = c.ad_top.copy;
+  document.getElementById('adTopCta').textContent = c.ad_top.cta_text;
+  document.getElementById('adTopCta').href = c.ad_top.cta_url;
+  document.getElementById('adNativeTag').textContent = c.ad_native.tag;
+  document.getElementById('adNativeCopy').innerHTML = c.ad_native.copy;
+  document.getElementById('adNativeCta').textContent = c.ad_native.cta_text;
+  document.getElementById('adNativeCta').href = c.ad_native.cta_url;
+  // spotlight
+  document.getElementById('spotlightEyebrow').textContent = c.spotlight.eyebrow;
+  document.getElementById('spotlightTitle').textContent = c.spotlight.title;
+  document.getElementById('spotlightDesc').textContent = c.spotlight.desc;
+  document.getElementById('cwBadge').textContent = c.spotlight.badge;
+  document.getElementById('cwName').textContent = c.spotlight.name;
+  document.getElementById('cwMeta').textContent = c.spotlight.meta;
+  document.getElementById('cwPrice').textContent = c.spotlight.price;
+  document.getElementById('cwPriceChg').textContent = c.spotlight.price_chg;
+  document.getElementById('cwStages').innerHTML = c.spotlight.stages.map((s,i)=>
+    '<div class="cw-stage'+(i===c.spotlight.stages.length-1?' now':'')+'">'+s+'</div>'
+  ).join('');
+  // leaderboard
+  document.getElementById('lbEyebrow').textContent = c.leaderboard.eyebrow;
+  document.getElementById('lbTitle').textContent = c.leaderboard.title;
+  document.getElementById('lbDesc').textContent = c.leaderboard.desc;
+  document.getElementById('lbRules').innerHTML = c.leaderboard.rules.map(r=>
+    '<div class="lb-rule"><b>'+r.b+'</b> '+r.t+'</div>'
+  ).join('');
+  // pro
+  document.getElementById('proDesc').textContent = c.pro.desc;
+  document.getElementById('proGrid').innerHTML = c.pro.plans.map(p=>
+    '<div class="pro-card'+(p.featured?' featured':'')+'">'+
+      (p.badge?'<div class="badge-pop">'+p.badge+'</div>':'')+
+      '<div class="pro-tier">'+p.tier+'</div>'+
+      '<div class="pro-price mono">'+p.price+'<span>'+p.period+'</span></div>'+
+      '<ul class="pro-feats">'+p.feats.map(f=>'<li>'+f+'</li>').join('')+'</ul>'+
+      '<a href="#" class="pro-btn '+(p.featured?'filled':'ghost')+'">'+p.cta+'</a>'+
+    '</div>'
+  ).join('');
+  // asset classes
+  document.getElementById('classesGrid').innerHTML = c.classes.map(cl=>
+    '<div class="class-card">'+
+      '<div class="cc-icon mc">'+cl.icon+'</div>'+
+      '<h3>'+cl.title+'</h3>'+
+      '<p>'+cl.desc+'</p>'+
+      '<div class="cc-stats">'+
+        '<div class="cc-stat"><div class="n">'+cl.stat1_n+'</div><div class="l">'+cl.stat1_l+'</div></div>'+
+        '<div class="cc-stat"><div class="n">'+cl.stat2_n+'</div><div class="l">'+cl.stat2_l+'</div></div>'+
+      '</div>'+
+    '</div>'
+  ).join('');
+  // disclaimer
+  document.getElementById('disclaimerText').textContent = c.disclaimer.text;
+}
+renderSiteContent();
+
 function up(v){ return v>=0; }
 
 // ticker tape
-const tickerItems = [];
-Object.values(leagues).forEach(l=> l.teams.forEach(t=> tickerItems.push(t)));
 function buildTicker(){
+  const tickerItems = [];
+  Object.values(leagues).forEach(l=> l.teams.forEach(t=> tickerItems.push(t)));
   const html = tickerItems.map(t=>
     '<span class="tick"><span class="sym">'+t.name.toUpperCase().slice(0,4)+'</span><span class="px">£'+t.price.toFixed(2)+'</span><span class="'+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></span>'
   ).join('');
@@ -843,18 +895,44 @@ async function refreshWallet(){
 
 async function loadTeamsFromDB(){
   if(!sb) return;
-  const { data, error } = await sb.from('teams').select('*');
-  if(error || !data) return;
-  data.forEach(dbTeam=>{
-    const bucket = leagues[dbTeam.league];
-    if(!bucket) return;
-    const match = bucket.teams.find(t=> t.name.toLowerCase() === dbTeam.name.toLowerCase());
-    if(match){ match.id = dbTeam.id; match.price = dbTeam.price; match.chg = dbTeam.chg; }
+  const { data, error } = await sb.from('teams').select('*').order('league_label').order('price', { ascending:false });
+  if(error || !data || data.length === 0) return;
+
+  // Rebuild `leagues` entirely from the database, grouped by league key.
+  // This is what lets a brand-new league (or a brand-new team) added from
+  // the admin dashboard actually show up as a tab here, not just patch
+  // prices onto tabs that already existed in this file.
+  const grouped = {};
+  data.forEach(t=>{
+    if(!grouped[t.league]) grouped[t.league] = { label: t.league_label, teams: [] };
+    grouped[t.league].teams.push({ id:t.id, name:t.name, tier:t.tier, price:t.price, chg:t.chg });
   });
-  // re-render whichever tab is active and refresh the ticker/index cards with live prices
-  const activeTab = tabBar.querySelector('.tab-btn.active');
-  if(activeTab) renderTable(activeTab.dataset.key);
+  leagues = grouped;
+
+  // keep whichever tab was active (by key) if it still exists, else first tab
+  const activeKey = tabBar.querySelector('.tab-btn.active')?.dataset.key;
   buildTicker();
+  buildTabs();
+  if(activeKey && leagues[activeKey]){
+    const btn = tabBar.querySelector('.tab-btn[data-key="'+activeKey+'"]');
+    if(btn){
+      tabBar.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable(activeKey);
+    }
+  }
+}
+
+async function loadSiteSettings(){
+  if(!sb) return;
+  const { data, error } = await sb.from('site_settings').select('*');
+  if(error || !data) return;
+  data.forEach(row=>{
+    if(row.key === 'indices'){ indices = row.value; return; }
+    if(siteContent[row.key] !== undefined) siteContent[row.key] = row.value;
+  });
+  renderSiteContent();
+  buildIndices();
 }
 
 async function loadLeaderboard(){
@@ -973,6 +1051,7 @@ document.getElementById('tradeSubmit').addEventListener('click', async ()=>{
 initSupabase();
 loadTeamsFromDB();
 loadLeaderboard();
+loadSiteSettings();
 
 // hero chart
 const heroSeries = genSeries(438.62, 12.4, 10);

@@ -14,7 +14,8 @@
 body{ background:var(--bg); color:var(--chalk); font-family:'Inter',sans-serif; }
 .mono{ font-family:'JetBrains Mono',monospace; }
 .display{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; text-transform:uppercase; }
-input,button,select{ font-family:inherit; }
+input,button,select,textarea{ font-family:inherit; }
+textarea{ resize:vertical; }
 
 /* Gate screen */
 #gate{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
@@ -23,8 +24,8 @@ input,button,select{ font-family:inherit; }
 .gate-sub{ color:var(--steel); font-size:13px; margin-bottom:24px; }
 .field{ margin-bottom:14px; }
 .field label{ display:block; font-size:11.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
-.field input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; }
-.field input:focus{ outline:none; border-color:var(--surge); }
+.field input, .field textarea{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; }
+.field input:focus, .field textarea:focus{ outline:none; border-color:var(--surge); }
 .btn{ width:100%; padding:11px; border-radius:4px; font-weight:700; font-size:14px; border:none; cursor:pointer; }
 .btn.primary{ background:var(--surge); color:#04241A; }
 .btn.ghost{ background:none; border:1px solid var(--border); color:var(--chalk); margin-top:8px; }
@@ -34,7 +35,7 @@ input,button,select{ font-family:inherit; }
 .gate-msg.err{ background:rgba(255,92,85,0.12); color:var(--drop); display:block; }
 .gate-msg.ok{ background:rgba(23,217,163,0.12); color:var(--surge); display:block; }
 
-/* Dashboard */
+/* Dashboard shell */
 #dash{ display:none; }
 nav{ display:flex; justify-content:space-between; align-items:center; padding:18px 32px; border-bottom:1px solid var(--border-soft); }
 .brand{ font-family:'Big Shoulders Display'; font-weight:800; font-size:19px; text-transform:uppercase; }
@@ -42,28 +43,67 @@ nav{ display:flex; justify-content:space-between; align-items:center; padding:18
 .who{ display:flex; align-items:center; gap:14px; }
 .who span{ font-size:12.5px; color:var(--steel); }
 .signout{ font-size:12px; border:1px solid var(--border); border-radius:4px; padding:7px 12px; color:var(--steel); cursor:pointer; background:none; }
-main{ padding:28px 32px; max-width:1100px; margin:0 auto; }
+main{ padding:28px 32px; max-width:1200px; margin:0 auto; }
+.config-warning{ background:rgba(231,181,75,0.1); border:1px solid var(--gilt); color:var(--gilt); font-size:12.5px; padding:12px 16px; border-radius:6px; margin-bottom:20px; }
+
+/* Top-level section tabs */
+.section-tabs{ display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--border-soft); }
+.section-tab{ font-family:'JetBrains Mono'; font-size:13px; padding:12px 18px; color:var(--steel); border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:none; border-left:none; border-right:none; }
+.section-tab.active{ color:var(--gilt); border-bottom-color:var(--gilt); }
+.section-pane{ display:none; }
+.section-pane.active{ display:block; }
+
 .bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
 .bar h1{ font-size:24px; }
 .bar .desc{ font-size:13px; color:var(--steel); }
 .refresh{ font-size:12px; border:1px solid var(--border); border-radius:4px; padding:8px 14px; color:var(--chalk); cursor:pointer; background:var(--panel); }
+
+/* Teams table */
 table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
 thead th{ text-align:left; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; padding:12px 14px; border-bottom:1px solid var(--border); font-weight:500; }
 tbody td{ padding:9px 14px; border-bottom:1px solid var(--border-soft); font-size:13.5px; }
 tbody tr:last-child td{ border-bottom:none; }
 .t-name{ font-weight:600; }
 .t-league{ font-size:11px; color:var(--steel-dim); }
-.edit-input{ width:90px; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:6px 8px; color:var(--chalk); font-size:13px; }
+.edit-input{ width:85px; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:6px 8px; color:var(--chalk); font-size:13px; }
 .edit-input:focus{ outline:none; border-color:var(--surge); }
-.save-btn{ font-size:11.5px; border:1px solid var(--surge); color:var(--surge); background:none; border-radius:3px; padding:6px 11px; cursor:pointer; }
-.save-btn:disabled{ opacity:0.4; cursor:default; }
+.save-btn{ font-size:11.5px; border:1px solid var(--surge); color:var(--surge); background:none; border-radius:3px; padding:6px 11px; cursor:pointer; margin-right:6px; }
+.del-btn{ font-size:11.5px; border:1px solid var(--drop); color:var(--drop); background:none; border-radius:3px; padding:6px 11px; cursor:pointer; }
+.save-btn:disabled, .del-btn:disabled{ opacity:0.4; cursor:default; }
 .row-status{ font-size:11px; color:var(--steel-dim); margin-left:8px; }
 .row-status.ok{ color:var(--surge); }
 .row-status.err{ color:var(--drop); }
 .filters{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
 .filter-btn{ font-family:'JetBrains Mono'; font-size:11.5px; padding:7px 12px; border:1px solid var(--border); border-radius:4px; color:var(--steel); background:var(--panel); cursor:pointer; }
 .filter-btn.active{ color:var(--gilt); border-color:var(--gilt); }
-.config-warning{ background:rgba(231,181,75,0.1); border:1px solid var(--gilt); color:var(--gilt); font-size:12.5px; padding:12px 16px; border-radius:6px; margin-bottom:20px; }
+
+/* Add-team form */
+.add-card{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:18px 20px; margin-bottom:20px; }
+.add-card h3{ font-size:14px; margin-bottom:12px; font-weight:600; }
+.add-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; align-items:end; }
+.add-grid .f label{ display:block; font-size:10px; color:var(--steel-dim); text-transform:uppercase; margin-bottom:5px; }
+.add-grid .f input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:8px 9px; color:var(--chalk); font-size:12.5px; }
+.add-btn{ background:var(--surge); color:#04241A; border:none; border-radius:3px; padding:9px; font-weight:700; font-size:12.5px; cursor:pointer; grid-column:span 6; margin-top:4px; }
+.add-hint{ font-size:11px; color:var(--steel-dim); margin-top:8px; }
+.add-status{ font-size:12px; margin-top:8px; }
+.add-status.ok{ color:var(--surge); }
+.add-status.err{ color:var(--drop); }
+@media(max-width:900px){ .add-grid{ grid-template-columns:repeat(2,1fr); } .add-btn{ grid-column:span 2; } }
+
+/* Site content cards */
+.content-card{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; margin-bottom:18px; }
+.content-card h3{ font-size:15px; margin-bottom:2px; }
+.content-card .ck-desc{ font-size:12px; color:var(--steel-dim); margin-bottom:16px; }
+.ck-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.ck-grid.full{ grid-template-columns:1fr; }
+.ck-field label{ display:block; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+.ck-field input, .ck-field textarea{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--chalk); font-size:13px; }
+.ck-field input:focus, .ck-field textarea:focus{ outline:none; border-color:var(--surge); }
+.ck-field textarea.json{ font-family:'JetBrains Mono'; font-size:12px; min-height:140px; }
+.ck-save{ background:var(--surge); color:#04241A; border:none; border-radius:4px; padding:9px 18px; font-weight:700; font-size:12.5px; cursor:pointer; margin-top:4px; }
+.ck-status{ font-size:12px; margin-left:12px; }
+.ck-status.ok{ color:var(--surge); }
+.ck-status.err{ color:var(--drop); }
 </style>
 </head>
 <body>
@@ -98,25 +138,202 @@ tbody tr:last-child td{ border-bottom:none; }
     <div id="configWarning" class="config-warning" style="display:none;">
       You haven't pasted your Supabase URL and anon key into the CONFIG block at the top of this file yet — edit admin.html and add them before this will work.
     </div>
-    <div class="bar">
-      <div>
-        <h1 class="display">Team prices</h1>
-        <div class="desc">Edit price / 24h change and hit Save on a row. Changes go live on the main site instantly.</div>
-      </div>
-      <button class="refresh" id="refreshBtn">↻ Refresh</button>
+
+    <div class="section-tabs">
+      <button class="section-tab active" data-pane="teamsPane">Teams & Leagues</button>
+      <button class="section-tab" data-pane="contentPane">Site Content</button>
     </div>
-    <div class="filters" id="filters"></div>
-    <table>
-      <thead>
-        <tr><th>Team</th><th>Price</th><th>24h chg %</th><th></th></tr>
-      </thead>
-      <tbody id="teamRows"></tbody>
-    </table>
+
+    <!-- ============ TEAMS & LEAGUES ============ -->
+    <div class="section-pane active" id="teamsPane">
+      <div class="bar">
+        <div>
+          <h1 class="display">Teams & leagues</h1>
+          <div class="desc">Edit any price live, or add a brand-new team — including a brand-new league, by typing a league key nothing else uses yet.</div>
+        </div>
+        <button class="refresh" id="refreshBtn">↻ Refresh</button>
+      </div>
+
+      <div class="add-card">
+        <h3>Add a team</h3>
+        <div class="add-grid">
+          <div class="f"><label>Team name</label><input id="newName" placeholder="e.g. Sevilla"></div>
+          <div class="f"><label>League key</label><input id="newLeague" placeholder="e.g. laliga"></div>
+          <div class="f"><label>League label</label><input id="newLeagueLabel" placeholder="e.g. La Liga"></div>
+          <div class="f"><label>Tier / meta text</label><input id="newTier" placeholder="e.g. ESP · TIER 1"></div>
+          <div class="f"><label>Price</label><input id="newPrice" type="number" step="0.01" placeholder="10.00"></div>
+          <div class="f"><label>24h chg %</label><input id="newChg" type="number" step="0.1" placeholder="0"></div>
+          <button class="add-btn" id="addTeamBtn">Add team</button>
+        </div>
+        <div class="add-hint">League key is the internal tab id (lowercase, no spaces, e.g. "eredivisie") — use an existing key to add to that tab, or a brand-new one to create a whole new tab on the live site.</div>
+        <div class="add-status" id="addStatus"></div>
+      </div>
+
+      <div class="filters" id="filters"></div>
+      <table>
+        <thead>
+          <tr><th>Team</th><th>Price</th><th>24h chg %</th><th></th></tr>
+        </thead>
+        <tbody id="teamRows"></tbody>
+      </table>
+    </div>
+
+    <!-- ============ SITE CONTENT ============ -->
+    <div class="section-pane" id="contentPane">
+      <div class="bar">
+        <div>
+          <h1 class="display">Site content</h1>
+          <div class="desc">Everything else on the live site — hero text, ads, the spotlight story, Pro pricing, leaderboard copy, asset classes, index cards, and the disclaimer.</div>
+        </div>
+      </div>
+
+      <div class="content-card" data-key="hero">
+        <h3>Hero</h3>
+        <div class="ck-desc">The big headline block at the top of the site.</div>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Eyebrow line</label><input data-f="eyebrow"></div>
+          <div class="ck-field"><label>Headline line 1</label><input data-f="line1"></div>
+          <div class="ck-field"><label>Headline line 2</label><input data-f="line2"></div>
+          <div class="ck-field"><label>Headline line 3 (gold)</label><input data-f="line3"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Subheading</label><textarea data-f="subhead" rows="2"></textarea></div></div>
+        <div class="ck-grid" style="grid-template-columns:repeat(6,1fr);">
+          <div class="ck-field"><label>Stat 1 value</label><input data-f="stat1_n"></div>
+          <div class="ck-field"><label>Stat 1 label</label><input data-f="stat1_l"></div>
+          <div class="ck-field"><label>Stat 2 value</label><input data-f="stat2_n"></div>
+          <div class="ck-field"><label>Stat 2 label</label><input data-f="stat2_l"></div>
+          <div class="ck-field"><label>Stat 3 value</label><input data-f="stat3_n"></div>
+          <div class="ck-field"><label>Stat 3 label</label><input data-f="stat3_l"></div>
+        </div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="ad_top">
+        <h3>Ad banner — top (below hero)</h3>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Tag</label><input data-f="tag"></div>
+          <div class="ck-field"><label>Button text</label><input data-f="cta_text"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Copy (bold with &lt;b&gt;text&lt;/b&gt; allowed)</label><textarea data-f="copy" rows="2"></textarea></div></div>
+        <div class="ck-grid full"><div class="ck-field"><label>Button link URL</label><input data-f="cta_url"></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="ad_native">
+        <h3>Ad banner — native (below market indices)</h3>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Tag</label><input data-f="tag"></div>
+          <div class="ck-field"><label>Button text</label><input data-f="cta_text"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Copy (bold with &lt;b&gt;text&lt;/b&gt; allowed)</label><textarea data-f="copy" rows="2"></textarea></div></div>
+        <div class="ck-grid full"><div class="ck-field"><label>Button link URL</label><input data-f="cta_url"></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="spotlight">
+        <h3>Spotlight story</h3>
+        <div class="ck-desc">The featured club/story card with its own price chart.</div>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Eyebrow</label><input data-f="eyebrow"></div>
+          <div class="ck-field"><label>Title</label><input data-f="title"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Description</label><textarea data-f="desc" rows="2"></textarea></div></div>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Badge text</label><input data-f="badge"></div>
+          <div class="ck-field"><label>Club/team name</label><input data-f="name"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Meta line</label><input data-f="meta"></div></div>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Price</label><input data-f="price"></div>
+          <div class="ck-field"><label>Price change text</label><input data-f="price_chg"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Stages (one per line — last line is the current/highlighted one)</label><textarea data-f-json="stages" rows="4"></textarea></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="leaderboard">
+        <h3>Leaderboard</h3>
+        <div class="ck-grid">
+          <div class="ck-field"><label>Eyebrow</label><input data-f="eyebrow"></div>
+          <div class="ck-field"><label>Title</label><input data-f="title"></div>
+        </div>
+        <div class="ck-grid full"><div class="ck-field"><label>Description</label><textarea data-f="desc" rows="2"></textarea></div></div>
+        <div class="ck-grid full"><div class="ck-field"><label>Rules — raw JSON array of {"b": bold part, "t": rest of text}</label><textarea class="json" data-f-raw="rules" rows="5"></textarea></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="pro">
+        <h3>Pro subscription</h3>
+        <div class="ck-grid full"><div class="ck-field"><label>Section description</label><textarea data-f="desc" rows="2"></textarea></div></div>
+        <div class="ck-grid full"><div class="ck-field"><label>Plans — raw JSON array of {tier, price, period, featured, badge, feats:[...], cta}</label><textarea class="json" data-f-raw="plans" rows="10"></textarea></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="classes" data-israw="true">
+        <h3>Asset class cards</h3>
+        <div class="ck-desc">This entire card is one raw JSON array (no wrapper fields) — 3 objects with {icon, title, desc, stat1_n, stat1_l, stat2_n, stat2_l}.</div>
+        <div class="ck-grid full"><div class="ck-field"><textarea class="json" id="rawClasses" rows="10"></textarea></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="indices" data-israw="true">
+        <h3>Market index cards</h3>
+        <div class="ck-desc">Raw JSON array of {name, tier, value, chg} — these are the composite cards under "Market Indices", separate from individual team prices.</div>
+        <div class="ck-grid full"><div class="ck-field"><textarea class="json" id="rawIndices" rows="10"></textarea></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+
+      <div class="content-card" data-key="disclaimer">
+        <h3>Disclaimer</h3>
+        <div class="ck-grid full"><div class="ck-field"><label>Footer disclaimer text</label><textarea data-f="text" rows="5"></textarea></div></div>
+        <button class="ck-save">Save</button><span class="ck-status"></span>
+      </div>
+    </div>
   </main>
 </div>
 
 <script>
 let sb, currentLeague = 'all', allTeams = [];
+
+// Defaults so every field in Site Content is pre-filled even before
+// Supabase has loaded, or if a key doesn't exist in the DB yet.
+const settingsDefaults = {
+  hero: { eyebrow:'LIVE MARKET · 47,208 traders online', line1:'Every club', line2:'has a price.', line3:'Trade the table.',
+    subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
+    stat1_n:'82', stat1_l:'Listed clubs & teams', stat2_n:'9', stat2_l:'Markets covered', stat3_n:'12,450', stat3_l:'Starting coins, everyone' },
+  ad_top: { tag:'Sponsored', copy:"<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.", cta_text:'Shop now ↗', cta_url:'#' },
+  ad_native: { tag:'Sponsored', copy:'<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.', cta_text:'Try free ↗', cta_url:'#' },
+  spotlight: { eyebrow:'SPOTLIGHT · HAPPENING THIS WEEK', title:'Qualifying is where fortunes turn',
+    desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
+    badge:'CONFIRMED · WON PLAY-OFF ROUND', name:'Bodø/Glimt (UCL)', meta:'Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL',
+    price:'£38.60', price_chg:'▲ 612% since 1st Qualifying Round', stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'] },
+  leaderboard: { eyebrow:'RANKED COMPETITION', title:'Same coins. Same odds. Real prizes.',
+    desc:'Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
+    rules:[{b:'Free to enter.',t:'No purchase, ever, changes your standing.'},{b:'Equal start.',t:'Every account begins the season at the same balance.'},{b:'Ranked by portfolio value.',t:'Coins on hand plus the live value of everything you hold.'}] },
+  pro: { desc:"Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.",
+    plans:[
+      { tier:'Free', price:'£0', period:'/mo', featured:false, badge:'', feats:['Full trading access, all leagues','Equal footing in the ranked competition','5 watchlist slots','Standard data, ads shown'], cta:'Current plan' },
+      { tier:'Pro', price:'£4.99', period:'/mo', featured:true, badge:'Most popular', feats:['Everything in Free, zero ads','Deeper club & competition data','Unlimited watchlist slots','Early access to newly added leagues'], cta:'Upgrade to Pro' },
+      { tier:'Pro Annual', price:'£39', period:'/yr', featured:false, badge:'', feats:['Everything in Pro','2 months free vs. monthly','Priority support','Still zero trading advantage'], cta:'Upgrade to Annual' },
+    ] },
+  classes: [
+    { icon:'EQ', title:'Club equities', desc:'Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.', stat1_n:'±4.8%', stat1_l:'Avg. matchday move', stat2_n:'2,140', stat2_l:'Clubs listed' },
+    { icon:'NT', title:'National team bonds', desc:'Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.', stat1_n:'±0.6%', stat1_l:'Avg. daily move', stat2_n:'86', stat2_l:'Federations listed' },
+    { icon:'CL', title:'Continental campaigns', desc:"A club's Champions League run trades as its own instrument, separate from its domestic price. Event-driven — each knockout leg can move it sharply either way.", stat1_n:'±18%', stat1_l:'Avg. move per leg', stat2_n:'32', stat2_l:'UCL instruments live' },
+  ],
+  indices: [
+    { name:'EPL-20', tier:'ENGLAND · TOP FLIGHT', value:438.62, chg:12.4 },
+    { name:'LALIGA-20', tier:'SPAIN · TOP FLIGHT', value:294.10, chg:6.7 },
+    { name:'SERIE-A-20', tier:'ITALY · TOP FLIGHT', value:238.90, chg:-2.3 },
+    { name:'BUNDES-18', tier:'GERMANY · TOP FLIGHT', value:210.55, chg:3.8 },
+    { name:'LIGUE1-18', tier:'FRANCE · TOP FLIGHT', value:167.20, chg:1.9 },
+    { name:'UCL-36', tier:'CHAMPIONS LEAGUE · DRAW AUG 27', value:92.70, chg:0.8 },
+    { name:'UEL-36', tier:'EUROPA LEAGUE · DRAW AUG 28', value:36.90, chg:0.7 },
+    { name:'CUPS-10', tier:'DOMESTIC CUPS · EARLY ROUNDS', value:12.10, chg:0.0 },
+    { name:'INTL-50', tier:'NATIONAL TEAMS', value:60.30, chg:0.5 },
+  ],
+  disclaimer: { text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
+};
 
 function initSupabase(){
   if(SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')){
@@ -157,20 +374,32 @@ function onAuthed(user){
   document.getElementById('dash').style.display = 'block';
   document.getElementById('whoEmail').textContent = user.email;
   loadTeams();
+  loadContentSettings();
 }
 
+// ---------- Section tab switching ----------
+document.querySelectorAll('.section-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.section-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.section-pane').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.pane).classList.add('active');
+  });
+});
+
+// ---------- Teams & Leagues ----------
 async function loadTeams(){
   const { data, error } = await sb.from('teams').select('*').order('league').order('price', { ascending:false });
-  if(error){ alert('Could not load teams: ' + error.message + '\\n\\nThis usually means your email does not match the admin email in the SQL policy, or the schema has not been run yet.'); return; }
+  if(error){ alert('Could not load teams: ' + error.message + '\n\nThis usually means your email does not match the admin email in the SQL policy, or the schema has not been run yet.'); return; }
   allTeams = data;
   buildFilters();
   renderRows();
 }
 
 function buildFilters(){
-  const leagues = ['all', ...new Set(allTeams.map(t=>t.league))];
-  document.getElementById('filters').innerHTML = leagues.map(l=>
-    '<button class="filter-btn'+(l===currentLeague?' active':'')+'" data-l="'+l+'">'+(l==='all'?'All':allTeams.find(t=>t.league===l).league_label)+'</button>'
+  const leagueKeys = ['all', ...new Set(allTeams.map(t=>t.league))];
+  document.getElementById('filters').innerHTML = leagueKeys.map(l=>
+    '<button class="filter-btn'+(l===currentLeague?' active':'')+'" data-l="'+l+'">'+(l==='all'?'All':(allTeams.find(t=>t.league===l)||{}).league_label||l)+'</button>'
   ).join('');
   document.querySelectorAll('.filter-btn').forEach(b=>{
     b.addEventListener('click', ()=>{ currentLeague = b.dataset.l; buildFilters(); renderRows(); });
@@ -184,7 +413,7 @@ function renderRows(){
       '<td><div class="t-name">'+t.name+'</div><div class="t-league">'+t.league_label+' · '+t.tier+'</div></td>'+
       '<td><input class="edit-input mono price-input" value="'+t.price+'" step="0.01"></td>'+
       '<td><input class="edit-input mono chg-input" value="'+t.chg+'" step="0.1"></td>'+
-      '<td><button class="save-btn">Save</button><span class="row-status"></span></td>'+
+      '<td><button class="save-btn">Save</button><button class="del-btn">Delete</button><span class="row-status"></span></td>'+
     '</tr>'
   ).join('');
   document.querySelectorAll('.save-btn').forEach(btn=>{
@@ -201,11 +430,107 @@ function renderRows(){
       else { status.textContent = 'Saved ✓'; status.className='row-status ok'; setTimeout(()=>status.textContent='',2000); }
     });
   });
+  document.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const tr = e.target.closest('tr');
+      const id = tr.dataset.id;
+      const name = tr.querySelector('.t-name').textContent;
+      if(!confirm('Delete "'+name+'" from the live site? This cannot be undone.')) return;
+      btn.disabled = true;
+      const { error } = await sb.from('teams').delete().eq('id', id);
+      if(error){ alert('Failed to delete: ' + error.message); btn.disabled = false; return; }
+      loadTeams();
+    });
+  });
 }
+
+document.getElementById('addTeamBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newName').value.trim();
+  const league = document.getElementById('newLeague').value.trim().toLowerCase().replace(/\s+/g,'');
+  const league_label = document.getElementById('newLeagueLabel').value.trim();
+  const tier = document.getElementById('newTier').value.trim();
+  const price = parseFloat(document.getElementById('newPrice').value);
+  const chg = parseFloat(document.getElementById('newChg').value) || 0;
+  const status = document.getElementById('addStatus');
+  if(!name || !league || !league_label || !tier || isNaN(price)){
+    status.textContent = 'Fill in every field (chg can stay 0).'; status.className='add-status err'; return;
+  }
+  const { error } = await sb.from('teams').insert({ name, league, league_label, tier, price, chg });
+  if(error){ status.textContent = 'Failed: ' + error.message; status.className='add-status err'; return; }
+  status.textContent = 'Added ✓ — it will appear as a tab on the live site now.'; status.className='add-status ok';
+  ['newName','newLeague','newLeagueLabel','newTier','newPrice','newChg'].forEach(id=>document.getElementById(id).value='');
+  loadTeams();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', loadTeams);
+
+// ---------- Site Content ----------
+let currentSettings = JSON.parse(JSON.stringify(settingsDefaults));
+
+async function loadContentSettings(){
+  if(sb){
+    const { data, error } = await sb.from('site_settings').select('*');
+    if(!error && data){
+      data.forEach(row=>{ currentSettings[row.key] = row.value; });
+    }
+  }
+  populateContentForms();
+}
+
+function populateContentForms(){
+  document.querySelectorAll('.content-card').forEach(card=>{
+    const key = card.dataset.key;
+    const val = currentSettings[key];
+    if(card.dataset.israw){
+      const ta = card.querySelector('textarea.json');
+      ta.value = JSON.stringify(val, null, 2);
+      return;
+    }
+    card.querySelectorAll('[data-f]').forEach(input=>{
+      input.value = val[input.dataset.f] ?? '';
+    });
+    card.querySelectorAll('[data-f-json]').forEach(ta=>{
+      const arr = val[ta.dataset.fJson] || [];
+      ta.value = arr.join('\n');
+    });
+    card.querySelectorAll('[data-f-raw]').forEach(ta=>{
+      ta.value = JSON.stringify(val[ta.dataset.fRaw] || [], null, 2);
+    });
+  });
+}
+
+document.querySelectorAll('.content-card').forEach(card=>{
+  const saveBtn = card.querySelector('.ck-save');
+  const status = card.querySelector('.ck-status');
+  saveBtn.addEventListener('click', async ()=>{
+    const key = card.dataset.key;
+    let value;
+    try{
+      if(card.dataset.israw){
+        value = JSON.parse(card.querySelector('textarea.json').value);
+      } else {
+        value = {};
+        card.querySelectorAll('[data-f]').forEach(input=>{ value[input.dataset.f] = input.value; });
+        card.querySelectorAll('[data-f-json]').forEach(ta=>{
+          value[ta.dataset.fJson] = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+        });
+        card.querySelectorAll('[data-f-raw]').forEach(ta=>{
+          value[ta.dataset.fRaw] = JSON.parse(ta.value);
+        });
+      }
+    } catch(e){
+      status.textContent = 'Invalid JSON: ' + e.message; status.className='ck-status err'; return;
+    }
+    saveBtn.disabled = true; status.textContent='Saving…'; status.className='ck-status';
+    const { error } = await sb.from('site_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict:'key' });
+    saveBtn.disabled = false;
+    if(error){ status.textContent = 'Failed: ' + error.message; status.className='ck-status err'; }
+    else { currentSettings[key] = value; status.textContent = 'Saved ✓ — live on the site now.'; status.className='ck-status ok'; setTimeout(()=>status.textContent='',3000); }
+  });
+});
 
 document.getElementById('signInBtn').addEventListener('click', signIn);
 document.getElementById('signUpBtn').addEventListener('click', signUp);
-document.getElementById('refreshBtn').addEventListener('click', loadTeams);
 document.getElementById('signOutBtn').addEventListener('click', async ()=>{
   await sb.auth.signOut();
   location.reload();
