@@ -13,40 +13,37 @@
 *{box-sizing:border-box; margin:0; padding:0;}
 body{ background:var(--bg); color:var(--chalk); font-family:'Inter',sans-serif; }
 .mono{ font-family:'JetBrains Mono',monospace; }
-.display{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; text-transform:uppercase; }
-input,button,select,textarea{ font-family:inherit; }
-textarea{ resize:vertical; }
+.display{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:0.01em; }
+input,button,textarea{ font-family:inherit; }
 
-/* Gate screen */
+/* ===== Gate screen ===== */
 #gate{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
 .gate-card{ width:100%; max-width:360px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:32px; }
 .gate-title{ font-size:26px; margin-bottom:6px; }
 .gate-sub{ color:var(--steel); font-size:13px; margin-bottom:24px; }
 .field{ margin-bottom:14px; }
 .field label{ display:block; font-size:11.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
-.field input, .field textarea{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; }
-.field input:focus, .field textarea:focus{ outline:none; border-color:var(--surge); }
+.field input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; }
+.field input:focus{ outline:none; border-color:var(--surge); }
 .btn{ width:100%; padding:11px; border-radius:4px; font-weight:700; font-size:14px; border:none; cursor:pointer; }
 .btn.primary{ background:var(--surge); color:#04241A; }
 .btn.ghost{ background:none; border:1px solid var(--border); color:var(--chalk); margin-top:8px; }
-.toggle-row{ text-align:center; margin-top:16px; font-size:12.5px; color:var(--steel); }
-.toggle-row a{ color:var(--surge); cursor:pointer; }
 .gate-msg{ font-size:12.5px; padding:10px 12px; border-radius:4px; margin-bottom:14px; display:none; }
 .gate-msg.err{ background:rgba(255,92,85,0.12); color:var(--drop); display:block; }
 .gate-msg.ok{ background:rgba(23,217,163,0.12); color:var(--surge); display:block; }
 
-/* Dashboard shell */
+/* ===== Dashboard shell ===== */
 #dash{ display:none; }
-nav{ display:flex; justify-content:space-between; align-items:center; padding:18px 32px; border-bottom:1px solid var(--border-soft); }
+nav{ display:flex; justify-content:space-between; align-items:center; padding:16px 32px; border-bottom:1px solid var(--border-soft); }
 .brand{ font-family:'Big Shoulders Display'; font-weight:800; font-size:19px; text-transform:uppercase; }
 .brand span{ color:var(--gilt); }
+.brand-tag{ font-family:'JetBrains Mono'; font-size:10px; color:var(--steel-dim); border:1px solid var(--border); border-radius:3px; padding:2px 7px; margin-left:8px; vertical-align:middle; text-transform:none; letter-spacing:.04em; }
 .who{ display:flex; align-items:center; gap:14px; }
 .who span{ font-size:12.5px; color:var(--steel); }
 .signout{ font-size:12px; border:1px solid var(--border); border-radius:4px; padding:7px 12px; color:var(--steel); cursor:pointer; background:none; }
-main{ padding:28px 32px; max-width:1200px; margin:0 auto; }
+main{ padding:24px 32px 60px; max-width:1200px; margin:0 auto; }
 .config-warning{ background:rgba(231,181,75,0.1); border:1px solid var(--gilt); color:var(--gilt); font-size:12.5px; padding:12px 16px; border-radius:6px; margin-bottom:20px; }
 
-/* Top-level section tabs */
 .section-tabs{ display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--border-soft); }
 .section-tab{ font-family:'JetBrains Mono'; font-size:13px; padding:12px 18px; color:var(--steel); border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:none; border-left:none; border-right:none; }
 .section-tab.active{ color:var(--gilt); border-bottom-color:var(--gilt); }
@@ -55,10 +52,16 @@ main{ padding:28px 32px; max-width:1200px; margin:0 auto; }
 
 .bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
 .bar h1{ font-size:24px; }
-.bar .desc{ font-size:13px; color:var(--steel); }
+.bar .desc{ font-size:13px; color:var(--steel); max-width:520px; }
 .refresh{ font-size:12px; border:1px solid var(--border); border-radius:4px; padding:8px 14px; color:var(--chalk); cursor:pointer; background:var(--panel); }
 
-/* Teams table */
+/* ===== Live tabs pill row ===== */
+.live-tabs-row{ margin-bottom:18px; }
+.live-tabs-label{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+.live-tabs-pills{ display:flex; gap:8px; flex-wrap:wrap; }
+.live-tab-pill{ font-family:'JetBrains Mono'; font-size:11.5px; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:6px 13px; color:var(--chalk); }
+
+/* ===== Teams table ===== */
 table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
 thead th{ text-align:left; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; padding:12px 14px; border-bottom:1px solid var(--border); font-weight:500; }
 tbody td{ padding:9px 14px; border-bottom:1px solid var(--border-soft); font-size:13.5px; }
@@ -77,33 +80,117 @@ tbody tr:last-child td{ border-bottom:none; }
 .filter-btn{ font-family:'JetBrains Mono'; font-size:11.5px; padding:7px 12px; border:1px solid var(--border); border-radius:4px; color:var(--steel); background:var(--panel); cursor:pointer; }
 .filter-btn.active{ color:var(--gilt); border-color:var(--gilt); }
 
-/* Add-team form */
 .add-card{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:18px 20px; margin-bottom:20px; }
-.add-card h3{ font-size:14px; margin-bottom:12px; font-weight:600; }
+.add-card h3{ font-size:14px; margin-bottom:2px; font-weight:600; }
+.add-card .sub{ font-size:12px; color:var(--steel-dim); margin-bottom:14px; }
 .add-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; align-items:end; }
 .add-grid .f label{ display:block; font-size:10px; color:var(--steel-dim); text-transform:uppercase; margin-bottom:5px; }
 .add-grid .f input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:8px 9px; color:var(--chalk); font-size:12.5px; }
 .add-btn{ background:var(--surge); color:#04241A; border:none; border-radius:3px; padding:9px; font-weight:700; font-size:12.5px; cursor:pointer; grid-column:span 6; margin-top:4px; }
-.add-hint{ font-size:11px; color:var(--steel-dim); margin-top:8px; }
 .add-status{ font-size:12px; margin-top:8px; }
 .add-status.ok{ color:var(--surge); }
 .add-status.err{ color:var(--drop); }
 @media(max-width:900px){ .add-grid{ grid-template-columns:repeat(2,1fr); } .add-btn{ grid-column:span 2; } }
 
-/* Site content cards */
-.content-card{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; margin-bottom:18px; }
-.content-card h3{ font-size:15px; margin-bottom:2px; }
-.content-card .ck-desc{ font-size:12px; color:var(--steel-dim); margin-bottom:16px; }
-.ck-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-.ck-grid.full{ grid-template-columns:1fr; }
-.ck-field label{ display:block; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
-.ck-field input, .ck-field textarea{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--chalk); font-size:13px; }
-.ck-field input:focus, .ck-field textarea:focus{ outline:none; border-color:var(--surge); }
-.ck-field textarea.json{ font-family:'JetBrains Mono'; font-size:12px; min-height:140px; }
-.ck-save{ background:var(--surge); color:#04241A; border:none; border-radius:4px; padding:9px 18px; font-weight:700; font-size:12.5px; cursor:pointer; margin-top:4px; }
-.ck-status{ font-size:12px; margin-left:12px; }
-.ck-status.ok{ color:var(--surge); }
-.ck-status.err{ color:var(--drop); }
+/* ===== Live-preview editor components (copied from the live site's own CSS) ===== */
+.editor-block{ margin-bottom:34px; }
+.editor-block-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.editor-block-label{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.08em; }
+.editor-save{ background:var(--surge); color:#04241A; border:none; border-radius:4px; padding:8px 16px; font-weight:700; font-size:12px; cursor:pointer; }
+.editor-status{ font-size:12px; margin-left:10px; }
+.editor-status.ok{ color:var(--surge); }
+.editor-status.err{ color:var(--drop); }
+.editor-frame{ border:1px solid var(--border-soft); border-radius:8px; padding:28px; background:radial-gradient(ellipse at top left, rgba(23,217,163,0.03), transparent 60%); }
+
+.editable{ outline:none; border-radius:3px; padding:1px 3px; margin:-1px -3px; cursor:text; }
+.editable:hover{ background:rgba(23,217,163,0.06); }
+.editable:focus{ background:rgba(23,217,163,0.1); box-shadow:0 0 0 1px var(--surge); }
+.num-input{ background:none; border:none; border-bottom:1px dashed var(--border); color:inherit; font:inherit; padding:0 2px; }
+.num-input:hover{ border-bottom-color:var(--steel); }
+.num-input:focus{ outline:none; border-bottom-color:var(--surge); }
+.remove-x{ background:rgba(255,92,85,0.12); color:var(--drop); border:none; width:20px; height:20px; border-radius:50%; font-size:13px; line-height:1; cursor:pointer; flex-shrink:0; }
+.add-item-btn{ font-family:'JetBrains Mono'; font-size:11.5px; color:var(--surge); border:1px dashed var(--surge); background:none; border-radius:4px; padding:8px 14px; cursor:pointer; margin-top:10px; }
+
+/* -- hero preview -- */
+.eyebrow{ font-family:'JetBrains Mono'; font-size:12px; color:var(--surge); letter-spacing:0.14em; display:flex; align-items:center; gap:8px; margin-bottom:20px; }
+.eyebrow::before{ content:""; width:6px; height:6px; background:var(--surge); border-radius:50%; box-shadow:0 0 0 3px rgba(23,217,163,0.18); }
+.hero-prev h1{ font-size:40px; line-height:0.98; margin-bottom:18px; }
+.hero-prev h1 .line2{ color:var(--gilt); }
+.hero-prev [data-f="subhead"]{ display:block; font-size:15.5px; color:var(--steel); max-width:480px; margin-bottom:22px; }
+.hero-stats-prev{ display:flex; gap:30px; }
+.hstat .n{ font-family:'JetBrains Mono'; font-size:20px; font-weight:700; display:block; }
+.hstat .l{ font-size:11px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+
+/* -- ad banner -- */
+.ad-banner-prev{ border:1px dashed var(--border); border-radius:6px; background:var(--panel); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.ad-tag{ font-family:'JetBrains Mono'; font-size:9.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.08em; border:1px solid var(--border); border-radius:3px; padding:2px 6px; }
+.ad-body{ display:flex; align-items:center; gap:14px; flex:1; }
+.ad-copy{ font-size:13px; color:var(--steel); }
+.ad-cta{ font-family:'JetBrains Mono'; font-size:11.5px; color:var(--surge); border:1px solid var(--border); border-radius:3px; padding:6px 12px; white-space:nowrap; }
+.ad-url-row{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:11.5px; color:var(--steel-dim); }
+.ad-url-row input{ flex:1; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:6px 9px; color:var(--chalk); font-size:12px; font-family:'JetBrains Mono'; }
+
+/* -- spotlight -- */
+.cupwatch-prev{ background:radial-gradient(120% 160% at 0% 0%, rgba(231,181,75,0.07), transparent 55%), var(--panel); border:1px solid var(--border); border-radius:8px; padding:28px; }
+.cw-badge{ display:inline-flex; align-items:center; gap:7px; background:rgba(231,181,75,0.12); color:var(--gilt); font-family:'JetBrains Mono'; font-size:11px; padding:5px 10px; border-radius:3px; margin-bottom:16px; letter-spacing:.05em; }
+.cw-name{ font-size:24px; margin-bottom:4px; font-family:'Big Shoulders Display'; font-weight:800; text-transform:uppercase; }
+.cw-meta{ color:var(--steel); font-size:13.5px; margin-bottom:18px; }
+.cw-price-row{ display:flex; align-items:baseline; gap:14px; margin-bottom:18px; }
+.cw-price{ font-family:'JetBrains Mono'; font-size:32px; font-weight:700; color:var(--surge); }
+.cw-price-chg{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; color:var(--surge); }
+.cw-stages{ display:flex; gap:8px; flex-wrap:wrap; }
+.stage-item{ display:flex; align-items:center; gap:5px; background:var(--panel2); border-radius:3px; padding:2px; }
+.cw-stage{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); border:1px solid var(--border); border-radius:3px; padding:4px 8px; }
+.stage-item:last-child .cw-stage{ color:var(--gilt); border-color:var(--gilt); }
+
+/* -- leaderboard rules -- */
+.lb-rules-prev{ display:flex; gap:14px; flex-wrap:wrap; }
+.lb-rule{ position:relative; flex:1; min-width:220px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px 30px 14px 16px; font-size:13px; color:var(--steel); }
+.lb-rule .remove-x{ position:absolute; top:8px; right:8px; }
+
+/* -- pro plans -- */
+.pro-grid-prev{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.pro-card-prev{ border:1px solid var(--border); border-radius:6px; padding:22px; background:var(--panel); position:relative; }
+.pro-card-prev.featured{ border-color:var(--gilt); }
+.pro-card-prev .remove-x{ position:absolute; top:10px; left:10px; }
+.pro-tier{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel-dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
+.pro-price{ font-size:28px; font-family:'JetBrains Mono'; font-weight:700; margin-bottom:4px; }
+.pro-price .per{ font-size:12px; color:var(--steel-dim); font-weight:400; }
+.pro-feats{ list-style:none; margin:16px 0 18px; }
+.pro-feats li{ font-size:13px; color:var(--steel); padding:6px 0; border-top:1px solid var(--border-soft); display:flex; align-items:center; gap:8px; }
+.pro-feats li:first-child{ border-top:none; }
+.pro-feats li .editable{ flex:1; }
+.pro-btn-prev{ display:block; text-align:center; padding:10px; border-radius:3px; font-weight:700; font-size:13px; border:1px solid var(--border); }
+.badge-pop{ position:absolute; top:-11px; right:20px; background:var(--gilt); color:#241906; font-family:'JetBrains Mono'; font-size:10px; font-weight:700; padding:3px 9px; border-radius:3px; letter-spacing:.04em; }
+.pro-featured-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--steel-dim); margin-bottom:10px; }
+@media(max-width:900px){ .pro-grid-prev{ grid-template-columns:1fr; } }
+
+/* -- asset classes -- */
+.classes-prev{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.class-card-prev{ position:relative; border:1px solid var(--border); border-radius:6px; padding:22px; background:var(--panel); }
+.class-card-prev .remove-x{ position:absolute; top:10px; right:10px; }
+.cc-icon-input{ width:44px; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px; color:var(--gilt); font-family:'JetBrains Mono'; font-weight:700; font-size:14px; text-align:center; margin-bottom:14px; text-transform:uppercase; }
+.class-card-prev h3{ font-size:16px; margin-bottom:8px; font-weight:600; }
+.class-card-prev p{ color:var(--steel); font-size:13.5px; margin-bottom:14px; }
+.cc-stats-prev{ display:flex; gap:18px; border-top:1px solid var(--border-soft); padding-top:12px; }
+.cc-stat .n{ font-family:'JetBrains Mono'; font-size:13px; font-weight:600; }
+.cc-stat .l{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; }
+@media(max-width:900px){ .classes-prev{ grid-template-columns:1fr; } }
+
+/* -- market indices -- */
+.indices-prev{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border-soft); border:1px solid var(--border-soft); border-radius:6px; overflow:hidden; }
+.index-card-prev{ position:relative; background:var(--panel); padding:16px 18px; }
+.index-card-prev .remove-x{ position:absolute; top:10px; right:10px; }
+.ic-name{ font-size:13px; font-weight:600; margin-bottom:6px; }
+.ic-tier{ font-family:'JetBrains Mono'; font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+.ic-vals{ display:flex; gap:10px; align-items:baseline; }
+.ic-value{ font-family:'JetBrains Mono'; font-size:17px; font-weight:700; }
+.ic-chg{ font-family:'JetBrains Mono'; font-size:12px; font-weight:600; }
+@media(max-width:900px){ .indices-prev{ grid-template-columns:1fr; } }
+
+/* -- disclaimer -- */
+.disclaimer-prev{ background:#0D1712; border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
+.disclaimer-prev .editable{ font-size:11.5px; color:var(--steel-dim); line-height:1.6; display:block; }
 </style>
 </head>
 <body>
@@ -131,7 +218,7 @@ tbody tr:last-child td{ border-bottom:none; }
 
 <div id="dash">
   <nav>
-    <div class="brand">Pitch<span>Market</span> Admin</div>
+    <div class="brand">Pitch<span>Market</span><span class="brand-tag">ADMIN</span></div>
     <div class="who"><span id="whoEmail"></span><button class="signout" id="signOutBtn">Sign out</button></div>
   </nav>
   <main>
@@ -149,23 +236,28 @@ tbody tr:last-child td{ border-bottom:none; }
       <div class="bar">
         <div>
           <h1 class="display">Teams & leagues</h1>
-          <div class="desc">Edit any price live, or add a brand-new team — including a brand-new league, by typing a league key nothing else uses yet.</div>
+          <div class="desc">Edit any price live, or add a team below. Typing a League key that doesn't exist yet creates a brand-new tab on the live site — nothing else needed.</div>
         </div>
         <button class="refresh" id="refreshBtn">↻ Refresh</button>
       </div>
 
+      <div class="live-tabs-row">
+        <div class="live-tabs-label">Tabs currently live on your site</div>
+        <div class="live-tabs-pills" id="liveTabsPills"></div>
+      </div>
+
       <div class="add-card">
         <h3>Add a team</h3>
+        <div class="sub">To start a whole new league tab (e.g. "Eredivisie"), just type a League key nobody's used yet — it doesn't need to exist first.</div>
         <div class="add-grid">
-          <div class="f"><label>Team name</label><input id="newName" placeholder="e.g. Sevilla"></div>
-          <div class="f"><label>League key</label><input id="newLeague" placeholder="e.g. laliga"></div>
-          <div class="f"><label>League label</label><input id="newLeagueLabel" placeholder="e.g. La Liga"></div>
-          <div class="f"><label>Tier / meta text</label><input id="newTier" placeholder="e.g. ESP · TIER 1"></div>
+          <div class="f"><label>Team name</label><input id="newName" placeholder="e.g. Ajax"></div>
+          <div class="f"><label>League key (no spaces)</label><input id="newLeague" placeholder="e.g. eredivisie"></div>
+          <div class="f"><label>League label (shown on tab)</label><input id="newLeagueLabel" placeholder="e.g. Eredivisie"></div>
+          <div class="f"><label>Tier / meta text</label><input id="newTier" placeholder="e.g. NED · TIER 1"></div>
           <div class="f"><label>Price</label><input id="newPrice" type="number" step="0.01" placeholder="10.00"></div>
           <div class="f"><label>24h chg %</label><input id="newChg" type="number" step="0.1" placeholder="0"></div>
           <button class="add-btn" id="addTeamBtn">Add team</button>
         </div>
-        <div class="add-hint">League key is the internal tab id (lowercase, no spaces, e.g. "eredivisie") — use an existing key to add to that tab, or a brand-new one to create a whole new tab on the live site.</div>
         <div class="add-status" id="addStatus"></div>
       </div>
 
@@ -178,115 +270,67 @@ tbody tr:last-child td{ border-bottom:none; }
       </table>
     </div>
 
-    <!-- ============ SITE CONTENT ============ -->
+    <!-- ============ SITE CONTENT (live WYSIWYG previews) ============ -->
     <div class="section-pane" id="contentPane">
       <div class="bar">
         <div>
           <h1 class="display">Site content</h1>
-          <div class="desc">Everything else on the live site — hero text, ads, the spotlight story, Pro pricing, leaderboard copy, asset classes, index cards, and the disclaimer.</div>
+          <div class="desc">This is exactly how it looks on the live site. Click any text to edit it directly, use × to remove an item, or the dashed button to add one. Nothing goes live until you hit Save on that block.</div>
         </div>
       </div>
 
-      <div class="content-card" data-key="hero">
-        <h3>Hero</h3>
-        <div class="ck-desc">The big headline block at the top of the site.</div>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Eyebrow line</label><input data-f="eyebrow"></div>
-          <div class="ck-field"><label>Headline line 1</label><input data-f="line1"></div>
-          <div class="ck-field"><label>Headline line 2</label><input data-f="line2"></div>
-          <div class="ck-field"><label>Headline line 3 (gold)</label><input data-f="line3"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Subheading</label><textarea data-f="subhead" rows="2"></textarea></div></div>
-        <div class="ck-grid" style="grid-template-columns:repeat(6,1fr);">
-          <div class="ck-field"><label>Stat 1 value</label><input data-f="stat1_n"></div>
-          <div class="ck-field"><label>Stat 1 label</label><input data-f="stat1_l"></div>
-          <div class="ck-field"><label>Stat 2 value</label><input data-f="stat2_n"></div>
-          <div class="ck-field"><label>Stat 2 label</label><input data-f="stat2_l"></div>
-          <div class="ck-field"><label>Stat 3 value</label><input data-f="stat3_n"></div>
-          <div class="ck-field"><label>Stat 3 label</label><input data-f="stat3_l"></div>
-        </div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- HERO -->
+      <div class="editor-block" data-key="hero">
+        <div class="editor-block-head"><div class="editor-block-label">Hero</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame hero-prev" id="heroEditor"></div>
       </div>
 
-      <div class="content-card" data-key="ad_top">
-        <h3>Ad banner — top (below hero)</h3>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Tag</label><input data-f="tag"></div>
-          <div class="ck-field"><label>Button text</label><input data-f="cta_text"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Copy (bold with &lt;b&gt;text&lt;/b&gt; allowed)</label><textarea data-f="copy" rows="2"></textarea></div></div>
-        <div class="ck-grid full"><div class="ck-field"><label>Button link URL</label><input data-f="cta_url"></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- AD TOP -->
+      <div class="editor-block" data-key="ad_top">
+        <div class="editor-block-head"><div class="editor-block-label">Ad banner — top</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="adTopEditor"></div>
       </div>
 
-      <div class="content-card" data-key="ad_native">
-        <h3>Ad banner — native (below market indices)</h3>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Tag</label><input data-f="tag"></div>
-          <div class="ck-field"><label>Button text</label><input data-f="cta_text"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Copy (bold with &lt;b&gt;text&lt;/b&gt; allowed)</label><textarea data-f="copy" rows="2"></textarea></div></div>
-        <div class="ck-grid full"><div class="ck-field"><label>Button link URL</label><input data-f="cta_url"></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- AD NATIVE -->
+      <div class="editor-block" data-key="ad_native">
+        <div class="editor-block-head"><div class="editor-block-label">Ad banner — native</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="adNativeEditor"></div>
       </div>
 
-      <div class="content-card" data-key="spotlight">
-        <h3>Spotlight story</h3>
-        <div class="ck-desc">The featured club/story card with its own price chart.</div>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Eyebrow</label><input data-f="eyebrow"></div>
-          <div class="ck-field"><label>Title</label><input data-f="title"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Description</label><textarea data-f="desc" rows="2"></textarea></div></div>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Badge text</label><input data-f="badge"></div>
-          <div class="ck-field"><label>Club/team name</label><input data-f="name"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Meta line</label><input data-f="meta"></div></div>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Price</label><input data-f="price"></div>
-          <div class="ck-field"><label>Price change text</label><input data-f="price_chg"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Stages (one per line — last line is the current/highlighted one)</label><textarea data-f-json="stages" rows="4"></textarea></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- SPOTLIGHT -->
+      <div class="editor-block" data-key="spotlight">
+        <div class="editor-block-head"><div class="editor-block-label">Spotlight story</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="spotlightEditor"></div>
       </div>
 
-      <div class="content-card" data-key="leaderboard">
-        <h3>Leaderboard</h3>
-        <div class="ck-grid">
-          <div class="ck-field"><label>Eyebrow</label><input data-f="eyebrow"></div>
-          <div class="ck-field"><label>Title</label><input data-f="title"></div>
-        </div>
-        <div class="ck-grid full"><div class="ck-field"><label>Description</label><textarea data-f="desc" rows="2"></textarea></div></div>
-        <div class="ck-grid full"><div class="ck-field"><label>Rules — raw JSON array of {"b": bold part, "t": rest of text}</label><textarea class="json" data-f-raw="rules" rows="5"></textarea></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- LEADERBOARD -->
+      <div class="editor-block" data-key="leaderboard">
+        <div class="editor-block-head"><div class="editor-block-label">Leaderboard</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="leaderboardEditor"></div>
       </div>
 
-      <div class="content-card" data-key="pro">
-        <h3>Pro subscription</h3>
-        <div class="ck-grid full"><div class="ck-field"><label>Section description</label><textarea data-f="desc" rows="2"></textarea></div></div>
-        <div class="ck-grid full"><div class="ck-field"><label>Plans — raw JSON array of {tier, price, period, featured, badge, feats:[...], cta}</label><textarea class="json" data-f-raw="plans" rows="10"></textarea></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- PRO -->
+      <div class="editor-block" data-key="pro">
+        <div class="editor-block-head"><div class="editor-block-label">Pro plans</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="proEditor"></div>
       </div>
 
-      <div class="content-card" data-key="classes" data-israw="true">
-        <h3>Asset class cards</h3>
-        <div class="ck-desc">This entire card is one raw JSON array (no wrapper fields) — 3 objects with {icon, title, desc, stat1_n, stat1_l, stat2_n, stat2_l}.</div>
-        <div class="ck-grid full"><div class="ck-field"><textarea class="json" id="rawClasses" rows="10"></textarea></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- CLASSES -->
+      <div class="editor-block" data-key="classes" data-isarray="true">
+        <div class="editor-block-head"><div class="editor-block-label">Asset class cards</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="classesEditor"></div>
       </div>
 
-      <div class="content-card" data-key="indices" data-israw="true">
-        <h3>Market index cards</h3>
-        <div class="ck-desc">Raw JSON array of {name, tier, value, chg} — these are the composite cards under "Market Indices", separate from individual team prices.</div>
-        <div class="ck-grid full"><div class="ck-field"><textarea class="json" id="rawIndices" rows="10"></textarea></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- INDICES -->
+      <div class="editor-block" data-key="indices" data-isarray="true">
+        <div class="editor-block-head"><div class="editor-block-label">Market index cards</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="indicesEditor"></div>
       </div>
 
-      <div class="content-card" data-key="disclaimer">
-        <h3>Disclaimer</h3>
-        <div class="ck-grid full"><div class="ck-field"><label>Footer disclaimer text</label><textarea data-f="text" rows="5"></textarea></div></div>
-        <button class="ck-save">Save</button><span class="ck-status"></span>
+      <!-- DISCLAIMER -->
+      <div class="editor-block" data-key="disclaimer">
+        <div class="editor-block-head"><div class="editor-block-label">Disclaimer</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="disclaimerEditor"></div>
       </div>
     </div>
   </main>
@@ -295,8 +339,6 @@ tbody tr:last-child td{ border-bottom:none; }
 <script>
 let sb, currentLeague = 'all', allTeams = [];
 
-// Defaults so every field in Site Content is pre-filled even before
-// Supabase has loaded, or if a key doesn't exist in the DB yet.
 const settingsDefaults = {
   hero: { eyebrow:'LIVE MARKET · 47,208 traders online', line1:'Every club', line2:'has a price.', line3:'Trade the table.',
     subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
@@ -334,6 +376,8 @@ const settingsDefaults = {
   ],
   disclaimer: { text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
 };
+
+let currentSettings = JSON.parse(JSON.stringify(settingsDefaults));
 
 function initSupabase(){
   if(SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')){
@@ -377,7 +421,6 @@ function onAuthed(user){
   loadContentSettings();
 }
 
-// ---------- Section tab switching ----------
 document.querySelectorAll('.section-tab').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     document.querySelectorAll('.section-tab').forEach(t=>t.classList.remove('active'));
@@ -387,13 +430,19 @@ document.querySelectorAll('.section-tab').forEach(tab=>{
   });
 });
 
-// ---------- Teams & Leagues ----------
+// ================= TEAMS & LEAGUES =================
 async function loadTeams(){
   const { data, error } = await sb.from('teams').select('*').order('league').order('price', { ascending:false });
-  if(error){ alert('Could not load teams: ' + error.message + '\n\nThis usually means your email does not match the admin email in the SQL policy, or the schema has not been run yet.'); return; }
+  if(error){ alert('Could not load teams: ' + error.message); return; }
   allTeams = data;
+  buildLiveTabsPills();
   buildFilters();
   renderRows();
+}
+
+function buildLiveTabsPills(){
+  const labels = [...new Set(allTeams.map(t=>t.league_label))];
+  document.getElementById('liveTabsPills').innerHTML = labels.map(l=>'<span class="live-tab-pill">'+l+'</span>').join('') || '<span class="live-tab-pill">No teams yet</span>';
 }
 
 function buildFilters(){
@@ -455,77 +504,342 @@ document.getElementById('addTeamBtn').addEventListener('click', async ()=>{
   if(!name || !league || !league_label || !tier || isNaN(price)){
     status.textContent = 'Fill in every field (chg can stay 0).'; status.className='add-status err'; return;
   }
+  const isNewLeague = !allTeams.some(t=>t.league===league);
   const { error } = await sb.from('teams').insert({ name, league, league_label, tier, price, chg });
   if(error){ status.textContent = 'Failed: ' + error.message; status.className='add-status err'; return; }
-  status.textContent = 'Added ✓ — it will appear as a tab on the live site now.'; status.className='add-status ok';
+  status.textContent = isNewLeague
+    ? '✓ Added — new tab "'+league_label+'" now live on your site.'
+    : '✓ Added to the existing "'+league_label+'" tab.';
+  status.className='add-status ok';
   ['newName','newLeague','newLeagueLabel','newTier','newPrice','newChg'].forEach(id=>document.getElementById(id).value='');
   loadTeams();
 });
 
 document.getElementById('refreshBtn').addEventListener('click', loadTeams);
 
-// ---------- Site Content ----------
-let currentSettings = JSON.parse(JSON.stringify(settingsDefaults));
+// ================= SITE CONTENT (WYSIWYG) =================
+function editable(value, field, singleLine){
+  const tag = singleLine ? 'span' : 'div';
+  return '<'+tag+' class="editable" contenteditable data-f="'+field+'"'+(singleLine?' data-single="1"':'')+'>'+esc(value)+'</'+tag+'>';
+}
+function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function loadContentSettings(){
   if(sb){
     const { data, error } = await sb.from('site_settings').select('*');
-    if(!error && data){
-      data.forEach(row=>{ currentSettings[row.key] = row.value; });
-    }
+    if(!error && data){ data.forEach(row=>{ currentSettings[row.key] = row.value; }); }
   }
-  populateContentForms();
+  renderHeroEditor();
+  renderAdEditor('ad_top','adTopEditor');
+  renderAdEditor('ad_native','adNativeEditor');
+  renderSpotlightEditor();
+  renderLeaderboardEditor();
+  renderProEditor();
+  renderClassesEditor();
+  renderIndicesEditor();
+  renderDisclaimerEditor();
+  bindEnterAsBlur();
 }
 
-function populateContentForms(){
-  document.querySelectorAll('.content-card').forEach(card=>{
-    const key = card.dataset.key;
-    const val = currentSettings[key];
-    if(card.dataset.israw){
-      const ta = card.querySelector('textarea.json');
-      ta.value = JSON.stringify(val, null, 2);
-      return;
-    }
-    card.querySelectorAll('[data-f]').forEach(input=>{
-      input.value = val[input.dataset.f] ?? '';
-    });
-    card.querySelectorAll('[data-f-json]').forEach(ta=>{
-      const arr = val[ta.dataset.fJson] || [];
-      ta.value = arr.join('\n');
-    });
-    card.querySelectorAll('[data-f-raw]').forEach(ta=>{
-      ta.value = JSON.stringify(val[ta.dataset.fRaw] || [], null, 2);
-    });
+function bindEnterAsBlur(){
+  document.querySelectorAll('.editable[data-single="1"]').forEach(el=>{
+    el.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } };
   });
 }
 
-document.querySelectorAll('.content-card').forEach(card=>{
-  const saveBtn = card.querySelector('.ck-save');
-  const status = card.querySelector('.ck-status');
-  saveBtn.addEventListener('click', async ()=>{
-    const key = card.dataset.key;
-    let value;
-    try{
-      if(card.dataset.israw){
-        value = JSON.parse(card.querySelector('textarea.json').value);
-      } else {
-        value = {};
-        card.querySelectorAll('[data-f]').forEach(input=>{ value[input.dataset.f] = input.value; });
-        card.querySelectorAll('[data-f-json]').forEach(ta=>{
-          value[ta.dataset.fJson] = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
-        });
-        card.querySelectorAll('[data-f-raw]').forEach(ta=>{
-          value[ta.dataset.fRaw] = JSON.parse(ta.value);
-        });
-      }
-    } catch(e){
-      status.textContent = 'Invalid JSON: ' + e.message; status.className='ck-status err'; return;
+// ---------- HERO ----------
+function renderHeroEditor(){
+  const h = currentSettings.hero;
+  document.getElementById('heroEditor').innerHTML =
+    '<div class="eyebrow">'+editable(h.eyebrow,'eyebrow',true)+'</div>'+
+    '<h1 class="display">'+editable(h.line1,'line1',true)+'<br>'+editable(h.line2,'line2',true)+'<br><span class="line2">'+editable(h.line3,'line3',true)+'</span></h1>'+
+    editable(h.subhead,'subhead',false)+
+    '<div class="hero-stats-prev">'+
+      '<div class="hstat"><span class="n mono">'+editable(h.stat1_n,'stat1_n',true)+'</span><span class="l">'+editable(h.stat1_l,'stat1_l',true)+'</span></div>'+
+      '<div class="hstat"><span class="n mono">'+editable(h.stat2_n,'stat2_n',true)+'</span><span class="l">'+editable(h.stat2_l,'stat2_l',true)+'</span></div>'+
+      '<div class="hstat"><span class="n mono">'+editable(h.stat3_n,'stat3_n',true)+'</span><span class="l">'+editable(h.stat3_l,'stat3_l',true)+'</span></div>'+
+    '</div>';
+}
+function readHero(){
+  const root = document.getElementById('heroEditor');
+  const v = {};
+  root.querySelectorAll('[data-f]').forEach(el=>{ v[el.dataset.f] = el.innerText.trim(); });
+  return v;
+}
+
+// ---------- AD BANNERS ----------
+function renderAdEditor(key, elId){
+  const a = currentSettings[key];
+  document.getElementById(elId).innerHTML =
+    '<div class="ad-banner-prev">'+
+      '<div class="ad-body">'+
+        '<span class="ad-tag">'+editable(a.tag,'tag',true)+'</span>'+
+        '<div class="ad-copy" data-f="copy" contenteditable>'+a.copy+'</div>'+
+      '</div>'+
+      '<span class="ad-cta">'+editable(a.cta_text,'cta_text',true)+'</span>'+
+    '</div>'+
+    '<div class="ad-url-row">Button links to: <input data-f="cta_url" value="'+esc(a.cta_url)+'"></div>';
+}
+function readAd(elId){
+  const root = document.getElementById(elId);
+  const v = {};
+  root.querySelectorAll('[data-f]').forEach(el=>{
+    if(el.dataset.f === 'cta_url'){ v.cta_url = el.value.trim(); }
+    else if(el.dataset.f === 'copy'){ v.copy = el.innerHTML.trim(); }
+    else { v[el.dataset.f] = el.innerText.trim(); }
+  });
+  return v;
+}
+
+// ---------- SPOTLIGHT ----------
+function renderSpotlightEditor(){
+  const s = currentSettings.spotlight;
+  document.getElementById('spotlightEditor').innerHTML =
+    '<div class="cupwatch-prev">'+
+      '<div class="cw-badge">'+editable(s.badge,'badge',true)+'</div>'+
+      '<div class="cw-name">'+editable(s.name,'name',true)+'</div>'+
+      '<div class="cw-meta">'+editable(s.meta,'meta',true)+'</div>'+
+      '<div class="cw-price-row"><span class="cw-price">'+editable(s.price,'price',true)+'</span><span class="cw-price-chg">'+editable(s.price_chg,'price_chg',true)+'</span></div>'+
+      '<div class="cw-stages" id="stagesList">'+
+        s.stages.map(st=>'<div class="stage-item"><span class="cw-stage editable" contenteditable data-single="1">'+esc(st)+'</span><button class="remove-x" type="button">×</button></div>').join('')+
+      '</div>'+
+      '<button class="add-item-btn" type="button" id="addStageBtn">+ Add stage</button>'+
+    '</div>'+
+    '<div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border-soft);">'+
+      '<div style="font-size:11px; color:var(--steel-dim); text-transform:uppercase; margin-bottom:8px;">Section heading (above the card)</div>'+
+      '<div class="eyebrow">'+editable(s.eyebrow,'eyebrow',true)+'</div>'+
+      '<div class="display" style="font-size:20px; margin-bottom:6px;">'+editable(s.title,'title',true)+'</div>'+
+      '<div style="color:var(--steel); font-size:13.5px;">'+editable(s.desc,'desc',false)+'</div>'+
+    '</div>';
+  document.getElementById('addStageBtn').onclick = ()=>{
+    const div = document.createElement('div');
+    div.className='stage-item';
+    div.innerHTML = '<span class="cw-stage editable" contenteditable data-single="1">New stage</span><button class="remove-x" type="button">×</button>';
+    document.getElementById('stagesList').appendChild(div);
+    bindEnterAsBlur();
+  };
+  document.getElementById('spotlightEditor').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('remove-x')) e.target.closest('.stage-item').remove();
+  });
+}
+function readSpotlight(){
+  const root = document.getElementById('spotlightEditor');
+  const v = {};
+  root.querySelectorAll('[data-f]').forEach(el=>{ v[el.dataset.f] = el.innerText.trim(); });
+  v.stages = [...root.querySelectorAll('.stage-item .cw-stage')].map(el=>el.innerText.trim());
+  return v;
+}
+
+// ---------- LEADERBOARD ----------
+function renderLeaderboardEditor(){
+  const l = currentSettings.leaderboard;
+  document.getElementById('leaderboardEditor').innerHTML =
+    '<div class="eyebrow">'+editable(l.eyebrow,'eyebrow',true)+'</div>'+
+    '<div class="display" style="font-size:22px; margin-bottom:8px;">'+editable(l.title,'title',true)+'</div>'+
+    '<div style="color:var(--steel); font-size:14px; margin-bottom:18px;">'+editable(l.desc,'desc',false)+'</div>'+
+    '<div class="lb-rules-prev" id="rulesList">'+
+      l.rules.map(r=>'<div class="lb-rule"><b class="editable" contenteditable data-single="1">'+esc(r.b)+'</b> <span class="editable" contenteditable data-single="1">'+esc(r.t)+'</span><button class="remove-x" type="button">×</button></div>').join('')+
+    '</div>'+
+    '<button class="add-item-btn" type="button" id="addRuleBtn">+ Add rule</button>';
+  document.getElementById('addRuleBtn').onclick = ()=>{
+    const div = document.createElement('div');
+    div.className='lb-rule';
+    div.innerHTML = '<b class="editable" contenteditable data-single="1">New rule.</b> <span class="editable" contenteditable data-single="1">Description.</span><button class="remove-x" type="button">×</button>';
+    document.getElementById('rulesList').appendChild(div);
+    bindEnterAsBlur();
+  };
+  document.getElementById('leaderboardEditor').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('remove-x')) e.target.closest('.lb-rule').remove();
+  });
+}
+function readLeaderboard(){
+  const root = document.getElementById('leaderboardEditor');
+  const v = {};
+  root.querySelectorAll('[data-f]').forEach(el=>{ v[el.dataset.f] = el.innerText.trim(); });
+  v.rules = [...root.querySelectorAll('.lb-rule')].map(rule=>({
+    b: rule.querySelector('b').innerText.trim(),
+    t: rule.querySelector('span').innerText.trim(),
+  }));
+  return v;
+}
+
+// ---------- PRO PLANS ----------
+function proCardHTML(p){
+  return '<div class="pro-card-prev'+(p.featured?' featured':'')+'">'+
+    '<button class="remove-x" type="button">×</button>'+
+    (p.featured?'<div class="badge-pop editable" contenteditable data-f="badge" data-single="1">'+esc(p.badge||'Featured')+'</div>':'')+
+    '<label class="pro-featured-toggle"><input type="checkbox" class="featured-check" '+(p.featured?'checked':'')+'> Featured plan</label>'+
+    '<div class="pro-tier">'+editable(p.tier,'tier',true)+'</div>'+
+    '<div class="pro-price">'+editable(p.price,'price',true)+'<span class="per">'+editable(p.period,'period',true)+'</span></div>'+
+    '<ul class="pro-feats">'+
+      p.feats.map(f=>'<li><span class="editable" contenteditable data-single="1">'+esc(f)+'</span><button class="remove-x feat-remove" type="button">×</button></li>').join('')+
+    '</ul>'+
+    '<button class="add-item-btn add-feat-btn" type="button" style="margin-bottom:14px;">+ Add feature</button>'+
+    '<div class="pro-btn-prev editable" contenteditable data-f="cta" data-single="1">'+esc(p.cta)+'</div>'+
+  '</div>';
+}
+function renderProEditor(){
+  const p = currentSettings.pro;
+  document.getElementById('proEditor').innerHTML =
+    '<div style="color:var(--steel); font-size:14px; margin-bottom:18px;">'+editable(p.desc,'desc',false)+'</div>'+
+    '<div class="pro-grid-prev" id="plansList">'+p.plans.map(proCardHTML).join('')+'</div>'+
+    '<button class="add-item-btn" type="button" id="addPlanBtn">+ Add plan</button>';
+  document.getElementById('addPlanBtn').onclick = ()=>{
+    const div = document.createElement('div');
+    div.innerHTML = proCardHTML({tier:'New Plan', price:'£0', period:'/mo', featured:false, badge:'', feats:['Feature one'], cta:'Choose plan'});
+    document.getElementById('plansList').appendChild(div.firstChild);
+    bindEnterAsBlur();
+  };
+  document.getElementById('proEditor').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('feat-remove')) e.target.closest('li').remove();
+    else if(e.target.classList.contains('remove-x')) e.target.closest('.pro-card-prev').remove();
+    else if(e.target.classList.contains('add-feat-btn')){
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="editable" contenteditable data-single="1">New feature</span><button class="remove-x feat-remove" type="button">×</button>';
+      e.target.closest('.pro-card-prev').querySelector('.pro-feats').appendChild(li);
+      bindEnterAsBlur();
     }
-    saveBtn.disabled = true; status.textContent='Saving…'; status.className='ck-status';
+  });
+  document.getElementById('proEditor').addEventListener('change', (e)=>{
+    if(e.target.classList.contains('featured-check')){
+      const card = e.target.closest('.pro-card-prev');
+      card.classList.toggle('featured', e.target.checked);
+      let badge = card.querySelector('.badge-pop');
+      if(e.target.checked && !badge){
+        badge = document.createElement('div');
+        badge.className = 'badge-pop editable'; badge.contentEditable = true; badge.dataset.f='badge'; badge.dataset.single='1';
+        badge.textContent = 'Featured';
+        card.insertBefore(badge, card.querySelector('.pro-featured-toggle'));
+        bindEnterAsBlur();
+      } else if(!e.target.checked && badge){ badge.remove(); }
+    }
+  });
+}
+function readPro(){
+  const root = document.getElementById('proEditor');
+  const v = { desc: root.querySelector('[data-f="desc"]').innerText.trim(), plans: [] };
+  root.querySelectorAll('.pro-card-prev').forEach(card=>{
+    v.plans.push({
+      tier: card.querySelector('[data-f="tier"]').innerText.trim(),
+      price: card.querySelector('[data-f="price"]').innerText.trim(),
+      period: card.querySelector('[data-f="period"]').innerText.trim(),
+      featured: card.classList.contains('featured'),
+      badge: card.querySelector('.badge-pop') ? card.querySelector('.badge-pop').innerText.trim() : '',
+      feats: [...card.querySelectorAll('.pro-feats li span')].map(s=>s.innerText.trim()),
+      cta: card.querySelector('[data-f="cta"]').innerText.trim(),
+    });
+  });
+  return v;
+}
+
+// ---------- ASSET CLASSES ----------
+function classCardHTML(c){
+  return '<div class="class-card-prev">'+
+    '<button class="remove-x" type="button">×</button>'+
+    '<input class="cc-icon-input" data-f="icon" value="'+esc(c.icon)+'" maxlength="3">'+
+    '<h3 class="editable" contenteditable data-f="title" data-single="1">'+esc(c.title)+'</h3>'+
+    '<p class="editable" contenteditable data-f="desc">'+esc(c.desc)+'</p>'+
+    '<div class="cc-stats-prev">'+
+      '<div class="cc-stat"><span class="n mono editable" contenteditable data-f="stat1_n" data-single="1">'+esc(c.stat1_n)+'</span><span class="l editable" contenteditable data-f="stat1_l" data-single="1">'+esc(c.stat1_l)+'</span></div>'+
+      '<div class="cc-stat"><span class="n mono editable" contenteditable data-f="stat2_n" data-single="1">'+esc(c.stat2_n)+'</span><span class="l editable" contenteditable data-f="stat2_l" data-single="1">'+esc(c.stat2_l)+'</span></div>'+
+    '</div>'+
+  '</div>';
+}
+function renderClassesEditor(){
+  document.getElementById('classesEditor').innerHTML =
+    '<div class="classes-prev" id="classesList">'+currentSettings.classes.map(classCardHTML).join('')+'</div>'+
+    '<button class="add-item-btn" type="button" id="addClassBtn">+ Add class card</button>';
+  document.getElementById('addClassBtn').onclick = ()=>{
+    const div = document.createElement('div');
+    div.innerHTML = classCardHTML({icon:'XX', title:'New class', desc:'Description here.', stat1_n:'0%', stat1_l:'Stat label', stat2_n:'0', stat2_l:'Stat label'});
+    document.getElementById('classesList').appendChild(div.firstChild);
+    bindEnterAsBlur();
+  };
+  document.getElementById('classesEditor').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('remove-x')) e.target.closest('.class-card-prev').remove();
+  });
+}
+function readClasses(){
+  return [...document.querySelectorAll('#classesList .class-card-prev')].map(card=>({
+    icon: card.querySelector('[data-f="icon"]').value.trim(),
+    title: card.querySelector('[data-f="title"]').innerText.trim(),
+    desc: card.querySelector('[data-f="desc"]').innerText.trim(),
+    stat1_n: card.querySelector('[data-f="stat1_n"]').innerText.trim(),
+    stat1_l: card.querySelector('[data-f="stat1_l"]').innerText.trim(),
+    stat2_n: card.querySelector('[data-f="stat2_n"]').innerText.trim(),
+    stat2_l: card.querySelector('[data-f="stat2_l"]').innerText.trim(),
+  }));
+}
+
+// ---------- MARKET INDICES ----------
+function indexCardHTML(ix){
+  const up = ix.chg >= 0;
+  return '<div class="index-card-prev">'+
+    '<button class="remove-x" type="button">×</button>'+
+    '<div class="ic-name editable" contenteditable data-f="name" data-single="1">'+esc(ix.name)+'</div>'+
+    '<div class="ic-tier editable" contenteditable data-f="tier" data-single="1">'+esc(ix.tier)+'</div>'+
+    '<div class="ic-vals">'+
+      '<input class="num-input ic-value" data-f="value" type="number" step="0.01" value="'+ix.value+'">'+
+      '<input class="num-input ic-chg" data-f="chg" type="number" step="0.1" value="'+ix.chg+'" style="color:'+(up?'#17D9A3':'#FF5C55')+';">'+
+    '</div>'+
+  '</div>';
+}
+function renderIndicesEditor(){
+  document.getElementById('indicesEditor').innerHTML =
+    '<div class="indices-prev" id="indicesList">'+currentSettings.indices.map(indexCardHTML).join('')+'</div>'+
+    '<button class="add-item-btn" type="button" id="addIndexBtn">+ Add index card</button>';
+  document.getElementById('addIndexBtn').onclick = ()=>{
+    const div = document.createElement('div');
+    div.innerHTML = indexCardHTML({name:'NEW-IDX', tier:'DESCRIPTION', value:10, chg:0});
+    document.getElementById('indicesList').appendChild(div.firstChild);
+    bindEnterAsBlur();
+  };
+  document.getElementById('indicesEditor').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('remove-x')) e.target.closest('.index-card-prev').remove();
+  });
+}
+function readIndices(){
+  return [...document.querySelectorAll('#indicesList .index-card-prev')].map(card=>({
+    name: card.querySelector('[data-f="name"]').innerText.trim(),
+    tier: card.querySelector('[data-f="tier"]').innerText.trim(),
+    value: parseFloat(card.querySelector('[data-f="value"]').value) || 0,
+    chg: parseFloat(card.querySelector('[data-f="chg"]').value) || 0,
+  }));
+}
+
+// ---------- DISCLAIMER ----------
+function renderDisclaimerEditor(){
+  document.getElementById('disclaimerEditor').innerHTML =
+    '<div class="disclaimer-prev"><div class="editable" contenteditable data-f="text">'+esc(currentSettings.disclaimer.text)+'</div></div>';
+}
+function readDisclaimer(){
+  return { text: document.querySelector('#disclaimerEditor [data-f="text"]').innerText.trim() };
+}
+
+// ---------- Save wiring for every block ----------
+const readers = {
+  hero: readHero,
+  ad_top: ()=>readAd('adTopEditor'),
+  ad_native: ()=>readAd('adNativeEditor'),
+  spotlight: readSpotlight,
+  leaderboard: readLeaderboard,
+  pro: readPro,
+  classes: readClasses,
+  indices: readIndices,
+  disclaimer: readDisclaimer,
+};
+
+document.querySelectorAll('.editor-block').forEach(block=>{
+  const key = block.dataset.key;
+  const btn = block.querySelector('.editor-save');
+  const status = block.querySelector('.editor-status');
+  btn.addEventListener('click', async ()=>{
+    const value = readers[key]();
+    btn.disabled = true; status.textContent = 'Saving…'; status.className = 'editor-status';
     const { error } = await sb.from('site_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict:'key' });
-    saveBtn.disabled = false;
-    if(error){ status.textContent = 'Failed: ' + error.message; status.className='ck-status err'; }
-    else { currentSettings[key] = value; status.textContent = 'Saved ✓ — live on the site now.'; status.className='ck-status ok'; setTimeout(()=>status.textContent='',3000); }
+    btn.disabled = false;
+    if(error){ status.textContent = 'Failed: ' + error.message; status.className = 'editor-status err'; }
+    else { currentSettings[key] = value; status.textContent = 'Saved ✓ — live now.'; status.className = 'editor-status ok'; setTimeout(()=>status.textContent='',3000); }
   });
 });
 
