@@ -209,6 +209,7 @@ td.spark-cell{ width:100px; }
   padding:7px 14px 7px 8px;
 }
 .wallet-icon{ width:20px; height:20px; border-radius:50%; background:var(--gilt); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#241906; }
+.coin-ic{ display:inline-block; width:12px; height:12px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #F5D687, var(--gilt) 55%, #C9932E 100%); box-shadow:inset 0 0 0 1px rgba(36,25,6,0.35); vertical-align:-1px; margin-right:3px; }
 .wallet-amt{ font-family:'JetBrains Mono'; font-size:13px; font-weight:600; }
 .wallet-label{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; }
 
@@ -228,7 +229,7 @@ td.spark-cell{ width:100px; }
 
 /* ===== Pro section ===== */
 .pro-band{ background:linear-gradient(180deg, rgba(231,181,75,0.05), transparent); }
-.pro-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.pro-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:20px; }
 .pro-card{ border:1px solid var(--border); border-radius:6px; padding:26px; background:var(--panel); position:relative; }
 .pro-card.featured{ border-color:var(--gilt); }
 .pro-tier{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel-dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
@@ -320,8 +321,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 </head>
 <body>
 
-<div class="ad-rail ad-rail-left"><span>AD SPACE<br>160×400</span></div>
-<div class="ad-rail ad-rail-right"><span>AD SPACE<br>160×400</span></div>
+<div class="ad-rail ad-rail-left" id="adRailLeft"><span>AD SPACE<br>160×400</span></div>
+<div class="ad-rail ad-rail-right" id="adRailRight"><span>AD SPACE<br>160×400</span></div>
 
 <div class="ticker-wrap"><div class="ticker-track mono" id="tickerTrack"></div></div>
 <div class="config-banner" id="configBanner">Add your Supabase URL and anon key to the CONFIG block near the top of this file to enable real sign-in and trading.</div>
@@ -344,6 +345,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
         <div class="wallet-amt mono" id="walletAmt">—</div>
         <div class="wallet-label">Fan Coins</div>
       </div>
+      <span id="proBadge" style="display:none; font-family:'JetBrains Mono'; font-size:10px; font-weight:700; color:#241906; background:var(--gilt); padding:3px 7px; border-radius:3px; margin-left:8px;">PRO</span>
     </div>
     <button class="nav-cta" id="authBtn" style="border:none; cursor:pointer;">Sign in to trade</button>
   </div>
@@ -361,7 +363,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
     <div class="hero-stats">
       <div class="hstat"><div class="n mono" id="heroStat1N">82</div><div class="l" id="heroStat1L">Listed clubs & teams</div></div>
       <div class="hstat"><div class="n mono" id="heroStat2N">9</div><div class="l" id="heroStat2L">Markets covered</div></div>
-      <div class="hstat"><div class="n mono" id="heroStat3N">12,450</div><div class="l" id="heroStat3L">Starting coins, everyone</div></div>
+      <div class="hstat"><div class="n mono" id="heroStat3N">2,000</div><div class="l" id="heroStat3L">Starting coins, everyone</div></div>
     </div>
   </div>
   <div class="hero-chart">
@@ -377,7 +379,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   </div>
 </section>
 
-<div style="padding:20px 0 0;">
+<div style="padding:20px 0 0;" id="adTopBanner">
   <div class="ad-banner">
     <div class="ad-body">
       <span class="ad-tag" id="adTopTag">Sponsored</span>
@@ -398,7 +400,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   <div class="index-grid" id="indexGrid"></div>
 </section>
 
-<div style="padding:0;">
+<div style="padding:0;" id="adNativeBanner">
   <div class="ad-banner ad-native">
     <div class="ad-body">
       <span class="ad-tag" id="adNativeTag">Sponsored</span>
@@ -422,7 +424,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <div class="cw-name display" id="cwName">Bodø/Glimt (UCL)</div>
       <div class="cw-meta" id="cwMeta">Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL</div>
       <div class="cw-price-row">
-        <div class="cw-price mono" id="cwPrice">£38.60</div>
+        <div class="cw-price mono" id="cwPrice"><span class="coin-ic"></span>38.60</div>
         <div class="cw-price-chg" id="cwPriceChg">▲ 612% since 1st Qualifying Round</div>
       </div>
       <div class="cw-stages" id="cwStages">
@@ -453,7 +455,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <div class="sec-eyebrow" id="lbEyebrow">RANKED COMPETITION</div>
       <div class="sec-title display" id="lbTitle">Same coins. Same odds. Real prizes.</div>
     </div>
-    <div class="sec-desc" id="lbDesc">Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.</div>
+    <div class="sec-desc" id="lbDesc">Every entrant starts with the same 2,000 Fan Coins — Free, Pro, or Ultimate. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.</div>
   </div>
   <div class="lb-rules" id="lbRules"></div>
   <table>
@@ -465,8 +467,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <section class="pro-band" id="pro">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">GO PRO</div>
-      <div class="sec-title display">Better information, not better odds</div>
+      <div class="sec-eyebrow" id="proEyebrow">GO PRO</div>
+      <div class="sec-title display" id="proTitle">Better information, not better odds</div>
     </div>
     <div class="sec-desc" id="proDesc">Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.</div>
   </div>
@@ -496,17 +498,17 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   </table>
 </section>
 
-<div class="disclaimer-bar">
+<div class="disclaimer-bar" id="disclaimer">
   <p id="disclaimerText">PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.</p>
 </div>
 
 <footer>
   <div class="fl">PITCHMARKET · A SIMULATED EXCHANGE · PRICES ARE FOR ILLUSTRATION, NOT REAL QUOTES</div>
   <div class="foot-links">
-    <a href="#">About</a>
-    <a href="#">Rules of trading</a>
-    <a href="#">Risk disclosure</a>
-    <a href="#">Contact</a>
+    <a href="#classes">About</a>
+    <a href="#leaderboard">Rules of trading</a>
+    <a href="#disclaimer">Risk disclosure</a>
+    <a href="mailto:hello@pitchmarket.example">Contact</a>
   </div>
 </footer>
 
@@ -515,7 +517,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
   <div class="modal">
     <button class="modal-close" id="authClose">✕</button>
     <h2 id="authTitle">Sign in</h2>
-    <div class="sub">Trade with 12,450 free Fan Coins to start. No cash value, ever.</div>
+    <div class="sub">Trade with 2,000 free Fan Coins to start. No cash value, ever.</div>
     <div class="m-msg" id="authMsg"></div>
     <div class="m-field"><label>Email</label><input id="authEmail" type="email" placeholder="you@example.com"></div>
     <div class="m-field"><label>Password</label><input id="authPassword" type="password" placeholder="••••••••"></div>
@@ -570,6 +572,7 @@ function sparkSVG(data, color){
   return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/></svg>';
 }
 function fmtChg(chg){ return (chg>=0?'▲ ':'▼ ')+Math.abs(chg).toFixed(1)+'%'; }
+function coin(n, decimals){ return '<span class="coin-ic"></span>'+Number(n).toFixed(decimals===undefined?2:decimals); }
 
 let leagues = {
   epl: { label:'Premier League', teams:[
@@ -698,7 +701,7 @@ let siteContent = {
     subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
     stat1_n:'82', stat1_l:'Listed clubs & teams',
     stat2_n:'9', stat2_l:'Markets covered',
-    stat3_n:'12,450', stat3_l:'Starting coins, everyone',
+    stat3_n:'2,000', stat3_l:'Starting coins, everyone',
   },
   ad_top: { tag:'Sponsored', copy:"<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.", cta_text:'Shop now ↗', cta_url:'#' },
   ad_native: { tag:'Sponsored', copy:'<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.', cta_text:'Try free ↗', cta_url:'#' },
@@ -707,12 +710,12 @@ let siteContent = {
     desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
     badge:'CONFIRMED · WON PLAY-OFF ROUND', name:'Bodø/Glimt (UCL)',
     meta:'Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL',
-    price:'£38.60', price_chg:'▲ 612% since 1st Qualifying Round',
+    price:'38.60', price_chg:'▲ 612% since 1st Qualifying Round',
     stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'],
   },
   leaderboard: {
     eyebrow:'RANKED COMPETITION', title:'Same coins. Same odds. Real prizes.',
-    desc:'Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
+    desc:'Every entrant starts with the same 2,000 Fan Coins — Free, Pro, or Ultimate. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
     rules:[
       {b:'Free to enter.', t:'No purchase, ever, changes your standing.'},
       {b:'Equal start.', t:'Every account begins the season at the same balance.'},
@@ -720,11 +723,24 @@ let siteContent = {
     ],
   },
   pro: {
-    desc:"Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.",
+    eyebrow:'MEMBERSHIP', title:'Play free. Go deeper if you want.',
+    desc:"Every tier competes on identical terms. Pro and Ultimate add tools, data, customization and comfort — never an edge in trading or the leaderboard.",
     plans:[
-      { tier:'Free', price:'£0', period:'/mo', featured:false, badge:'', feats:['Full trading access, all leagues','Equal footing in the ranked competition','5 watchlist slots','Standard data, ads shown'], cta:'Current plan' },
-      { tier:'Pro', price:'£4.99', period:'/mo', featured:true, badge:'Most popular', feats:['Everything in Free, zero ads','Deeper club & competition data','Unlimited watchlist slots','Early access to newly added leagues'], cta:'Upgrade to Pro' },
-      { tier:'Pro Annual', price:'£39', period:'/yr', featured:false, badge:'', feats:['Everything in Pro','2 months free vs. monthly','Priority support','Still zero trading advantage'], cta:'Upgrade to Annual' },
+      { tier:'Free', tagline:'Play PitchMarket', price:'$0', period:'/mo', featured:false, badge:'',
+        feats:['Ads','Basic rankings','Basic watchlist','Standard data','Basic portfolio history','No paid feature affects competitive outcomes'],
+        cta:'Current plan', checkout_url:'' },
+      { tier:'Pro', tagline:'Enhance Your Experience', price:'$1.99', period:'/mo', featured:false, badge:'',
+        feats:['No ads','Private rankings/leagues','More watchlist slots','Market simulations','Advanced portfolio analytics','Custom price/event alerts','Expanded personal history','Better profile customization'],
+        cta:'Upgrade to Pro', checkout_url:'PASTE_YOUR_STRIPE_PRO_MONTHLY_LINK_HERE' },
+      { tier:'Pro Annual', tagline:'Enhance Your Experience', price:'$20', period:'/yr', featured:false, badge:'',
+        feats:['Everything in Pro','Save vs. paying monthly'],
+        cta:'Upgrade to Pro Annual', checkout_url:'PASTE_YOUR_STRIPE_PRO_ANNUAL_LINK_HERE' },
+      { tier:'Ultimate', tagline:'Analyze Everything', price:'$4.99', period:'/mo', featured:true, badge:'Most popular',
+        feats:['Everything in Pro','Unlimited watchlists','Unlimited market simulations','Full historical market data','Deeper portfolio analytics','Advanced charts & visualizations','Custom dashboards','Unlimited private rankings/leagues','Custom private league branding','AI-written portfolio recaps','Weekly/monthly personalized reports','Early access to new non-competitive features','Ultimate profile badge & cosmetics'],
+        cta:'Upgrade to Ultimate', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_MONTHLY_LINK_HERE' },
+      { tier:'Ultimate Annual', tagline:'Analyze Everything', price:'$50', period:'/yr', featured:false, badge:'',
+        feats:['Everything in Ultimate','Save vs. paying monthly'],
+        cta:'Upgrade to Ultimate Annual', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_ANNUAL_LINK_HERE' },
     ],
   },
   classes:[
@@ -765,7 +781,7 @@ function renderSiteContent(){
   document.getElementById('cwBadge').textContent = c.spotlight.badge;
   document.getElementById('cwName').textContent = c.spotlight.name;
   document.getElementById('cwMeta').textContent = c.spotlight.meta;
-  document.getElementById('cwPrice').textContent = c.spotlight.price;
+  document.getElementById('cwPrice').innerHTML = '<span class="coin-ic"></span>' + c.spotlight.price;
   document.getElementById('cwPriceChg').textContent = c.spotlight.price_chg;
   document.getElementById('cwStages').innerHTML = c.spotlight.stages.map((s,i)=>
     '<div class="cw-stage'+(i===c.spotlight.stages.length-1?' now':'')+'">'+s+'</div>'
@@ -778,16 +794,23 @@ function renderSiteContent(){
     '<div class="lb-rule"><b>'+r.b+'</b> '+r.t+'</div>'
   ).join('');
   // pro
+  document.getElementById('proEyebrow').textContent = c.pro.eyebrow || 'MEMBERSHIP';
+  document.getElementById('proTitle').textContent = c.pro.title || '';
   document.getElementById('proDesc').textContent = c.pro.desc;
-  document.getElementById('proGrid').innerHTML = c.pro.plans.map(p=>
-    '<div class="pro-card'+(p.featured?' featured':'')+'">'+
+  document.getElementById('proGrid').innerHTML = c.pro.plans.map(p=>{
+    const hasCheckout = p.checkout_url && !p.checkout_url.includes('PASTE_');
+    const btn = hasCheckout
+      ? '<a href="'+p.checkout_url+'" target="_blank" rel="noopener" class="pro-btn '+(p.featured?'filled':'ghost')+'">'+p.cta+'</a>'
+      : '<div class="pro-btn ghost" style="cursor:default; opacity:0.7;">'+p.cta+'</div>';
+    return '<div class="pro-card'+(p.featured?' featured':'')+'">'+
       (p.badge?'<div class="badge-pop">'+p.badge+'</div>':'')+
       '<div class="pro-tier">'+p.tier+'</div>'+
+      (p.tagline?'<div style="font-size:11.5px; color:var(--gilt); margin-bottom:10px; margin-top:-6px;">'+p.tagline+'</div>':'')+
       '<div class="pro-price mono">'+p.price+'<span>'+p.period+'</span></div>'+
       '<ul class="pro-feats">'+p.feats.map(f=>'<li>'+f+'</li>').join('')+'</ul>'+
-      '<a href="#" class="pro-btn '+(p.featured?'filled':'ghost')+'">'+p.cta+'</a>'+
-    '</div>'
-  ).join('');
+      btn+
+    '</div>';
+  }).join('');
   // asset classes
   document.getElementById('classesGrid').innerHTML = c.classes.map(cl=>
     '<div class="class-card">'+
@@ -812,7 +835,7 @@ function buildTicker(){
   const tickerItems = [];
   Object.values(leagues).forEach(l=> l.teams.forEach(t=> tickerItems.push(t)));
   const html = tickerItems.map(t=>
-    '<span class="tick"><span class="sym">'+t.name.toUpperCase().slice(0,4)+'</span><span class="px">£'+t.price.toFixed(2)+'</span><span class="'+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></span>'
+    '<span class="tick"><span class="sym">'+t.name.toUpperCase().slice(0,4)+'</span><span class="px">'+coin(t.price)+'</span><span class="'+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></span>'
   ).join('');
   document.getElementById('tickerTrack').innerHTML = html + html;
 }
@@ -843,7 +866,7 @@ function buildMiniCaps(){
     { name:'Slovan Bratislava', price:15.80 },
   ];
   document.getElementById('miniCaps').innerHTML = list.map(t=>
-    '<div class="mc-item"><div class="mc-name">'+t.name+'</div><div class="mc-price mono" style="color:#17D9A3">£'+t.price.toFixed(2)+'</div></div>'
+    '<div class="mc-item"><div class="mc-name">'+t.name+'</div><div class="mc-price mono" style="color:#17D9A3">'+coin(t.price)+'</div></div>'
   ).join('');
 }
 buildMiniCaps();
@@ -859,7 +882,7 @@ function renderTable(key){
     const color = up(t.chg)?'#17D9A3':'#FF5C55';
     return '<tr>'+
       '<td><div class="team-name">'+t.name+'</div><div class="team-tier">'+t.tier+'</div></td>'+
-      '<td class="num mono">'+(t.price<1?'£'+t.price.toFixed(3):'£'+t.price.toFixed(2))+'</td>'+
+      '<td class="num mono">'+coin(t.price)+'</td>'+
       '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
       '<td class="num mono">'+(Math.round(hash(t.name)%900+100))+'K</td>'+
@@ -922,10 +945,20 @@ function updateAuthUI(){
 
 async function refreshWallet(){
   if(!sb || !currentSession) return;
-  const { data, error } = await sb.from('profiles').select('coin_balance').eq('id', currentSession.user.id).single();
+  const { data, error } = await sb.from('profiles').select('coin_balance, is_pro, pro_expires_at').eq('id', currentSession.user.id).single();
   if(!error && data){
     document.getElementById('walletAmt').textContent = Math.round(data.coin_balance).toLocaleString();
+    const isPro = data.is_pro && (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+    applyProStatus(isPro);
   }
+}
+
+function applyProStatus(isPro){
+  document.getElementById('proBadge').style.display = isPro ? 'inline-block' : 'none';
+  ['adRailLeft','adRailRight','adTopBanner','adNativeBanner'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = isPro ? 'none' : '';
+  });
 }
 
 async function loadTeamsFromDB(){
@@ -980,7 +1013,7 @@ async function loadLeaderboard(){
   }
   body.innerHTML = data.map((row,i)=>
     '<tr><td class="mono">#'+(i+1)+'</td><td>'+(row.display_name||'Trader')+'</td>'+
-    '<td class="num mono">'+Math.round(row.portfolio_value).toLocaleString()+' coins</td></tr>'
+    '<td class="num mono"><span class="coin-ic"></span>'+Math.round(row.portfolio_value).toLocaleString()+'</td></tr>'
   ).join('');
 }
 
@@ -1028,7 +1061,7 @@ function openTrade(id, name, price){
   tradeTeam = { id, name, price: parseFloat(price) };
   tradeSide = 'buy';
   document.getElementById('tradeTeamName').textContent = name;
-  document.getElementById('tradeTeamPrice').textContent = 'Current price: £' + tradeTeam.price.toFixed(2);
+  document.getElementById('tradeTeamPrice').innerHTML = 'Current price: ' + coin(tradeTeam.price);
   document.getElementById('tabBuy').classList.add('active','buy'); document.getElementById('tabBuy').classList.remove('sell');
   document.getElementById('tabSell').classList.remove('active','sell');
   document.getElementById('tradeQty').value = 10;
@@ -1056,7 +1089,7 @@ document.getElementById('tabSell').addEventListener('click', ()=>{
 function updateTradeCost(){
   if(!tradeTeam) return;
   const qty = parseFloat(document.getElementById('tradeQty').value) || 0;
-  document.getElementById('tradeCost').textContent = (qty*tradeTeam.price).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + ' coins';
+  document.getElementById('tradeCost').innerHTML = '<span class="coin-ic"></span>' + (qty*tradeTeam.price).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
 }
 document.getElementById('tradeQty').addEventListener('input', updateTradeCost);
 
@@ -1110,9 +1143,9 @@ new Chart(document.getElementById('cupChart'), {
       tension:0.3, fill:true, backgroundColor:'rgba(231,181,75,0.08)' }] },
   options:{ responsive:true, maintainAspectRatio:false,
     plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#101E19', borderColor:'#213027', borderWidth:1, titleColor:'#7E9089', bodyColor:'#EEF3EE',
-      callbacks:{ label:(ctx)=> '£'+ctx.parsed.y.toFixed(2) } } },
+      callbacks:{ label:(ctx)=> '🪙'+ctx.parsed.y.toFixed(2) } } },
     scales:{ x:{ grid:{display:false}, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10} } },
-      y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10}, callback:(v)=>'£'+v } } } }
+      y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:10}, callback:(v)=>'🪙'+v } } } }
 });
 </script>
 

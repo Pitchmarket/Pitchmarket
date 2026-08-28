@@ -90,6 +90,26 @@ tbody tr:last-child td{ border-bottom:none; }
 .add-status{ font-size:12px; margin-top:8px; }
 .add-status.ok{ color:var(--surge); }
 .add-status.err{ color:var(--drop); }
+
+/* ===== Price Approvals ===== */
+.pending-badge{ background:var(--drop); color:white; font-size:10px; font-weight:700; border-radius:10px; padding:1px 6px; margin-left:6px; vertical-align:middle; }
+.event-card{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px 20px; margin-bottom:12px; }
+.event-teams{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:15px; font-weight:600; margin-bottom:4px; }
+.event-meta{ font-size:11.5px; color:var(--steel-dim); margin-bottom:10px; }
+.event-deltas{ display:flex; gap:20px; margin-bottom:10px; flex-wrap:wrap; }
+.event-delta{ font-family:'JetBrains Mono'; font-size:13px; }
+.event-delta.up{ color:var(--surge); }
+.event-delta.down{ color:var(--drop); }
+.event-reason{ font-size:12.5px; color:var(--steel); font-style:italic; margin-bottom:14px; }
+.event-actions{ display:flex; gap:8px; }
+.approve-btn{ background:var(--surge); color:#04241A; border:none; border-radius:4px; padding:8px 16px; font-weight:700; font-size:12.5px; cursor:pointer; }
+.approve-btn:disabled, .reject-btn:disabled{ opacity:0.5; cursor:default; }
+.reject-btn{ background:none; border:1px solid var(--drop); color:var(--drop); border-radius:4px; padding:8px 16px; font-weight:700; font-size:12.5px; cursor:pointer; }
+.event-status-pill{ font-family:'JetBrains Mono'; font-size:10px; padding:3px 8px; border-radius:3px; text-transform:uppercase; }
+.event-status-pill.approved{ background:rgba(23,217,163,0.12); color:var(--surge); }
+.event-status-pill.rejected{ background:rgba(255,92,85,0.12); color:var(--drop); }
+.event-status-pill.skipped{ background:var(--panel2); color:var(--steel-dim); }
+.history-label{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
 @media(max-width:900px){ .add-grid{ grid-template-columns:repeat(2,1fr); } .add-btn{ grid-column:span 2; } }
 
 /* ===== Live-preview editor components (copied from the live site's own CSS) ===== */
@@ -129,6 +149,11 @@ tbody tr:last-child td{ border-bottom:none; }
 .ad-cta{ font-family:'JetBrains Mono'; font-size:11.5px; color:var(--surge); border:1px solid var(--border); border-radius:3px; padding:6px 12px; white-space:nowrap; }
 .ad-url-row{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:11.5px; color:var(--steel-dim); }
 .ad-url-row input{ flex:1; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:6px 9px; color:var(--chalk); font-size:12px; font-family:'JetBrains Mono'; }
+.ck-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.ck-field label{ display:block; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+.ck-field input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--chalk); font-size:13px; }
+.ck-field input:focus{ outline:none; border-color:var(--surge); }
+@media(max-width:700px){ .ck-grid{ grid-template-columns:1fr; } }
 
 /* -- spotlight -- */
 .cupwatch-prev{ background:radial-gradient(120% 160% at 0% 0%, rgba(231,181,75,0.07), transparent 55%), var(--panel); border:1px solid var(--border); border-radius:8px; padding:28px; }
@@ -137,6 +162,7 @@ tbody tr:last-child td{ border-bottom:none; }
 .cw-meta{ color:var(--steel); font-size:13.5px; margin-bottom:18px; }
 .cw-price-row{ display:flex; align-items:baseline; gap:14px; margin-bottom:18px; }
 .cw-price{ font-family:'JetBrains Mono'; font-size:32px; font-weight:700; color:var(--surge); }
+.coin-ic{ display:inline-block; width:12px; height:12px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #F5D687, var(--gilt) 55%, #C9932E 100%); box-shadow:inset 0 0 0 1px rgba(36,25,6,0.35); vertical-align:-1px; margin-right:3px; }
 .cw-price-chg{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; color:var(--surge); }
 .cw-stages{ display:flex; gap:8px; flex-wrap:wrap; }
 .stage-item{ display:flex; align-items:center; gap:5px; background:var(--panel2); border-radius:3px; padding:2px; }
@@ -229,6 +255,7 @@ tbody tr:last-child td{ border-bottom:none; }
     <div class="section-tabs">
       <button class="section-tab active" data-pane="teamsPane">Teams & Leagues</button>
       <button class="section-tab" data-pane="contentPane">Site Content</button>
+      <button class="section-tab" data-pane="approvalsPane">Price Approvals<span id="pendingCountBadge" style="display:none;"></span></button>
     </div>
 
     <!-- ============ TEAMS & LEAGUES ============ -->
@@ -333,6 +360,22 @@ tbody tr:last-child td{ border-bottom:none; }
         <div class="editor-frame" id="disclaimerEditor"></div>
       </div>
     </div>
+
+    <!-- ============ PRICE APPROVALS ============ -->
+    <div class="section-pane" id="approvalsPane">
+      <div class="bar">
+        <div>
+          <h1 class="display">Price approvals</h1>
+          <div class="desc">Real match results your pipeline has priced. Nothing here touches a live team price until you approve it.</div>
+        </div>
+        <button class="refresh" id="refreshApprovalsBtn">↻ Refresh</button>
+      </div>
+      <div id="pendingEventsList"></div>
+      <div style="margin-top:32px;">
+        <div class="history-label">Recently reviewed</div>
+        <div id="historyEventsList"></div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -342,21 +385,35 @@ let sb, currentLeague = 'all', allTeams = [];
 const settingsDefaults = {
   hero: { eyebrow:'LIVE MARKET · 47,208 traders online', line1:'Every club', line2:'has a price.', line3:'Trade the table.',
     subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
-    stat1_n:'82', stat1_l:'Listed clubs & teams', stat2_n:'9', stat2_l:'Markets covered', stat3_n:'12,450', stat3_l:'Starting coins, everyone' },
+    stat1_n:'82', stat1_l:'Listed clubs & teams', stat2_n:'9', stat2_l:'Markets covered', stat3_n:'2,000', stat3_l:'Starting coins, everyone' },
   ad_top: { tag:'Sponsored', copy:"<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.", cta_text:'Shop now ↗', cta_url:'#' },
   ad_native: { tag:'Sponsored', copy:'<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.', cta_text:'Try free ↗', cta_url:'#' },
   spotlight: { eyebrow:'SPOTLIGHT · HAPPENING THIS WEEK', title:'Qualifying is where fortunes turn',
     desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
     badge:'CONFIRMED · WON PLAY-OFF ROUND', name:'Bodø/Glimt (UCL)', meta:'Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL',
-    price:'£38.60', price_chg:'▲ 612% since 1st Qualifying Round', stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'] },
+    price:'38.60', price_chg:'▲ 612% since 1st Qualifying Round', stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'] },
   leaderboard: { eyebrow:'RANKED COMPETITION', title:'Same coins. Same odds. Real prizes.',
-    desc:'Every entrant starts with the same 12,450 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
+    desc:'Every entrant starts with the same 2,000 Fan Coins — Free, Pro, or Ultimate. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
     rules:[{b:'Free to enter.',t:'No purchase, ever, changes your standing.'},{b:'Equal start.',t:'Every account begins the season at the same balance.'},{b:'Ranked by portfolio value.',t:'Coins on hand plus the live value of everything you hold.'}] },
-  pro: { desc:"Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.",
+  pro: {
+    eyebrow:'MEMBERSHIP', title:'Play free. Go deeper if you want.',
+    desc:"Every tier competes on identical terms. Pro and Ultimate add tools, data, customization and comfort — never an edge in trading or the leaderboard.",
     plans:[
-      { tier:'Free', price:'£0', period:'/mo', featured:false, badge:'', feats:['Full trading access, all leagues','Equal footing in the ranked competition','5 watchlist slots','Standard data, ads shown'], cta:'Current plan' },
-      { tier:'Pro', price:'£4.99', period:'/mo', featured:true, badge:'Most popular', feats:['Everything in Free, zero ads','Deeper club & competition data','Unlimited watchlist slots','Early access to newly added leagues'], cta:'Upgrade to Pro' },
-      { tier:'Pro Annual', price:'£39', period:'/yr', featured:false, badge:'', feats:['Everything in Pro','2 months free vs. monthly','Priority support','Still zero trading advantage'], cta:'Upgrade to Annual' },
+      { tier:'Free', tagline:'Play PitchMarket', price:'$0', period:'/mo', featured:false, badge:'',
+        feats:['Ads','Basic rankings','Basic watchlist','Standard data','Basic portfolio history','No paid feature affects competitive outcomes'],
+        cta:'Current plan', checkout_url:'' },
+      { tier:'Pro', tagline:'Enhance Your Experience', price:'$1.99', period:'/mo', featured:false, badge:'',
+        feats:['No ads','Private rankings/leagues','More watchlist slots','Market simulations','Advanced portfolio analytics','Custom price/event alerts','Expanded personal history','Better profile customization'],
+        cta:'Upgrade to Pro', checkout_url:'PASTE_YOUR_STRIPE_PRO_MONTHLY_LINK_HERE' },
+      { tier:'Pro Annual', tagline:'Enhance Your Experience', price:'$20', period:'/yr', featured:false, badge:'',
+        feats:['Everything in Pro','Save vs. paying monthly'],
+        cta:'Upgrade to Pro Annual', checkout_url:'PASTE_YOUR_STRIPE_PRO_ANNUAL_LINK_HERE' },
+      { tier:'Ultimate', tagline:'Analyze Everything', price:'$4.99', period:'/mo', featured:true, badge:'Most popular',
+        feats:['Everything in Pro','Unlimited watchlists','Unlimited market simulations','Full historical market data','Deeper portfolio analytics','Advanced charts & visualizations','Custom dashboards','Unlimited private rankings/leagues','Custom private league branding','AI-written portfolio recaps','Weekly/monthly personalized reports','Early access to new non-competitive features','Ultimate profile badge & cosmetics'],
+        cta:'Upgrade to Ultimate', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_MONTHLY_LINK_HERE' },
+      { tier:'Ultimate Annual', tagline:'Analyze Everything', price:'$50', period:'/yr', featured:false, badge:'',
+        feats:['Everything in Ultimate','Save vs. paying monthly'],
+        cta:'Upgrade to Ultimate Annual', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_ANNUAL_LINK_HERE' },
     ] },
   classes: [
     { icon:'EQ', title:'Club equities', desc:'Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.', stat1_n:'±4.8%', stat1_l:'Avg. matchday move', stat2_n:'2,140', stat2_l:'Clubs listed' },
@@ -419,6 +476,8 @@ function onAuthed(user){
   document.getElementById('whoEmail').textContent = user.email;
   loadTeams();
   loadContentSettings();
+  loadPendingEvents();
+  loadHistoryEvents();
 }
 
 document.querySelectorAll('.section-tab').forEach(tab=>{
@@ -599,7 +658,7 @@ function renderSpotlightEditor(){
       '<div class="cw-badge">'+editable(s.badge,'badge',true)+'</div>'+
       '<div class="cw-name">'+editable(s.name,'name',true)+'</div>'+
       '<div class="cw-meta">'+editable(s.meta,'meta',true)+'</div>'+
-      '<div class="cw-price-row"><span class="cw-price">'+editable(s.price,'price',true)+'</span><span class="cw-price-chg">'+editable(s.price_chg,'price_chg',true)+'</span></div>'+
+      '<div class="cw-price-row"><span class="cw-price"><span class="coin-ic"></span>'+editable(s.price,'price',true)+'</span><span class="cw-price-chg">'+editable(s.price_chg,'price_chg',true)+'</span></div>'+
       '<div class="cw-stages" id="stagesList">'+
         s.stages.map(st=>'<div class="stage-item"><span class="cw-stage editable" contenteditable data-single="1">'+esc(st)+'</span><button class="remove-x" type="button">×</button></div>').join('')+
       '</div>'+
@@ -670,23 +729,30 @@ function proCardHTML(p){
     (p.featured?'<div class="badge-pop editable" contenteditable data-f="badge" data-single="1">'+esc(p.badge||'Featured')+'</div>':'')+
     '<label class="pro-featured-toggle"><input type="checkbox" class="featured-check" '+(p.featured?'checked':'')+'> Featured plan</label>'+
     '<div class="pro-tier">'+editable(p.tier,'tier',true)+'</div>'+
+    '<div style="font-size:11px; color:var(--gilt); margin-bottom:8px;">'+editable(p.tagline||'','tagline',true)+'</div>'+
     '<div class="pro-price">'+editable(p.price,'price',true)+'<span class="per">'+editable(p.period,'period',true)+'</span></div>'+
     '<ul class="pro-feats">'+
       p.feats.map(f=>'<li><span class="editable" contenteditable data-single="1">'+esc(f)+'</span><button class="remove-x feat-remove" type="button">×</button></li>').join('')+
     '</ul>'+
     '<button class="add-item-btn add-feat-btn" type="button" style="margin-bottom:14px;">+ Add feature</button>'+
     '<div class="pro-btn-prev editable" contenteditable data-f="cta" data-single="1">'+esc(p.cta)+'</div>'+
+    '<div style="margin-top:10px;"><label style="display:block; font-size:10px; color:var(--steel-dim); text-transform:uppercase; margin-bottom:4px;">Checkout URL (blank = no payment button, e.g. the Free plan)</label>'+
+      '<input class="num-input" data-f="checkout_url" value="'+esc(p.checkout_url||'')+'" style="width:100%; font-size:11px; padding:5px 6px; border:1px solid var(--border); border-radius:3px;" placeholder="https://buy.stripe.com/..."></div>'+
   '</div>';
 }
 function renderProEditor(){
   const p = currentSettings.pro;
   document.getElementById('proEditor').innerHTML =
+    '<div class="ck-grid">'+
+      '<div class="ck-field"><label>Section eyebrow</label><input data-f="pro-eyebrow" value="'+esc(p.eyebrow||'')+'"></div>'+
+      '<div class="ck-field"><label>Section title</label><input data-f="pro-title" value="'+esc(p.title||'')+'"></div>'+
+    '</div>'+
     '<div style="color:var(--steel); font-size:14px; margin-bottom:18px;">'+editable(p.desc,'desc',false)+'</div>'+
     '<div class="pro-grid-prev" id="plansList">'+p.plans.map(proCardHTML).join('')+'</div>'+
     '<button class="add-item-btn" type="button" id="addPlanBtn">+ Add plan</button>';
   document.getElementById('addPlanBtn').onclick = ()=>{
     const div = document.createElement('div');
-    div.innerHTML = proCardHTML({tier:'New Plan', price:'£0', period:'/mo', featured:false, badge:'', feats:['Feature one'], cta:'Choose plan'});
+    div.innerHTML = proCardHTML({tier:'New Plan', tagline:'', price:'$0', period:'/mo', featured:false, badge:'', feats:['Feature one'], cta:'Choose plan', checkout_url:''});
     document.getElementById('plansList').appendChild(div.firstChild);
     bindEnterAsBlur();
   };
@@ -714,19 +780,27 @@ function renderProEditor(){
       } else if(!e.target.checked && badge){ badge.remove(); }
     }
   });
+  bindEnterAsBlur();
 }
 function readPro(){
   const root = document.getElementById('proEditor');
-  const v = { desc: root.querySelector('[data-f="desc"]').innerText.trim(), plans: [] };
+  const v = {
+    eyebrow: root.querySelector('[data-f="pro-eyebrow"]').value.trim(),
+    title: root.querySelector('[data-f="pro-title"]').value.trim(),
+    desc: root.querySelector('[data-f="desc"]').innerText.trim(),
+    plans: [],
+  };
   root.querySelectorAll('.pro-card-prev').forEach(card=>{
     v.plans.push({
       tier: card.querySelector('[data-f="tier"]').innerText.trim(),
+      tagline: card.querySelector('[data-f="tagline"]').innerText.trim(),
       price: card.querySelector('[data-f="price"]').innerText.trim(),
       period: card.querySelector('[data-f="period"]').innerText.trim(),
       featured: card.classList.contains('featured'),
       badge: card.querySelector('.badge-pop') ? card.querySelector('.badge-pop').innerText.trim() : '',
       feats: [...card.querySelectorAll('.pro-feats li span')].map(s=>s.innerText.trim()),
       cta: card.querySelector('[data-f="cta"]').innerText.trim(),
+      checkout_url: card.querySelector('[data-f="checkout_url"]').value.trim(),
     });
   });
   return v;
@@ -815,6 +889,74 @@ function renderDisclaimerEditor(){
 function readDisclaimer(){
   return { text: document.querySelector('#disclaimerEditor [data-f="text"]').innerText.trim() };
 }
+
+// ================= PRICE APPROVALS =================
+function eventCardHTML(ev, isPending){
+  const hasDeltas = ev.home_delta_pct != null && ev.away_delta_pct != null;
+  const homeUp = hasDeltas && ev.home_delta_pct >= 0;
+  const awayUp = hasDeltas && ev.away_delta_pct >= 0;
+  const dateStr = ev.match_date ? new Date(ev.match_date).toLocaleDateString() : '';
+  return '<div class="event-card" data-id="'+ev.id+'">'+
+    '<div class="event-teams">'+esc(ev.home_team_name)+' '+ev.home_score+' - '+ev.away_score+' '+esc(ev.away_team_name)+
+      (!isPending ? ' <span class="event-status-pill '+ev.status+'">'+ev.status+'</span>' : '')+
+    '</div>'+
+    '<div class="event-meta">'+esc(ev.competition||'')+(dateStr?' · '+dateStr:'')+'</div>'+
+    (hasDeltas
+      ? '<div class="event-deltas">'+
+          '<span class="event-delta '+(homeUp?'up':'down')+'">'+esc(ev.home_team_name)+': '+(homeUp?'+':'')+ev.home_delta_pct+'%</span>'+
+          '<span class="event-delta '+(awayUp?'up':'down')+'">'+esc(ev.away_team_name)+': '+(awayUp?'+':'')+ev.away_delta_pct+'%</span>'+
+        '</div>'
+      : '<div class="event-meta">No team on your site matched this match — nothing to price.</div>')+
+    (ev.ai_reason ? '<div class="event-reason">"'+esc(ev.ai_reason)+'" — priced by '+esc(ev.ai_provider||'AI')+'</div>' : '')+
+    (isPending && hasDeltas
+      ? '<div class="event-actions"><button class="approve-btn">Approve</button><button class="reject-btn">Reject</button></div>'
+      : '')+
+  '</div>';
+}
+
+async function loadPendingEvents(){
+  const { data, error } = await sb.from('match_events').select('*').eq('status','pending').order('created_at', { ascending:false });
+  const badge = document.getElementById('pendingCountBadge');
+  if(error){ console.error('Could not load pending events:', error.message); return; }
+  if(data && data.length > 0){ badge.textContent = data.length; badge.className = 'pending-badge'; badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+
+  const container = document.getElementById('pendingEventsList');
+  if(!data || data.length === 0){
+    container.innerHTML = '<div style="color:var(--steel-dim); font-size:13px; padding:16px 0;">No pending price changes right now. Either the scheduled job has not found anything new, or everything has already been reviewed.</div>';
+    return;
+  }
+  container.innerHTML = data.map(ev=>eventCardHTML(ev, true)).join('');
+  container.querySelectorAll('.approve-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>reviewEvent(btn.closest('.event-card').dataset.id, true, btn));
+  });
+  container.querySelectorAll('.reject-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>reviewEvent(btn.closest('.event-card').dataset.id, false, btn));
+  });
+}
+
+async function reviewEvent(id, approve, btn){
+  const card = btn.closest('.event-card');
+  card.querySelectorAll('button').forEach(b=>b.disabled = true);
+  const { error } = await sb.rpc('approve_match_event', { p_event_id: id, p_approve: approve });
+  if(error){ alert('Failed: ' + error.message); card.querySelectorAll('button').forEach(b=>b.disabled = false); return; }
+  loadPendingEvents();
+  loadHistoryEvents();
+  loadTeams(); // an approval just moved a real price — refresh the Teams tab too
+}
+
+async function loadHistoryEvents(){
+  const { data, error } = await sb.from('match_events').select('*').neq('status','pending').order('created_at', { ascending:false }).limit(20);
+  const container = document.getElementById('historyEventsList');
+  if(error){ console.error('Could not load event history:', error.message); return; }
+  if(!data || data.length === 0){
+    container.innerHTML = '<div style="color:var(--steel-dim); font-size:13px;">Nothing reviewed yet.</div>';
+    return;
+  }
+  container.innerHTML = data.map(ev=>eventCardHTML(ev, false)).join('');
+}
+
+document.getElementById('refreshApprovalsBtn').addEventListener('click', ()=>{ loadPendingEvents(); loadHistoryEvents(); });
 
 // ---------- Save wiring for every block ----------
 const readers = {
