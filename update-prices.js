@@ -38,7 +38,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+let supabase; // created inside main(), after the required-variable check below
 
 // football-data.org competition code -> your `league` key in Supabase.
 // Only the leagues this free data source actually covers.
@@ -163,10 +163,15 @@ async function alreadyLogged(matchId){
 async function main(){
   if(!FOOTBALL_DATA_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY){
     console.error('Missing a required environment variable (football-data / Supabase). Check your GitHub Secrets.');
+    console.error(`  FOOTBALL_DATA_API_KEY set: ${!!FOOTBALL_DATA_API_KEY}`);
+    console.error(`  SUPABASE_URL set: ${!!SUPABASE_URL}`);
+    console.error(`  SUPABASE_SERVICE_ROLE_KEY set: ${!!SUPABASE_SERVICE_ROLE_KEY}`);
     process.exit(1);
   }
   if(AI_PROVIDER === 'gemini' && !GEMINI_API_KEY){ console.error('AI_PROVIDER is gemini but GEMINI_API_KEY is not set.'); process.exit(1); }
   if(AI_PROVIDER === 'claude' && !ANTHROPIC_API_KEY){ console.error('AI_PROVIDER is claude but ANTHROPIC_API_KEY is not set.'); process.exit(1); }
+
+  supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   console.log(`Using AI provider: ${AI_PROVIDER}`);
 
