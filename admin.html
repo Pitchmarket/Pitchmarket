@@ -60,6 +60,11 @@ main{ padding:24px 32px 60px; max-width:1200px; margin:0 auto; }
 .live-tabs-label{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
 .live-tabs-pills{ display:flex; gap:8px; flex-wrap:wrap; }
 .live-tab-pill{ font-family:'JetBrains Mono'; font-size:11.5px; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:6px 13px; color:var(--chalk); }
+.order-row{ display:flex; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:9px 12px; margin-bottom:6px; }
+.order-label{ font-size:13px; font-weight:600; }
+.order-btns{ display:flex; gap:4px; }
+.order-up, .order-down{ background:var(--panel2); border:1px solid var(--border); color:var(--chalk); width:26px; height:26px; border-radius:3px; cursor:pointer; font-size:13px; }
+.order-up:disabled, .order-down:disabled{ opacity:0.3; cursor:default; }
 
 /* ===== Teams table ===== */
 table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
@@ -269,8 +274,10 @@ tbody tr:last-child td{ border-bottom:none; }
       </div>
 
       <div class="live-tabs-row">
-        <div class="live-tabs-label">Tabs currently live on your site</div>
-        <div class="live-tabs-pills" id="liveTabsPills"></div>
+        <div class="live-tabs-label">League order on your site — use the arrows to rearrange, then Save</div>
+        <div id="leagueOrderList"></div>
+        <button class="add-item-btn" type="button" id="saveLeagueOrderBtn" style="margin-top:10px;">Save order</button>
+        <span class="add-status" id="leagueOrderStatus" style="display:block; margin-top:8px;"></span>
       </div>
 
       <div class="add-card">
@@ -352,6 +359,15 @@ tbody tr:last-child td{ border-bottom:none; }
       <div class="editor-block" data-key="indices" data-isarray="true">
         <div class="editor-block-head"><div class="editor-block-label">Market index cards</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
         <div class="editor-frame" id="indicesEditor"></div>
+      </div>
+
+      <!-- LEAGUE ORDER -->
+      <div class="editor-block" data-key="league_order" data-isarray="true">
+        <div class="editor-block-head"><div class="editor-block-label">League tab order</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame">
+          <div class="ck-desc" style="margin-bottom:12px;">Raw JSON array of league keys, in the order tabs should appear on the live site (matches the "League key" field from the Teams & Leagues tab). Any league not listed here just gets added to the end automatically.</div>
+          <textarea class="json" id="rawLeagueOrder" rows="6" style="width:100%;"></textarea>
+        </div>
       </div>
 
       <!-- DISCLAIMER -->
@@ -491,18 +507,63 @@ document.querySelectorAll('.section-tab').forEach(tab=>{
 
 // ================= TEAMS & LEAGUES =================
 async function loadTeams(){
-  const { data, error } = await sb.from('teams').select('*').order('league').order('price', { ascending:false });
+  const { data, error } = await sb.from('teams').select('*').order('league_order').order('price', { ascending:false });
   if(error){ alert('Could not load teams: ' + error.message); return; }
   allTeams = data;
-  buildLiveTabsPills();
+  buildLeagueOrderList();
   buildFilters();
   renderRows();
 }
 
-function buildLiveTabsPills(){
-  const labels = [...new Set(allTeams.map(t=>t.league_label))];
-  document.getElementById('liveTabsPills').innerHTML = labels.map(l=>'<span class="live-tab-pill">'+l+'</span>').join('') || '<span class="live-tab-pill">No teams yet</span>';
+let leagueOrderList = [];
+function buildLeagueOrderList(){
+  const seen = new Map();
+  allTeams.forEach(t=>{ if(!seen.has(t.league)) seen.set(t.league, t.league_label); });
+  leagueOrderList = [...seen.entries()].map(([key,label])=>({key,label}));
+  renderLeagueOrderList();
 }
+
+function renderLeagueOrderList(){
+  const container = document.getElementById('leagueOrderList');
+  if(leagueOrderList.length === 0){
+    container.innerHTML = '<div style="color:var(--steel-dim); font-size:13px;">No teams yet.</div>';
+    return;
+  }
+  container.innerHTML = leagueOrderList.map((l,i)=>
+    '<div class="order-row" data-key="'+l.key+'">'+
+      '<span class="order-label">'+l.label+'</span>'+
+      '<div class="order-btns">'+
+        '<button class="order-up" type="button"'+(i===0?' disabled':'')+'>↑</button>'+
+        '<button class="order-down" type="button"'+(i===leagueOrderList.length-1?' disabled':'')+'>↓</button>'+
+      '</div>'+
+    '</div>'
+  ).join('');
+}
+
+document.getElementById('leagueOrderList').addEventListener('click', (e)=>{
+  const row = e.target.closest('.order-row');
+  if(!row) return;
+  const idx = leagueOrderList.findIndex(l=>l.key===row.dataset.key);
+  if(e.target.classList.contains('order-up') && idx > 0){
+    [leagueOrderList[idx-1], leagueOrderList[idx]] = [leagueOrderList[idx], leagueOrderList[idx-1]];
+    renderLeagueOrderList();
+  } else if(e.target.classList.contains('order-down') && idx < leagueOrderList.length-1){
+    [leagueOrderList[idx+1], leagueOrderList[idx]] = [leagueOrderList[idx], leagueOrderList[idx+1]];
+    renderLeagueOrderList();
+  }
+});
+
+document.getElementById('saveLeagueOrderBtn').addEventListener('click', async ()=>{
+  const status = document.getElementById('leagueOrderStatus');
+  status.textContent = 'Saving…'; status.className = 'add-status';
+  for(let i=0; i<leagueOrderList.length; i++){
+    const { error } = await sb.from('teams').update({ league_order: (i+1)*10 }).eq('league', leagueOrderList[i].key);
+    if(error){ status.textContent = 'Failed: ' + error.message; status.className = 'add-status err'; return; }
+  }
+  status.textContent = 'Saved ✓ — order updated on your live site.'; status.className = 'add-status ok';
+  setTimeout(()=>status.textContent='', 3000);
+  loadTeams();
+});
 
 function buildFilters(){
   const leagueKeys = ['all', ...new Set(allTeams.map(t=>t.league))];
