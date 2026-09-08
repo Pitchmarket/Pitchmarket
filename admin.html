@@ -398,6 +398,11 @@ tbody tr:last-child td{ border-bottom:none; }
 <script>
 let sb, currentLeague = 'all', allTeams = [];
 
+// Escaping helpers — club names contain quotes and accents (e.g. Bodø/Glimt,
+// Atlético) that would otherwise break out of HTML attributes or markup.
+function escHtml(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return escHtml(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
 const settingsDefaults = {
   hero: { eyebrow:'LIVE MARKET · 47,208 traders online', line1:'Every club', line2:'has a price.', line3:'Trade the table.',
     subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
@@ -579,7 +584,10 @@ function renderRows(){
   const rows = currentLeague==='all' ? allTeams : allTeams.filter(t=>t.league===currentLeague);
   document.getElementById('teamRows').innerHTML = rows.map(t=>
     '<tr data-id="'+t.id+'">'+
-      '<td><div class="t-name">'+t.name+'</div><div class="t-league">'+t.league_label+' · '+t.tier+'</div></td>'+
+      '<td>'+
+        '<input class="edit-input name-input" value="'+escAttr(t.name)+'" style="width:190px; font-weight:600;">'+
+        '<div class="t-league" style="margin-top:4px;">'+escHtml(t.league_label)+' · <input class="edit-input tier-input" value="'+escAttr(t.tier)+'" style="width:150px; font-size:11px; padding:3px 6px;"></div>'+
+      '</td>'+
       '<td><input class="edit-input mono price-input" value="'+t.price+'" step="0.01"></td>'+
       '<td><input class="edit-input mono chg-input" value="'+t.chg+'" step="0.1"></td>'+
       '<td><button class="save-btn">Save</button><button class="del-btn">Delete</button><span class="row-status"></span></td>'+
@@ -589,11 +597,14 @@ function renderRows(){
     btn.addEventListener('click', async (e)=>{
       const tr = e.target.closest('tr');
       const id = tr.dataset.id;
+      const name = tr.querySelector('.name-input').value.trim();
+      const tier = tr.querySelector('.tier-input').value.trim();
       const price = parseFloat(tr.querySelector('.price-input').value);
       const chg = parseFloat(tr.querySelector('.chg-input').value);
       const status = tr.querySelector('.row-status');
+      if(!name){ status.textContent = 'Name cannot be empty.'; status.className='row-status err'; return; }
       btn.disabled = true; status.textContent='Saving…'; status.className='row-status';
-      const { error } = await sb.from('teams').update({ price, chg, updated_at: new Date().toISOString() }).eq('id', id);
+      const { error } = await sb.from('teams').update({ name, tier, price, chg, updated_at: new Date().toISOString() }).eq('id', id);
       btn.disabled = false;
       if(error){ status.textContent = 'Failed: ' + error.message; status.className='row-status err'; }
       else { status.textContent = 'Saved ✓'; status.className='row-status ok'; setTimeout(()=>status.textContent='',2000); }
@@ -603,7 +614,7 @@ function renderRows(){
     btn.addEventListener('click', async (e)=>{
       const tr = e.target.closest('tr');
       const id = tr.dataset.id;
-      const name = tr.querySelector('.t-name').textContent;
+      const name = tr.querySelector('.name-input').value;
       if(!confirm('Delete "'+name+'" from the live site? This cannot be undone.')) return;
       btn.disabled = true;
       const { error } = await sb.from('teams').delete().eq('id', id);
@@ -625,7 +636,12 @@ document.getElementById('addTeamBtn').addEventListener('click', async ()=>{
     status.textContent = 'Fill in every field (chg can stay 0).'; status.className='add-status err'; return;
   }
   const isNewLeague = !allTeams.some(t=>t.league===league);
-  const { error } = await sb.from('teams').insert({ name, league, league_label, tier, price, chg });
+  // Inherit the league's existing sort position so newly added teams slot
+  // into the right tab order instead of defaulting to 999 and sorting last.
+  const existing = allTeams.find(t=>t.league===league);
+  const maxOrder = allTeams.reduce((m,t)=> t.league_order && t.league_order < 999 ? Math.max(m, t.league_order) : m, 0);
+  const league_order = existing ? existing.league_order : maxOrder + 10;
+  const { error } = await sb.from('teams').insert({ name, league, league_label, tier, price, chg, league_order });
   if(error){ status.textContent = 'Failed: ' + error.message; status.className='add-status err'; return; }
   status.textContent = isNewLeague
     ? '✓ Added — new tab "'+league_label+'" now live on your site.'
