@@ -49,23 +49,90 @@ const COMPETITIONS = {
   BL1: 'bundesliga',
   FL1: 'ligue1',
   CL:  'championsleague',
+  ELC: 'championship',   // English Championship
+  PPL: 'portugal',       // Primeira Liga
+  DED: 'eredivisie',     // Eredivisie
+  BSA: 'brazil',         // Brasileirão Série A
 };
 
 // football-data.org team names -> the exact names stored in your
 // teams table. Extend this if a team isn't matching — the script
 // logs any name it can't resolve so you know what to add.
+//
+// Only names that DIFFER need an entry. normalize() already strips
+// FC/CF/AFC suffixes, so "Middlesbrough FC" matches "Middlesbrough"
+// on its own. The entries below are for genuinely different strings —
+// mostly where your site uses a short name ("Wolves") and the data
+// feed uses the full official one ("Wolverhampton Wanderers FC").
 const NAME_ALIASES = {
+  // Premier League
   'Manchester City FC': 'Manchester City', 'Arsenal FC': 'Arsenal', 'Liverpool FC': 'Liverpool',
   'Manchester United FC': 'Manchester United', 'Chelsea FC': 'Chelsea', 'Tottenham Hotspur FC': 'Tottenham Hotspur',
   'Newcastle United FC': 'Newcastle United', 'Aston Villa FC': 'Aston Villa',
+  'Brighton & Hove Albion FC': 'Brighton', 'Nottingham Forest FC': 'Nottm Forest',
+  'Crystal Palace FC': 'Crystal Palace', 'Wolverhampton Wanderers FC': 'Wolves',
+  'Ipswich Town FC': 'Ipswich Town', 'Hull City AFC': 'Hull', 'Coventry City FC': 'Coventry',
+  'Leeds United FC': 'Leeds', 'Sunderland AFC': 'Sunderland', 'Everton FC': 'Everton',
+  'Brentford FC': 'Brentford', 'Fulham FC': 'Fulham', 'AFC Bournemouth': 'Bournemouth',
+  // La Liga
   'Real Madrid CF': 'Real Madrid', 'FC Barcelona': 'Barcelona', 'Club Atlético de Madrid': 'Atlético Madrid',
   'Athletic Club': 'Athletic Bilbao', 'Real Sociedad de Fútbol': 'Real Sociedad', 'Villarreal CF': 'Villarreal',
+  'Real Betis Balompié': 'Betis', 'Sevilla FC': 'Sevilla', 'Valencia CF': 'Valencia',
+  'RC Celta de Vigo': 'Celta', 'Rayo Vallecano de Madrid': 'Rayo Vallecano', 'Getafe CF': 'Getafe',
+  'RCD Espanyol de Barcelona': 'Espanyol', 'Deportivo Alavés': 'Alavés', 'Levante UD': 'Levante',
+  'CA Osasuna': 'Osasuna', 'Elche CF': 'Elche', 'RC Deportivo de La Coruña': 'Deportivo',
+  'Real Racing Club': 'Racing Santander', 'Málaga CF': 'Málaga',
+  // Serie A
   'FC Internazionale Milano': 'Inter Milan', 'AC Milan': 'AC Milan', 'Juventus FC': 'Juventus',
   'SSC Napoli': 'Napoli', 'AS Roma': 'AS Roma', 'Atalanta BC': 'Atalanta',
+  'SS Lazio': 'Lazio', 'ACF Fiorentina': 'Fiorentina', 'Bologna FC 1909': 'Bologna',
+  'Torino FC': 'Torino', 'Udinese Calcio': 'Udinese', 'Genoa CFC': 'Genoa',
+  'US Sassuolo Calcio': 'Sassuolo', 'Cagliari Calcio': 'Cagliari', 'Parma Calcio 1913': 'Parma',
+  'US Lecce': 'Lecce', 'AC Monza': 'Monza', 'Como 1907': 'Como',
+  'Venezia FC': 'Venezia', 'Frosinone Calcio': 'Frosinone',
+  // Bundesliga
   'FC Bayern München': 'Bayern Munich', 'Borussia Dortmund': 'Borussia Dortmund', 'Bayer 04 Leverkusen': 'Bayer Leverkusen',
   'RB Leipzig': 'RB Leipzig', 'Eintracht Frankfurt': 'Eintracht Frankfurt', 'VfB Stuttgart': 'VfB Stuttgart',
+  'TSG 1899 Hoffenheim': 'Hoffenheim', 'Sport-Club Freiburg': 'Freiburg',
+  'Borussia Mönchengladbach': 'Mönchengladbach', 'SV Werder Bremen': 'Werder',
+  '1. FC Union Berlin': 'Union Berlin', '1. FSV Mainz 05': 'Mainz', 'FC Augsburg': 'Augsburg',
+  'Hamburger SV': 'Hamburg', '1. FC Köln': 'Köln', 'FC Schalke 04': 'Schalke',
+  'SC Paderborn 07': 'Paderborn', 'SV 07 Elversberg': 'SV Elversberg',
+  // Ligue 1
   'Paris Saint-Germain FC': 'Paris Saint-Germain', 'Olympique de Marseille': 'Marseille', 'AS Monaco FC': 'Monaco',
   'Olympique Lyonnais': 'Lyon', 'LOSC Lille': 'Lille', 'OGC Nice': 'Nice',
+  'Racing Club de Lens': 'Lens', 'Stade Rennais FC 1901': 'Rennes',
+  'Racing Club de Strasbourg Alsace': 'Strasbourg', 'Toulouse FC': 'Toulouse',
+  'Paris FC': 'Paris FC', 'FC Lorient': 'Lorient', 'Stade Brestois 29': 'Brest',
+  'Angers SCO': 'Angers', 'Le Havre AC': 'Le Havre', 'AJ Auxerre': 'Auxerre',
+  'ES Troyes AC': 'Troyes', 'Le Mans FC': 'Le Mans',
+  // Championship
+  'West Ham United FC': 'West Ham', 'Middlesbrough FC': 'Middlesbrough',
+  'Southampton FC': 'Southampton', 'Norwich City FC': 'Norwich City',
+  'Burnley FC': 'Burnley', 'Millwall FC': 'Millwall', 'Sheffield United FC': 'Sheffield United',
+  'Derby County FC': 'Derby County', 'Bristol City FC': 'Bristol City', 'Wrexham AFC': 'Wrexham',
+  'Queens Park Rangers FC': 'QPR', 'Swansea City AFC': 'Swansea',
+  'Birmingham City FC': 'Birmingham', 'West Bromwich Albion FC': 'West Bromwich Albion',
+  'Watford FC': 'Watford', 'Portsmouth FC': 'Portsmouth', 'Cardiff City FC': 'Cardiff City',
+  'Blackburn Rovers FC': 'Blackburn Rovers', 'Stoke City FC': 'Stoke City',
+  'Preston North End FC': 'Preston', 'Bolton Wanderers FC': 'Bolton',
+  'Charlton Athletic FC': 'Charlton', 'Lincoln City FC': 'Lincoln City',
+  // Primeira Liga
+  'Sport Lisboa e Benfica': 'Benfica', 'FC Porto': 'FC Porto',
+  'Sporting Clube de Portugal': 'Sporting CP', 'Sporting Clube de Braga': 'Sporting Braga',
+  'Vitória SC': 'Vitória SC', 'FC Famalicão': 'Famalicão',
+  // Eredivisie
+  'AFC Ajax': 'Ajax', 'PSV': 'PSV Eindhoven', 'Feyenoord Rotterdam': 'Feyenoord',
+  'AZ': 'AZ Alkmaar', 'FC Twente \'65': 'FC Twente', 'FC Utrecht': 'FC Utrecht',
+  // Brazil Série A
+  'CR Flamengo': 'Flamengo', 'SE Palmeiras': 'Palmeiras', 'São Paulo FC': 'São Paulo',
+  'SC Corinthians Paulista': 'Corinthians', 'Fluminense FC': 'Fluminense',
+  'Grêmio FBPA': 'Grêmio', 'CA Mineiro': 'Atlético Mineiro', 'Clube Atlético Mineiro': 'Atlético Mineiro',
+  'CA Paranaense': 'Athletico-PR', 'Club Athletico Paranaense': 'Athletico-PR',
+  'Cruzeiro EC': 'Cruzeiro', 'EC Bahia': 'Bahia', 'RB Bragantino': 'Bragantino',
+  'Coritiba FBC': 'Coritiba', 'Botafogo FR': 'Botafogo', 'EC Vitória': 'Vitória',
+  'Santos FC': 'Santos', 'SC Internacional': 'Internacional', 'Mirassol FC': 'Mirassol',
+  'Clube do Remo': 'Remo', 'CR Vasco da Gama': 'Vasco', 'Associação Chapecoense de Futebol': 'Chapecoense',
 };
 
 function normalize(name){
