@@ -260,6 +260,11 @@ td.spark-cell{ width:100px; }
 .m-field label{ display:block; font-size:11px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
 .m-field input{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; color:var(--chalk); font-size:14px; font-family:inherit; }
 .m-field input:focus{ outline:none; border-color:var(--surge); }
+.pw-wrap{ position:relative; }
+.pw-wrap input{ padding-right:42px; }
+.pw-toggle{ position:absolute; top:50%; right:6px; transform:translateY(-50%); background:none; border:none; color:var(--steel); cursor:pointer; padding:6px; display:flex; align-items:center; border-radius:3px; }
+.pw-toggle:hover{ color:var(--chalk); }
+.pw-toggle:focus-visible{ outline:1px solid var(--surge); }
 .m-btn{ width:100%; padding:11px; border-radius:4px; font-weight:700; font-size:14px; border:none; cursor:pointer; margin-top:4px; }
 .m-btn.primary{ background:var(--surge); color:#04241A; }
 .m-btn.ghost{ background:none; border:1px solid var(--border); color:var(--chalk); margin-top:8px; }
@@ -575,7 +580,15 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
     <div class="sub">Trade with 2,000 free Fan Coins to start. No cash value, ever.</div>
     <div class="m-msg" id="authMsg"></div>
     <div class="m-field"><label>Email</label><input id="authEmail" type="email" placeholder="you@example.com"></div>
-    <div class="m-field"><label>Password</label><input id="authPassword" type="password" placeholder="••••••••"></div>
+    <div class="m-field"><label>Password</label>
+      <div class="pw-wrap">
+        <input id="authPassword" type="password" placeholder="••••••••">
+        <button type="button" class="pw-toggle" id="authPwToggle" aria-label="Show password" title="Show password">
+          <svg class="pw-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="pw-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2"/><path d="M6.6 6.6A17.4 17.4 0 0 0 2 12s3.5 7 10 7a10.4 10.4 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+        </button>
+      </div>
+    </div>
     <button class="m-btn primary" id="authSubmit">Sign in</button>
     <div class="m-toggle">No account? <a id="authToggle">Create one</a></div>
   </div>
@@ -595,8 +608,15 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <button class="trade-tab sell" id="tabSell">Sell</button>
     </div>
     <div class="m-msg" id="tradeMsg"></div>
-    <div class="m-field"><label>Quantity</label><input id="tradeQty" type="number" min="1" step="1" value="10"></div>
+    <div class="m-field">
+      <label>Quantity <span id="tradeMaxHint" style="float:right; text-transform:none; letter-spacing:0; color:var(--steel);"></span></label>
+      <div style="display:flex; gap:8px;">
+        <input id="tradeQty" type="number" min="1" step="1" value="10" style="flex:1;">
+        <button type="button" id="tradeMaxBtn" style="background:none; border:1px solid var(--border); color:var(--steel); border-radius:4px; padding:0 14px; font-size:12px; cursor:pointer; font-family:'JetBrains Mono';">Max</button>
+      </div>
+    </div>
     <div class="trade-cost"><span>Estimated total</span><b id="tradeCost">—</b></div>
+    <div class="trade-cost" id="tradeAvailRow"><span id="tradeAvailLabel">Available</span><b id="tradeAvail">—</b></div>
     <button class="m-btn primary" id="tradeSubmit">Confirm Buy</button>
   </div>
 </div>
@@ -1111,10 +1131,10 @@ async function loadPortfolio(){
 
 // Sell straight from the portfolio — reuses the same trade modal, opened
 // on the sell tab so the flow is identical to selling from the market.
-document.getElementById('portfolioBody').addEventListener('click', (e)=>{
+document.getElementById('portfolioBody').addEventListener('click', async (e)=>{
   const btn = e.target.closest('.sell-btn');
   if(!btn) return;
-  openTrade(btn.dataset.id, btn.dataset.name, btn.dataset.price);
+  await openTrade(btn.dataset.id, btn.dataset.name, btn.dataset.price);
   document.getElementById('tabSell').click();
 });
 
@@ -1180,7 +1200,23 @@ async function loadLeaderboard(){
 // ----- Auth modal wiring -----
 const authOverlay = document.getElementById('authOverlay');
 function openAuth(){ authOverlay.classList.add('open'); }
-function closeAuth(){ authOverlay.classList.remove('open'); document.getElementById('authMsg').className='m-msg'; }
+function setPasswordVisible(visible){
+  const input = document.getElementById('authPassword');
+  const btn = document.getElementById('authPwToggle');
+  input.type = visible ? 'text' : 'password';
+  btn.querySelector('.pw-eye').style.display = visible ? 'none' : '';
+  btn.querySelector('.pw-eye-off').style.display = visible ? '' : 'none';
+  const label = visible ? 'Hide password' : 'Show password';
+  btn.setAttribute('aria-label', label);
+  btn.title = label;
+}
+document.getElementById('authPwToggle').addEventListener('click', ()=>{
+  const input = document.getElementById('authPassword');
+  setPasswordVisible(input.type === 'password');
+  input.focus();
+});
+// Always re-hide on close, so a password is never left showing on screen.
+function closeAuth(){ authOverlay.classList.remove('open'); document.getElementById('authMsg').className='m-msg'; setPasswordVisible(false); }
 document.getElementById('authClose').addEventListener('click', closeAuth);
 document.getElementById('authOverlay').addEventListener('click', (e)=>{ if(e.target===authOverlay) closeAuth(); });
 
@@ -1216,7 +1252,9 @@ document.getElementById('authSubmit').addEventListener('click', async ()=>{
 
 // ----- Trade modal wiring -----
 const tradeOverlay = document.getElementById('tradeOverlay');
-function openTrade(id, name, price){
+let tradeHeldShares = 0;
+
+async function openTrade(id, name, price){
   if(!currentSession){ openAuth(); return; }
   tradeTeam = { id, name, price: parseFloat(price) };
   tradeSide = 'buy';
@@ -1226,9 +1264,19 @@ function openTrade(id, name, price){
   document.getElementById('tabSell').classList.remove('active','sell');
   document.getElementById('tradeQty').value = 10;
   document.getElementById('tradeMsg').className = 'm-msg';
-  updateTradeCost();
   document.getElementById('tradeSubmit').textContent = 'Confirm Buy';
   tradeOverlay.classList.add('open');
+
+  // Pull the freshest cash balance and this team's holding, so the caps
+  // reflect reality rather than whatever was cached from an earlier trade.
+  tradeHeldShares = 0;
+  const [{ data: prof }, { data: hold }] = await Promise.all([
+    sb.from('profiles').select('coin_balance').eq('id', currentSession.user.id).single(),
+    sb.from('holdings').select('shares').eq('user_id', currentSession.user.id).eq('team_id', id).maybeSingle(),
+  ]);
+  if(prof) currentCash = Number(prof.coin_balance) || 0;
+  if(hold) tradeHeldShares = Number(hold.shares) || 0;
+  updateTradeCost();
 }
 function closeTrade(){ tradeOverlay.classList.remove('open'); }
 document.getElementById('tradeClose').addEventListener('click', closeTrade);
@@ -1239,19 +1287,65 @@ document.getElementById('tabBuy').addEventListener('click', ()=>{
   document.getElementById('tabBuy').classList.add('active','buy');
   document.getElementById('tabSell').classList.remove('active','sell');
   document.getElementById('tradeSubmit').textContent='Confirm Buy';
+  updateTradeCost();
 });
 document.getElementById('tabSell').addEventListener('click', ()=>{
   tradeSide='sell';
   document.getElementById('tabSell').classList.add('active','sell');
   document.getElementById('tabBuy').classList.remove('active','buy');
   document.getElementById('tradeSubmit').textContent='Confirm Sell';
+  updateTradeCost();
 });
+
+// The most you can trade right now: on buy, whatever your cash affords;
+// on sell, whatever you actually hold.
+function maxTradeQty(){
+  if(!tradeTeam) return 0;
+  if(tradeSide === 'sell') return tradeHeldShares;
+  return tradeTeam.price > 0 ? Math.floor(currentCash / tradeTeam.price) : 0;
+}
+
 function updateTradeCost(){
   if(!tradeTeam) return;
-  const qty = parseFloat(document.getElementById('tradeQty').value) || 0;
-  document.getElementById('tradeCost').innerHTML = '<span class="coin-ic"></span>' + (qty*tradeTeam.price).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  const input = document.getElementById('tradeQty');
+  const qty = parseFloat(input.value) || 0;
+  const max = maxTradeQty();
+  const cost = qty * tradeTeam.price;
+  const submit = document.getElementById('tradeSubmit');
+  const msg = document.getElementById('tradeMsg');
+
+  input.max = max;
+  document.getElementById('tradeCost').innerHTML = '<span class="coin-ic"></span>' + cost.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('tradeMaxHint').textContent = 'max ' + max.toLocaleString();
+
+  if(tradeSide === 'sell'){
+    document.getElementById('tradeAvailLabel').textContent = 'Shares held';
+    document.getElementById('tradeAvail').innerHTML = tradeHeldShares.toLocaleString();
+  } else {
+    document.getElementById('tradeAvailLabel').textContent = 'Your balance';
+    document.getElementById('tradeAvail').innerHTML = coin(currentCash);
+  }
+
+  // Block the submit rather than let the database reject it — clearer to the
+  // person, and stops a confusing "nothing happened" when they overreach.
+  let problem = '';
+  if(qty <= 0) problem = 'Enter a quantity greater than zero.';
+  else if(tradeSide === 'buy' && cost > currentCash) problem = 'That costs more Fan Coins than you have.';
+  else if(tradeSide === 'sell' && qty > tradeHeldShares) problem = 'You do not own that many shares.';
+
+  if(problem){
+    submit.disabled = true; submit.style.opacity = '0.5'; submit.style.cursor = 'default';
+    msg.textContent = problem; msg.className = 'm-msg err';
+  } else {
+    submit.disabled = false; submit.style.opacity = ''; submit.style.cursor = '';
+    msg.className = 'm-msg';
+  }
 }
 document.getElementById('tradeQty').addEventListener('input', updateTradeCost);
+document.getElementById('tradeMaxBtn').addEventListener('click', ()=>{
+  document.getElementById('tradeQty').value = maxTradeQty();
+  updateTradeCost();
+});
 
 // delegated click for every "Trade" button across all league tables
 tableBody.addEventListener('click', (e)=>{
