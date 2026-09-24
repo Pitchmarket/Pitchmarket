@@ -37,6 +37,10 @@ const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+// How many days back to check for finished matches. Default 3 is plenty
+// for the 6-hourly schedule. Raise it temporarily (e.g. LOOKBACK_DAYS=14)
+// for a one-off catch-up run after fixing team name aliases.
+const LOOKBACK_DAYS = parseInt(process.env.LOOKBACK_DAYS || '3', 10);
 
 let supabase; // created inside main(), after the required-variable check below
 
@@ -222,9 +226,21 @@ async function findTeamRow(league, teamName, isUCL){
   }) || null;
 }
 
+// A match counts as "already handled" only if it produced a real result.
+// Rows marked 'skipped' (no team matched, or the AI call failed) are
+// deliberately NOT counted, so that once you add a missing alias the
+// next run picks those matches up again instead of ignoring them forever.
 async function alreadyLogged(matchId){
-  const { data } = await supabase.from('match_events').select('id').eq('source_match_id', String(matchId)).maybeSingle();
-  return !!data;
+  const { data } = await supabase.from('match_events')
+    .select('id, status').eq('source_match_id', String(matchId)).maybeSingle();
+  return !!data && data.status !== 'skipped';
+}
+
+// Clear out a previous 'skipped' row for this match so the retry can
+// insert a fresh one (source_match_id is unique, so the old row must go).
+async function clearSkipped(matchId){
+  await supabase.from('match_events').delete()
+    .eq('source_match_id', String(matchId)).eq('status', 'skipped');
 }
 
 async function main(){
@@ -244,7 +260,7 @@ async function main(){
 
   const now = new Date();
   const dateTo = now.toISOString().slice(0,10);
-  const dateFrom = new Date(now.getTime() - 3*24*60*60*1000).toISOString().slice(0,10); // 3-day lookback, safety margin over the run schedule
+  const dateFrom = new Date(now.getTime() - LOOKBACK_DAYS*24*60*60*1000).toISOString().slice(0,10);
 
   for(const [code, leagueKey] of Object.entries(COMPETITIONS)){
     console.log(`\nChecking ${code} (${leagueKey})...`);
@@ -254,6 +270,9 @@ async function main(){
     for(const match of matches){
       const matchId = String(match.id);
       if(await alreadyLogged(matchId)){ continue; }
+      // If this match was skipped on an earlier run, remove that row so the
+      // retry below can insert fresh (source_match_id is unique).
+      await clearSkipped(matchId);
 
       const homeScore = match.score?.fullTime?.home;
       const awayScore = match.score?.fullTime?.away;

@@ -1,0 +1,41 @@
+name: Update PitchMarket prices
+
+"on":
+  schedule:
+    # Runs at minute 0 past every 6th hour (UTC). Change the "*/6" to
+    # run more or less often — e.g. "*/3" for every 3 hours.
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: 'How many days back to check (use 14 for a catch-up run after fixing team names)'
+        required: false
+        default: '3'
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run price updater
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          AI_PROVIDER: gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '3' }}
+          # To switch to Claude later: change AI_PROVIDER above to "claude",
+          # add an ANTHROPIC_API_KEY secret, and uncomment the line below.
+          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node update-prices.js
