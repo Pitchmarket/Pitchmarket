@@ -294,6 +294,49 @@ td.spark-cell{ width:100px; }
 .sell-btn:hover{ border-color:var(--drop); color:var(--drop); }
 @media(max-width:860px){ .pf-summary{ grid-template-columns:repeat(2,1fr); } }
 
+/* ===== Watchlist ===== */
+.wl-bar{ display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+.wl-slots{ font-family:'JetBrains Mono'; font-size:12px; color:var(--steel); display:flex; align-items:center; gap:8px; }
+.wl-plan{ font-size:10px; font-weight:700; padding:2px 7px; border-radius:3px; background:var(--panel2); color:var(--steel-dim); letter-spacing:.04em; }
+.wl-plan.pro{ background:var(--gilt); color:#241906; }
+.wl-plan.ultimate{ background:linear-gradient(90deg,#E7B54B,#F5D687); color:#241906; }
+.wl-add{ display:flex; gap:8px; }
+.wl-add select{ background:var(--panel); border:1px solid var(--border); color:var(--chalk); border-radius:4px; padding:8px 10px; font-size:13px; font-family:inherit; min-width:220px; }
+.wl-add select:focus{ outline:none; border-color:var(--surge); }
+.wl-add button{ background:var(--surge); color:#04241A; border:none; border-radius:4px; padding:8px 18px; font-weight:700; font-size:13px; cursor:pointer; }
+.wl-msg{ font-size:12.5px; margin-bottom:14px; min-height:16px; }
+.wl-msg.err{ color:var(--drop); }
+.wl-msg.ok{ color:var(--surge); }
+
+.wl-card{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px 22px; margin-bottom:14px; display:grid; grid-template-columns:1fr 300px; gap:26px; align-items:start; }
+.wl-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:12px; }
+.wl-name{ font-size:18px; font-weight:600; }
+.wl-meta{ font-size:11.5px; color:var(--steel-dim); margin-bottom:12px; }
+.wl-price-row{ display:flex; align-items:baseline; gap:12px; margin-bottom:14px; }
+.wl-price{ font-family:'JetBrains Mono'; font-size:26px; font-weight:700; }
+.wl-remove{ background:none; border:1px solid var(--border); color:var(--steel-dim); border-radius:4px; width:26px; height:26px; cursor:pointer; font-size:14px; line-height:1; flex-shrink:0; }
+.wl-remove:hover{ border-color:var(--drop); color:var(--drop); }
+.wl-form{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.wl-field label{ display:block; font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.wl-field input{ width:110px; background:var(--bg); border:1px solid var(--border); color:var(--chalk); border-radius:4px; padding:7px 9px; font-size:13px; font-family:'JetBrains Mono'; }
+.wl-field input:focus{ outline:none; border-color:var(--surge); }
+.wl-save{ background:none; border:1px solid var(--surge); color:var(--surge); border-radius:4px; padding:7px 14px; font-size:12px; cursor:pointer; font-weight:600; }
+.wl-save-status{ font-size:11.5px; margin-left:8px; }
+.wl-chart-wrap{ position:relative; height:150px; }
+.wl-chart-empty{ display:flex; align-items:center; justify-content:center; height:150px; border:1px dashed var(--border); border-radius:6px; color:var(--steel-dim); font-size:12px; text-align:center; padding:0 18px; }
+.wl-form-strip{ display:flex; gap:4px; margin-top:8px; }
+.wl-res{ width:20px; height:20px; border-radius:3px; font-size:10.5px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono'; }
+.wl-res.W{ background:rgba(23,217,163,0.16); color:var(--surge); }
+.wl-res.D{ background:var(--panel2); color:var(--steel); }
+.wl-res.L{ background:rgba(255,92,85,0.16); color:var(--drop); }
+.wl-empty{ color:var(--steel-dim); font-size:13.5px; padding:26px 0; text-align:center; border:1px dashed var(--border); border-radius:8px; }
+.wl-alert{ background:rgba(255,92,85,0.1); border:1px solid var(--drop); color:var(--drop); font-size:13px; padding:11px 16px; border-radius:6px; margin-bottom:12px; }
+.wl-alert.above{ background:rgba(23,217,163,0.1); border-color:var(--surge); color:var(--surge); }
+.star-btn{ background:none; border:none; color:var(--steel-dim); cursor:pointer; font-size:15px; padding:2px 6px; line-height:1; }
+.star-btn:hover{ color:var(--gilt); }
+.star-btn.on{ color:var(--gilt); }
+@media(max-width:860px){ .wl-card{ grid-template-columns:1fr; } .wl-chart-wrap{ height:130px; } }
+
 /* ===== Leaderboard ===== */
 .lb-rules{ display:flex; gap:14px; margin-bottom:22px; flex-wrap:wrap; }
 .lb-rule{ flex:1; min-width:200px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px 16px; font-size:13px; color:var(--steel); }
@@ -352,6 +395,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
       <a href="#markets">Markets</a>
       <a href="#spotlight">Spotlight</a>
       <a href="#portfolio" id="navPortfolio" style="display:none;">Portfolio</a>
+      <a href="#watchlist" id="navWatchlist" style="display:none;">Watchlist</a>
       <a href="#leaderboard">Leaderboard</a>
       <a href="#pro">Go Pro</a>
     </div>
@@ -507,6 +551,32 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
     </thead>
     <tbody id="portfolioBody"></tbody>
   </table>
+</section>
+
+<section id="watchlist" style="display:none;">
+  <div class="sec-head">
+    <div>
+      <div class="sec-eyebrow">TRACKED TEAMS</div>
+      <div class="sec-title display">Watchlist</div>
+    </div>
+    <div class="sec-desc">Follow any team, see how its price moved across its last five matches, and set the level you want to be alerted at.</div>
+  </div>
+
+  <div id="wlAlerts"></div>
+
+  <div class="wl-bar">
+    <div class="wl-slots">
+      <span id="wlSlotText">—</span>
+      <span class="wl-plan" id="wlPlanTag"></span>
+    </div>
+    <div class="wl-add">
+      <select id="wlTeamSelect"><option value="">Add a team…</option></select>
+      <button id="wlAddBtn">Add</button>
+    </div>
+  </div>
+  <div class="wl-msg" id="wlMsg"></div>
+
+  <div id="wlList"></div>
 </section>
 
 <section id="leaderboard">
@@ -961,9 +1031,12 @@ function renderTable(key){
       '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
       '<td class="num mono">'+(Math.round(hash(t.name)%900+100))+'K</td>'+
-      '<td><button class="buy-btn" data-id="'+(t.id||'')+'" data-name="'+t.name+'" data-price="'+t.price+'">Trade</button></td>'+
+      '<td style="white-space:nowrap;"><button class="star-btn" data-id="'+(t.id||'')+'" title="Add to watchlist">☆</button>'+
+        '<button class="buy-btn" data-id="'+(t.id||'')+'" data-name="'+t.name+'" data-price="'+t.price+'">Trade</button></td>'+
     '</tr>';
   }).join('');
+  // Keep the ☆/★ state correct when switching league tabs
+  if(typeof renderStars === 'function') renderStars();
 }
 let leagueOrder = ['epl','laliga','seriea','bundesliga','ligue1','championsleague','europa','cups','portugal','eredivisie','championship','brazil','national'];
 
@@ -1027,20 +1100,28 @@ function updateAuthUI(){
     authBtn.textContent = 'Sign in to trade';
     document.getElementById('portfolio').style.display = 'none';
     document.getElementById('navPortfolio').style.display = 'none';
+    document.getElementById('watchlist').style.display = 'none';
+    document.getElementById('navWatchlist').style.display = 'none';
+    watchlistRows = [];
+    renderStars();
   }
 }
 
 let currentCash = 0;
+let currentIsPro = false, currentIsUltimate = false;
 
 async function refreshWallet(){
   if(!sb || !currentSession) return;
-  const { data, error } = await sb.from('profiles').select('coin_balance, is_pro, pro_expires_at').eq('id', currentSession.user.id).single();
+  const { data, error } = await sb.from('profiles').select('coin_balance, is_pro, is_ultimate, pro_expires_at').eq('id', currentSession.user.id).single();
   if(!error && data){
     currentCash = Number(data.coin_balance) || 0;
     document.getElementById('walletAmt').textContent = Math.round(data.coin_balance).toLocaleString();
-    const isPro = data.is_pro && (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
-    applyProStatus(isPro);
+    const notExpired = !data.pro_expires_at || new Date(data.pro_expires_at) > new Date();
+    currentIsUltimate = !!data.is_ultimate && notExpired;
+    currentIsPro = (!!data.is_pro || currentIsUltimate) && notExpired;
+    applyProStatus(currentIsPro);
     loadPortfolio();
+    loadWatchlist();
   }
 }
 
@@ -1136,6 +1217,258 @@ document.getElementById('portfolioBody').addEventListener('click', async (e)=>{
   if(!btn) return;
   await openTrade(btn.dataset.id, btn.dataset.name, btn.dataset.price);
   document.getElementById('tabSell').click();
+});
+
+// ============================================================
+// WATCHLIST
+// ============================================================
+let watchlistRows = [];
+const wlCharts = {};   // team_id -> Chart instance, so we can destroy on re-render
+
+function wlSlotLimit(){
+  if(currentIsUltimate) return Infinity;
+  if(currentIsPro) return 25;
+  return 5;
+}
+
+function populateTeamSelect(){
+  const sel = document.getElementById('wlTeamSelect');
+  const watched = new Set(watchlistRows.map(r=>r.team_id));
+  const opts = ['<option value="">Add a team…</option>'];
+  Object.values(leagues).forEach(l=>{
+    const available = l.teams.filter(t=> t.id && !watched.has(t.id));
+    if(available.length === 0) return;
+    opts.push('<optgroup label="'+l.label+'">');
+    available.forEach(t=>{ opts.push('<option value="'+t.id+'">'+t.name+'</option>'); });
+    opts.push('</optgroup>');
+  });
+  sel.innerHTML = opts.join('');
+}
+
+async function loadWatchlist(){
+  if(!sb || !currentSession) return;
+  document.getElementById('watchlist').style.display = 'block';
+  document.getElementById('navWatchlist').style.display = '';
+
+  const { data: rows, error } = await sb
+    .from('watchlist')
+    .select('id, team_id, alert_below, alert_above, teams(name, tier, league_label, price, chg)')
+    .eq('user_id', currentSession.user.id);
+
+  if(error){
+    document.getElementById('wlList').innerHTML = '<div class="wl-empty">Could not load your watchlist right now.</div>';
+    return;
+  }
+  watchlistRows = (rows || []).filter(r=>r.teams);
+
+  // Slot counter + plan tag
+  const limit = wlSlotLimit();
+  document.getElementById('wlSlotText').textContent =
+    watchlistRows.length + ' / ' + (limit === Infinity ? '∞' : limit) + ' slots used';
+  const tag = document.getElementById('wlPlanTag');
+  tag.textContent = currentIsUltimate ? 'ULTIMATE' : (currentIsPro ? 'PRO' : 'FREE');
+  tag.className = 'wl-plan ' + (currentIsUltimate ? 'ultimate' : (currentIsPro ? 'pro' : ''));
+
+  populateTeamSelect();
+  renderStars();
+
+  if(watchlistRows.length === 0){
+    document.getElementById('wlList').innerHTML = '<div class="wl-empty">No teams tracked yet. Add one above, or tap the ☆ next to any team in the Market Explorer.</div>';
+    document.getElementById('wlAlerts').innerHTML = '';
+    return;
+  }
+
+  // Pull real price history for the watched teams in one query, then
+  // slice each team's own last 5 matches out of it. This is what makes
+  // each graph genuinely different — it is that club's actual movement.
+  const ids = watchlistRows.map(r=>r.team_id);
+  const { data: history } = await sb
+    .from('price_history')
+    .select('team_id, price, delta_pct, label, result, changed_at, source')
+    .in('team_id', ids)
+    .order('changed_at', { ascending: true });
+
+  const byTeam = {};
+  (history || []).forEach(h=>{ (byTeam[h.team_id] = byTeam[h.team_id] || []).push(h); });
+
+  renderWatchlistCards(byTeam);
+  renderWatchAlerts();
+}
+
+function renderWatchlistCards(byTeam){
+  const list = document.getElementById('wlList');
+
+  list.innerHTML = watchlistRows.map(r=>{
+    const t = r.teams;
+    const up = Number(t.chg) >= 0;
+    const hist = byTeam[r.team_id] || [];
+    const matches = hist.filter(h=>h.source === 'match');
+    const hasChart = hist.length >= 2;
+
+    const formStrip = matches.slice(-5).map(m=>
+      '<span class="wl-res '+(m.result||'D')+'" title="'+(m.label||'')+'">'+(m.result||'-')+'</span>'
+    ).join('');
+
+    return '<div class="wl-card" data-team="'+r.team_id+'">'+
+      '<div>'+
+        '<div class="wl-head">'+
+          '<div>'+
+            '<div class="wl-name">'+t.name+'</div>'+
+            '<div class="wl-meta">'+t.league_label+' · '+t.tier+'</div>'+
+          '</div>'+
+          '<button class="wl-remove" title="Remove from watchlist">×</button>'+
+        '</div>'+
+        '<div class="wl-price-row">'+
+          '<span class="wl-price">'+coin(t.price)+'</span>'+
+          '<span class="chip '+(up?'up':'down')+'">'+fmtChg(t.chg)+'</span>'+
+        '</div>'+
+        (formStrip ? '<div class="wl-form-strip">'+formStrip+'</div>' : '')+
+        '<div class="wl-form" style="margin-top:16px;">'+
+          '<div class="wl-field"><label>Alert below</label>'+
+            '<input class="wl-below" type="number" step="0.01" value="'+(r.alert_below ?? '')+'" placeholder="—"></div>'+
+          '<div class="wl-field"><label>Alert above</label>'+
+            '<input class="wl-above" type="number" step="0.01" value="'+(r.alert_above ?? '')+'" placeholder="—"></div>'+
+          '<button class="wl-save">Save alerts</button>'+
+          '<span class="wl-save-status"></span>'+
+        '</div>'+
+      '</div>'+
+      '<div>'+
+        (hasChart
+          ? '<div class="wl-chart-wrap"><canvas id="wlChart_'+r.team_id+'"></canvas></div>'
+          : '<div class="wl-chart-empty">Price history starts building once this team\u2019s next result is approved.</div>')+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  // Draw each chart from that team's own history
+  watchlistRows.forEach(r=>{
+    const hist = (byTeam[r.team_id] || []);
+    if(hist.length < 2) return;
+    // Keep the starting point plus up to the last 5 match moves
+    const matches = hist.filter(h=>h.source === 'match').slice(-5);
+    const first = hist[0];
+    const points = matches.length ? [first, ...matches] : hist.slice(-6);
+
+    const canvas = document.getElementById('wlChart_'+r.team_id);
+    if(!canvas) return;
+    if(wlCharts[r.team_id]) wlCharts[r.team_id].destroy();
+
+    const values = points.map(p=>Number(p.price));
+    const rising = values[values.length-1] >= values[0];
+    const color = rising ? '#17D9A3' : '#FF5C55';
+
+    wlCharts[r.team_id] = new Chart(canvas, {
+      type:'line',
+      data:{
+        labels: points.map(p=> p.source === 'seed' ? 'Start' : (p.label || '').slice(0, 18)),
+        datasets:[{ data: values, borderColor: color, borderWidth:2, pointRadius:3,
+          pointBackgroundColor: color, tension:0.3, fill:true,
+          backgroundColor: rising ? 'rgba(23,217,163,0.08)' : 'rgba(255,92,85,0.08)' }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false},
+          tooltip:{ backgroundColor:'#101E19', borderColor:'#213027', borderWidth:1,
+            titleColor:'#7E9089', bodyColor:'#EEF3EE',
+            callbacks:{ label:(ctx)=>{
+              const p = points[ctx.dataIndex];
+              const d = p.delta_pct != null && p.source === 'match'
+                ? '  (' + (p.delta_pct>=0?'+':'') + p.delta_pct + '%)' : '';
+              return '🪙' + Number(p.price).toFixed(2) + d;
+            } } } },
+        scales:{
+          x:{ grid:{display:false}, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:9}, maxRotation:0, autoSkip:true } },
+          y:{ grid:{ color:'#1A2820' }, ticks:{ color:'#4C5C55', font:{family:'JetBrains Mono', size:9} } } } }
+    });
+  });
+}
+
+function renderWatchAlerts(){
+  const hits = [];
+  watchlistRows.forEach(r=>{
+    const p = Number(r.teams.price);
+    if(r.alert_below != null && p < Number(r.alert_below))
+      hits.push({ cls:'', text: r.teams.name + ' has fallen below your alert level — now ' + Number(p).toFixed(2) + ', alert set at ' + Number(r.alert_below).toFixed(2) + '.' });
+    if(r.alert_above != null && p > Number(r.alert_above))
+      hits.push({ cls:'above', text: r.teams.name + ' has risen above your alert level — now ' + Number(p).toFixed(2) + ', alert set at ' + Number(r.alert_above).toFixed(2) + '.' });
+  });
+  document.getElementById('wlAlerts').innerHTML = hits.map(h=>
+    '<div class="wl-alert '+h.cls+'">'+h.text+'</div>'
+  ).join('');
+}
+
+// Star toggles in the Market Explorer table
+function renderStars(){
+  const watched = new Set(watchlistRows.map(r=>r.team_id));
+  document.querySelectorAll('.star-btn').forEach(btn=>{
+    btn.classList.toggle('on', watched.has(btn.dataset.id));
+    btn.textContent = watched.has(btn.dataset.id) ? '★' : '☆';
+  });
+}
+
+async function addToWatchlist(teamId){
+  const msg = document.getElementById('wlMsg');
+  if(!currentSession){ openAuth(); return; }
+  const { error } = await sb.from('watchlist').insert({ user_id: currentSession.user.id, team_id: teamId });
+  if(error){
+    // The slot-limit trigger raises a readable message; show it as-is.
+    msg.textContent = error.message; msg.className = 'wl-msg err';
+    setTimeout(()=>{ msg.textContent=''; }, 6000);
+    return;
+  }
+  msg.textContent = 'Added to your watchlist.'; msg.className = 'wl-msg ok';
+  setTimeout(()=>{ msg.textContent=''; }, 3000);
+  loadWatchlist();
+}
+
+async function removeFromWatchlist(teamId){
+  await sb.from('watchlist').delete().eq('user_id', currentSession.user.id).eq('team_id', teamId);
+  if(wlCharts[teamId]){ wlCharts[teamId].destroy(); delete wlCharts[teamId]; }
+  loadWatchlist();
+}
+
+document.getElementById('wlAddBtn').addEventListener('click', ()=>{
+  const sel = document.getElementById('wlTeamSelect');
+  if(!sel.value) return;
+  addToWatchlist(sel.value);
+});
+
+document.getElementById('wlList').addEventListener('click', async (e)=>{
+  const card = e.target.closest('.wl-card');
+  if(!card) return;
+  const teamId = card.dataset.team;
+
+  if(e.target.classList.contains('wl-remove')){
+    removeFromWatchlist(teamId);
+    return;
+  }
+  if(e.target.classList.contains('wl-save')){
+    const belowRaw = card.querySelector('.wl-below').value.trim();
+    const aboveRaw = card.querySelector('.wl-above').value.trim();
+    const status = card.querySelector('.wl-save-status');
+    const payload = {
+      alert_below: belowRaw === '' ? null : parseFloat(belowRaw),
+      alert_above: aboveRaw === '' ? null : parseFloat(aboveRaw),
+    };
+    status.textContent = 'Saving…'; status.style.color = 'var(--steel-dim)';
+    const { error } = await sb.from('watchlist').update(payload)
+      .eq('user_id', currentSession.user.id).eq('team_id', teamId);
+    if(error){ status.textContent = 'Failed'; status.style.color = 'var(--drop)'; return; }
+    status.textContent = 'Saved ✓'; status.style.color = 'var(--surge)';
+    const row = watchlistRows.find(r=>r.team_id === teamId);
+    if(row){ row.alert_below = payload.alert_below; row.alert_above = payload.alert_above; }
+    renderWatchAlerts();
+    setTimeout(()=>{ status.textContent=''; }, 2000);
+  }
+});
+
+// Star button clicks inside the Market Explorer table
+tableBody.addEventListener('click', (e)=>{
+  const star = e.target.closest('.star-btn');
+  if(!star) return;
+  if(!currentSession){ openAuth(); return; }
+  const id = star.dataset.id;
+  if(star.classList.contains('on')) removeFromWatchlist(id);
+  else addToWatchlist(id);
 });
 
 async function loadTeamsFromDB(){
