@@ -719,6 +719,11 @@ function sparkSVG(data, color){
 function fmtChg(chg){ return (chg>=0?'▲ ':'▼ ')+Math.abs(chg).toFixed(1)+'%'; }
 function coin(n, decimals){ return '<span class="coin-ic"></span>'+Number(n).toFixed(decimals===undefined?2:decimals); }
 
+// Declared up here because renderStars() runs during initial page setup
+// (via buildTabs -> renderTable), which happens before the watchlist
+// code further down the file would otherwise initialise it.
+let watchlistRows = [];
+
 let leagues = {
   epl: { label:'Premier League', teams:[
     {name:'Manchester City', tier:'ENG · TIER 1', price:420.15, chg:3.2},
@@ -1222,7 +1227,6 @@ document.getElementById('portfolioBody').addEventListener('click', async (e)=>{
 // ============================================================
 // WATCHLIST
 // ============================================================
-let watchlistRows = [];
 const wlCharts = {};   // team_id -> Chart instance, so we can destroy on re-render
 
 function wlSlotLimit(){
