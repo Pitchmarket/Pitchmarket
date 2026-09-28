@@ -403,25 +403,25 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 </head>
 <body>
 
-<div class="ad-rail ad-rail-left" id="adRailLeft"><span>AD SPACE<br>160×400</span></div>
-<div class="ad-rail ad-rail-right" id="adRailRight"><span>AD SPACE<br>160×400</span></div>
+<div class="ad-rail ad-rail-left" id="adRailLeft"><span id="adRailLeftText">AD SPACE<br>160×400</span></div>
+<div class="ad-rail ad-rail-right" id="adRailRight"><span id="adRailRightText">AD SPACE<br>160×400</span></div>
 
 <div class="ticker-wrap"><div class="ticker-track mono" id="tickerTrack"></div></div>
 <div class="config-banner" id="configBanner">Add your Supabase URL and anon key to the CONFIG block near the top of this file to enable real sign-in and trading.</div>
 
 <nav>
   <div class="brand">
-    <div class="brand-mark">P</div>
-    <div class="brand-name">Pitch<span>Market</span></div>
+    <div class="brand-mark" id="brandMark">P</div>
+    <div class="brand-name" id="brandName">Pitch<span>Market</span></div>
   </div>
   <div class="nav-mobile-hide">
     <div class="nav-links">
-      <a href="#markets">Markets</a>
-      <a href="#spotlight">Spotlight</a>
+      <a href="#markets" id="navMarkets">Markets</a>
+      <a href="#spotlight" id="navSpotlight">Spotlight</a>
       <a href="#portfolio" id="navPortfolio" style="display:none;">Portfolio</a>
       <a href="#watchlist" id="navWatchlist" style="display:none;">Watchlist</a>
-      <a href="#leaderboard">Leaderboard</a>
-      <a href="#pro">Go Pro</a>
+      <a href="#leaderboard" id="navLeaderboard">Leaderboard</a>
+      <a href="#pro" id="navPro">Go Pro</a>
     </div>
     <div class="notif-wrap" id="notifWrap" style="display:none;">
       <button class="notif-bell" id="notifBell" title="Price alerts" aria-label="Price alerts">
@@ -454,8 +454,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
     <h1 class="display"><span id="heroLine1">Every club</span><br><span id="heroLine2">has a price.</span><br><span class="line2" id="heroLine3">Trade the table.</span></h1>
     <p id="heroSubhead">Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.</p>
     <div class="hero-actions">
-      <a href="#explorer" class="btn-primary">Start trading</a>
-      <a href="#classes" class="btn-ghost">How it works</a>
+      <a href="#explorer" class="btn-primary" id="heroBtn1">Start trading</a>
+      <a href="#classes" class="btn-ghost" id="heroBtn2">How it works</a>
     </div>
     <div class="hero-stats">
       <div class="hstat"><div class="n mono" id="heroStat1N">82</div><div class="l" id="heroStat1L">Listed clubs & teams</div></div>
@@ -489,10 +489,10 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <section id="markets">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">MARKET INDICES</div>
-      <div class="sec-title display">Composites, by competition</div>
+      <div class="sec-eyebrow" id="secMarketsEyebrow">MARKET INDICES</div>
+      <div class="sec-title display" id="secMarketsTitle">Composites, by competition</div>
     </div>
-    <div class="sec-desc">Every top-flight European league, the major American leagues, and a blended index for the international game.</div>
+    <div class="sec-desc" id="secMarketsDesc">Every top-flight European league, the major American leagues, and a blended index for the international game.</div>
   </div>
   <div class="index-grid" id="indexGrid"></div>
 </section>
@@ -539,8 +539,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <section id="classes">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">ASSET CLASSES</div>
-      <div class="sec-title display">Three ways to hold the game</div>
+      <div class="sec-eyebrow" id="secClassesEyebrow">ASSET CLASSES</div>
+      <div class="sec-title display" id="secClassesTitle">Three ways to hold the game</div>
     </div>
   </div>
   <div class="classes" id="classesGrid"></div>
@@ -549,10 +549,10 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <section id="portfolio" style="display:none;">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">YOUR POSITIONS</div>
-      <div class="sec-title display">Portfolio</div>
+      <div class="sec-eyebrow" id="secPortfolioEyebrow">YOUR POSITIONS</div>
+      <div class="sec-title display" id="secPortfolioTitle">Portfolio</div>
     </div>
-    <div class="sec-desc">Everything you currently hold, valued at live market prices.</div>
+    <div class="sec-desc" id="secPortfolioDesc">Everything you currently hold, valued at live market prices.</div>
   </div>
 
   <div class="pf-summary">
@@ -593,10 +593,10 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <section id="watchlist" style="display:none;">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">TRACKED TEAMS</div>
-      <div class="sec-title display">Watchlist</div>
+      <div class="sec-eyebrow" id="secWatchlistEyebrow">TRACKED TEAMS</div>
+      <div class="sec-title display" id="secWatchlistTitle">Watchlist</div>
     </div>
-    <div class="sec-desc">Follow any team, see how its price moved across its last five matches, and set the level you want to be alerted at.</div>
+    <div class="sec-desc" id="secWatchlistDesc">Follow any team, see how its price moved across its last five matches, and set the level you want to be alerted at.</div>
   </div>
 
   <div id="wlAlerts"></div>
@@ -645,8 +645,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 <section id="explorer">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow">MARKET EXPLORER</div>
-      <div class="sec-title display">Browse listed clubs and teams</div>
+      <div class="sec-eyebrow" id="secExplorerEyebrow">MARKET EXPLORER</div>
+      <div class="sec-title display" id="secExplorerTitle">Browse listed clubs and teams</div>
     </div>
   </div>
   <div class="tabs" id="tabBar"></div>
@@ -670,13 +670,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:'JetBrains Mono'
 </div>
 
 <footer>
-  <div class="fl">PITCHMARKET · A SIMULATED EXCHANGE · PRICES ARE FOR ILLUSTRATION, NOT REAL QUOTES</div>
-  <div class="foot-links">
-    <a href="#classes">About</a>
-    <a href="#leaderboard">Rules of trading</a>
-    <a href="#disclaimer">Risk disclosure</a>
-    <a href="mailto:hello@pitchmarket.example">Contact</a>
-  </div>
+  <div class="fl" id="footerLine">PITCHMARKET · A SIMULATED EXCHANGE · PRICES ARE FOR ILLUSTRATION, NOT REAL QUOTES</div>
+  <div class="foot-links" id="footLinks"></div>
 </footer>
 
 <!-- Auth modal -->
@@ -936,6 +931,32 @@ let siteContent = {
     { icon:'NT', title:'National team bonds', desc:'Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.', stat1_n:'±0.6%', stat1_l:'Avg. daily move', stat2_n:'86', stat2_l:'Federations listed' },
     { icon:'CL', title:'Continental campaigns', desc:"A club's Champions League run trades as its own instrument, separate from its domestic price. Event-driven — each knockout leg can move it sharply either way.", stat1_n:'±18%', stat1_l:'Avg. move per leg', stat2_n:'32', stat2_l:'UCL instruments live' },
   ],
+  brand:{
+    mark:'P', name_1:'Pitch', name_2:'Market',
+    nav_markets:'Markets', nav_spotlight:'Spotlight', nav_portfolio:'Portfolio',
+    nav_watchlist:'Watchlist', nav_leaderboard:'Leaderboard', nav_pro:'Go Pro',
+    hero_btn_1:'Start trading', hero_btn_2:'How it works',
+  },
+  sections:{
+    markets_eyebrow:'MARKET INDICES', markets_title:'Composites, by competition',
+    markets_desc:'Every top-flight European league, the major American leagues, and a blended index for the international game.',
+    classes_eyebrow:'ASSET CLASSES', classes_title:'Three ways to hold the game',
+    portfolio_eyebrow:'YOUR POSITIONS', portfolio_title:'Portfolio',
+    portfolio_desc:'Everything you currently hold, valued at live market prices.',
+    watchlist_eyebrow:'TRACKED TEAMS', watchlist_title:'Watchlist',
+    watchlist_desc:'Follow any team, see how its price moved across its last five matches, and set the level you want to be alerted at.',
+    explorer_eyebrow:'MARKET EXPLORER', explorer_title:'Browse listed clubs and teams',
+  },
+  footer:{
+    line:'PITCHMARKET · A SIMULATED EXCHANGE · PRICES ARE FOR ILLUSTRATION, NOT REAL QUOTES',
+    links:[
+      {label:'About', href:'#classes'},
+      {label:'Rules of trading', href:'#leaderboard'},
+      {label:'Risk disclosure', href:'#disclaimer'},
+      {label:'Contact', href:'mailto:hello@pitchmarket.example'},
+    ],
+  },
+  ad_rails:{ left:'AD SPACE<br>160×400', right:'AD SPACE<br>160×400' },
   disclaimer:{ text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
 };
 
@@ -1013,6 +1034,51 @@ function renderSiteContent(){
   ).join('');
   // disclaimer
   document.getElementById('disclaimerText').textContent = c.disclaimer.text;
+
+  // brand + nav labels + hero buttons
+  const b = c.brand || {};
+  const setTxt = (id, val)=>{ const el=document.getElementById(id); if(el && val!=null) el.textContent = val; };
+  setTxt('brandMark', b.mark);
+  const bn = document.getElementById('brandName');
+  if(bn && (b.name_1 != null || b.name_2 != null)) bn.innerHTML = (b.name_1||'') + '<span>' + (b.name_2||'') + '</span>';
+  setTxt('navMarkets', b.nav_markets);
+  setTxt('navSpotlight', b.nav_spotlight);
+  setTxt('navPortfolio', b.nav_portfolio);
+  setTxt('navWatchlist', b.nav_watchlist);
+  setTxt('navLeaderboard', b.nav_leaderboard);
+  setTxt('navPro', b.nav_pro);
+  setTxt('heroBtn1', b.hero_btn_1);
+  setTxt('heroBtn2', b.hero_btn_2);
+
+  // section headings
+  const s = c.sections || {};
+  setTxt('secMarketsEyebrow', s.markets_eyebrow);
+  setTxt('secMarketsTitle', s.markets_title);
+  setTxt('secMarketsDesc', s.markets_desc);
+  setTxt('secClassesEyebrow', s.classes_eyebrow);
+  setTxt('secClassesTitle', s.classes_title);
+  setTxt('secPortfolioEyebrow', s.portfolio_eyebrow);
+  setTxt('secPortfolioTitle', s.portfolio_title);
+  setTxt('secPortfolioDesc', s.portfolio_desc);
+  setTxt('secWatchlistEyebrow', s.watchlist_eyebrow);
+  setTxt('secWatchlistTitle', s.watchlist_title);
+  setTxt('secWatchlistDesc', s.watchlist_desc);
+  setTxt('secExplorerEyebrow', s.explorer_eyebrow);
+  setTxt('secExplorerTitle', s.explorer_title);
+
+  // footer
+  const f = c.footer || {};
+  setTxt('footerLine', f.line);
+  const fl = document.getElementById('footLinks');
+  if(fl && Array.isArray(f.links))
+    fl.innerHTML = f.links.map(l=>'<a href="'+(l.href||'#')+'">'+(l.label||'')+'</a>').join('');
+
+  // ad rails
+  const ar = c.ad_rails || {};
+  const arl = document.getElementById('adRailLeftText');
+  const arr = document.getElementById('adRailRightText');
+  if(arl && ar.left != null) arl.innerHTML = ar.left;
+  if(arr && ar.right != null) arr.innerHTML = ar.right;
 }
 renderSiteContent();
 

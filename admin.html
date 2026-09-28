@@ -115,6 +115,11 @@ tbody tr:last-child td{ border-bottom:none; }
 .event-status-pill.rejected{ background:rgba(255,92,85,0.12); color:var(--drop); }
 .event-status-pill.skipped{ background:var(--panel2); color:var(--steel-dim); }
 .history-label{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+.foot-link-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.foot-link-row input{ background:var(--bg); border:1px solid var(--border); color:var(--chalk); border-radius:4px; padding:7px 9px; font-size:12.5px; }
+.foot-link-row input:focus{ outline:none; border-color:var(--surge); }
+.foot-link-row .fl-label{ width:190px; }
+.foot-link-row .fl-href{ flex:1; font-family:'JetBrains Mono'; font-size:11.5px; }
 @media(max-width:900px){ .add-grid{ grid-template-columns:repeat(2,1fr); } .add-btn{ grid-column:span 2; } }
 
 /* ===== Live-preview editor components (copied from the live site's own CSS) ===== */
@@ -375,6 +380,30 @@ tbody tr:last-child td{ border-bottom:none; }
         <div class="editor-block-head"><div class="editor-block-label">Disclaimer</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
         <div class="editor-frame" id="disclaimerEditor"></div>
       </div>
+
+      <!-- BRAND + NAV -->
+      <div class="editor-block" data-key="brand">
+        <div class="editor-block-head"><div class="editor-block-label">Brand, nav links &amp; hero buttons</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="brandEditor"></div>
+      </div>
+
+      <!-- SECTION HEADINGS -->
+      <div class="editor-block" data-key="sections">
+        <div class="editor-block-head"><div class="editor-block-label">Section headings</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="sectionsEditor"></div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="editor-block" data-key="footer">
+        <div class="editor-block-head"><div class="editor-block-label">Footer</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="footerEditor"></div>
+      </div>
+
+      <!-- AD RAILS -->
+      <div class="editor-block" data-key="ad_rails">
+        <div class="editor-block-head"><div class="editor-block-label">Side ad rails</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
+        <div class="editor-frame" id="adRailsEditor"></div>
+      </div>
     </div>
 
     <!-- ============ PRICE APPROVALS ============ -->
@@ -453,6 +482,23 @@ const settingsDefaults = {
     { name:'INTL-50', tier:'NATIONAL TEAMS', value:60.30, chg:0.5 },
   ],
   disclaimer: { text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
+  brand:{ mark:'P', name_1:'Pitch', name_2:'Market',
+    nav_markets:'Markets', nav_spotlight:'Spotlight', nav_portfolio:'Portfolio',
+    nav_watchlist:'Watchlist', nav_leaderboard:'Leaderboard', nav_pro:'Go Pro',
+    hero_btn_1:'Start trading', hero_btn_2:'How it works' },
+  sections:{
+    markets_eyebrow:'MARKET INDICES', markets_title:'Composites, by competition',
+    markets_desc:'Every top-flight European league, the major American leagues, and a blended index for the international game.',
+    classes_eyebrow:'ASSET CLASSES', classes_title:'Three ways to hold the game',
+    portfolio_eyebrow:'YOUR POSITIONS', portfolio_title:'Portfolio',
+    portfolio_desc:'Everything you currently hold, valued at live market prices.',
+    watchlist_eyebrow:'TRACKED TEAMS', watchlist_title:'Watchlist',
+    watchlist_desc:'Follow any team, see how its price moved across its last five matches, and set the level you want to be alerted at.',
+    explorer_eyebrow:'MARKET EXPLORER', explorer_title:'Browse listed clubs and teams' },
+  footer:{ line:'PITCHMARKET · A SIMULATED EXCHANGE · PRICES ARE FOR ILLUSTRATION, NOT REAL QUOTES',
+    links:[{label:'About',href:'#classes'},{label:'Rules of trading',href:'#leaderboard'},{label:'Risk disclosure',href:'#disclaimer'},{label:'Contact',href:'mailto:hello@pitchmarket.example'}] },
+  ad_rails:{ left:'AD SPACE<br>160×400', right:'AD SPACE<br>160×400' },
+  league_order:['epl','laliga','seriea','bundesliga','ligue1','championsleague','portugal','eredivisie','championship','brazil','national'],
 };
 
 let currentSettings = JSON.parse(JSON.stringify(settingsDefaults));
@@ -674,6 +720,11 @@ async function loadContentSettings(){
   renderClassesEditor();
   renderIndicesEditor();
   renderDisclaimerEditor();
+  renderBrandEditor();
+  renderSectionsEditor();
+  renderFooterEditor();
+  renderAdRailsEditor();
+  renderLeagueOrderSettingEditor();
   bindEnterAsBlur();
 }
 
@@ -967,6 +1018,133 @@ function readDisclaimer(){
   return { text: document.querySelector('#disclaimerEditor [data-f="text"]').innerText.trim() };
 }
 
+// ---------- BRAND / NAV / HERO BUTTONS ----------
+// Plain labelled inputs rather than a live preview, because these are
+// single words scattered across the page — a preview of the whole nav
+// would be less clear than just naming each field.
+function fieldRow(label, key, value, wide){
+  return '<div class="ck-field"'+(wide?' style="grid-column:1/-1;"':'')+'>'+
+    '<label>'+label+'</label>'+
+    '<input data-f="'+key+'" value="'+escAttr(value||'')+'"></div>';
+}
+function renderBrandEditor(){
+  const b = currentSettings.brand || {};
+  document.getElementById('brandEditor').innerHTML =
+    '<div class="ck-grid" style="grid-template-columns:repeat(3,1fr);">'+
+      fieldRow('Logo letter','mark',b.mark)+
+      fieldRow('Brand name (white part)','name_1',b.name_1)+
+      fieldRow('Brand name (gold part)','name_2',b.name_2)+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--steel-dim);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;">Nav links</div>'+
+    '<div class="ck-grid" style="grid-template-columns:repeat(3,1fr);">'+
+      fieldRow('Markets','nav_markets',b.nav_markets)+
+      fieldRow('Spotlight','nav_spotlight',b.nav_spotlight)+
+      fieldRow('Portfolio','nav_portfolio',b.nav_portfolio)+
+      fieldRow('Watchlist','nav_watchlist',b.nav_watchlist)+
+      fieldRow('Leaderboard','nav_leaderboard',b.nav_leaderboard)+
+      fieldRow('Go Pro','nav_pro',b.nav_pro)+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--steel-dim);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;">Hero buttons</div>'+
+    '<div class="ck-grid">'+
+      fieldRow('Primary button','hero_btn_1',b.hero_btn_1)+
+      fieldRow('Secondary button','hero_btn_2',b.hero_btn_2)+
+    '</div>';
+}
+function readSimpleFields(elId){
+  const v = {};
+  document.querySelectorAll('#'+elId+' [data-f]').forEach(el=>{ v[el.dataset.f] = el.value.trim(); });
+  return v;
+}
+function readBrand(){ return readSimpleFields('brandEditor'); }
+
+// ---------- SECTION HEADINGS ----------
+function renderSectionsEditor(){
+  const s = currentSettings.sections || {};
+  const group = (title, rows)=>
+    '<div style="font-size:11px;color:var(--steel-dim);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;">'+title+'</div>'+
+    '<div class="ck-grid">'+rows+'</div>';
+  document.getElementById('sectionsEditor').innerHTML =
+    group('Market indices',
+      fieldRow('Eyebrow','markets_eyebrow',s.markets_eyebrow)+
+      fieldRow('Title','markets_title',s.markets_title)+
+      fieldRow('Description','markets_desc',s.markets_desc,true))+
+    group('Asset classes',
+      fieldRow('Eyebrow','classes_eyebrow',s.classes_eyebrow)+
+      fieldRow('Title','classes_title',s.classes_title))+
+    group('Portfolio',
+      fieldRow('Eyebrow','portfolio_eyebrow',s.portfolio_eyebrow)+
+      fieldRow('Title','portfolio_title',s.portfolio_title)+
+      fieldRow('Description','portfolio_desc',s.portfolio_desc,true))+
+    group('Watchlist',
+      fieldRow('Eyebrow','watchlist_eyebrow',s.watchlist_eyebrow)+
+      fieldRow('Title','watchlist_title',s.watchlist_title)+
+      fieldRow('Description','watchlist_desc',s.watchlist_desc,true))+
+    group('Market explorer',
+      fieldRow('Eyebrow','explorer_eyebrow',s.explorer_eyebrow)+
+      fieldRow('Title','explorer_title',s.explorer_title));
+}
+function readSections(){ return readSimpleFields('sectionsEditor'); }
+
+// ---------- FOOTER ----------
+function footLinkRow(l){
+  return '<div class="foot-link-row">'+
+    '<input class="fl-label" value="'+escAttr(l.label||'')+'" placeholder="Label">'+
+    '<input class="fl-href" value="'+escAttr(l.href||'')+'" placeholder="#section or https://…">'+
+    '<button class="remove-x" type="button">×</button></div>';
+}
+function renderFooterEditor(){
+  const f = currentSettings.footer || {};
+  document.getElementById('footerEditor').innerHTML =
+    '<div class="ck-grid full"><div class="ck-field"><label>Footer line</label>'+
+      '<input data-f="line" value="'+escAttr(f.line||'')+'"></div></div>'+
+    '<div style="font-size:11px;color:var(--steel-dim);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;">Footer links</div>'+
+    '<div id="footLinksList">'+(f.links||[]).map(footLinkRow).join('')+'</div>'+
+    '<button class="add-item-btn" type="button" id="addFootLinkBtn">+ Add link</button>';
+  document.getElementById('addFootLinkBtn').onclick = ()=>{
+    const d=document.createElement('div');
+    d.innerHTML = footLinkRow({label:'New link', href:'#'});
+    document.getElementById('footLinksList').appendChild(d.firstChild);
+  };
+  document.getElementById('footerEditor').addEventListener('click',(e)=>{
+    if(e.target.classList.contains('remove-x')) e.target.closest('.foot-link-row').remove();
+  });
+}
+function readFooter(){
+  return {
+    line: document.querySelector('#footerEditor [data-f="line"]').value.trim(),
+    links: [...document.querySelectorAll('#footLinksList .foot-link-row')].map(r=>({
+      label: r.querySelector('.fl-label').value.trim(),
+      href:  r.querySelector('.fl-href').value.trim() || '#',
+    })).filter(l=>l.label),
+  };
+}
+
+// ---------- LEAGUE TAB ORDER (raw list) ----------
+function renderLeagueOrderSettingEditor(){
+  const v = currentSettings.league_order || [];
+  document.getElementById('rawLeagueOrder').value = JSON.stringify(v, null, 2);
+}
+function readLeagueOrderSetting(){
+  return JSON.parse(document.getElementById('rawLeagueOrder').value);
+}
+
+// ---------- AD RAILS ----------
+function renderAdRailsEditor(){
+  const a = currentSettings.ad_rails || {};
+  document.getElementById('adRailsEditor').innerHTML =
+    '<div class="ck-desc">The tall placeholders pinned to the left and right edges on wide screens. HTML is allowed, so &lt;br&gt; works for line breaks and you can paste an &lt;img&gt; or ad tag here.</div>'+
+    '<div class="ck-grid">'+
+      '<div class="ck-field"><label>Left rail</label><textarea class="json" data-f="left" rows="4">'+escHtml(a.left||'')+'</textarea></div>'+
+      '<div class="ck-field"><label>Right rail</label><textarea class="json" data-f="right" rows="4">'+escHtml(a.right||'')+'</textarea></div>'+
+    '</div>';
+}
+function readAdRails(){
+  return {
+    left:  document.querySelector('#adRailsEditor [data-f="left"]').value,
+    right: document.querySelector('#adRailsEditor [data-f="right"]').value,
+  };
+}
+
 // ================= PRICE APPROVALS =================
 function eventCardHTML(ev, isPending){
   const hasDeltas = ev.home_delta_pct != null && ev.away_delta_pct != null;
@@ -1046,6 +1224,11 @@ const readers = {
   classes: readClasses,
   indices: readIndices,
   disclaimer: readDisclaimer,
+  brand: readBrand,
+  sections: readSections,
+  footer: readFooter,
+  ad_rails: readAdRails,
+  league_order: readLeagueOrderSetting,
 };
 
 document.querySelectorAll('.editor-block').forEach(block=>{
