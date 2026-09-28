@@ -37,7 +37,7 @@ jobs:
           LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '3' }}
           # Auto-apply prices without approval. Set to 'true' to switch on.
           # Moves larger than AUTO_APPLY_MAX_PCT are still held for review.
-          AUTO_APPLY: 'false'
+          AUTO_APPLY: 'true'
           AUTO_APPLY_MAX_PCT: '8'
           # To switch to Claude later: change AI_PROVIDER above to "claude",
           # add an ANTHROPIC_API_KEY secret, and uncomment the line below.
