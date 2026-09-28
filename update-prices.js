@@ -42,6 +42,14 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // for a one-off catch-up run after fixing team name aliases.
 const LOOKBACK_DAYS = parseInt(process.env.LOOKBACK_DAYS || '3', 10);
 
+// Auto-apply: when on, routine price moves are applied straight away
+// with no approval step. Anything larger than AUTO_APPLY_MAX_PCT is
+// still held for review — those are the ones most likely to be a bad
+// team match or a misread scoreline, and they are also the ones that
+// would do the most damage to the leaderboard if wrong.
+const AUTO_APPLY = (process.env.AUTO_APPLY || 'false').toLowerCase() === 'true';
+const AUTO_APPLY_MAX_PCT = parseFloat(process.env.AUTO_APPLY_MAX_PCT || '8');
+
 let supabase; // created inside main(), after the required-variable check below
 
 // football-data.org competition code -> your `league` key in Supabase.
@@ -257,6 +265,9 @@ async function main(){
   supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   console.log(`Using AI provider: ${AI_PROVIDER}`);
+  console.log(AUTO_APPLY
+    ? `Auto-apply: ON — moves up to ${AUTO_APPLY_MAX_PCT}% applied immediately, anything larger held for review.`
+    : 'Auto-apply: OFF — every change waits for approval in admin.');
 
   const now = new Date();
   const dateTo = now.toISOString().slice(0,10);
@@ -314,18 +325,36 @@ async function main(){
 
       console.log(`  Proposed: home ${move.home >= 0 ? '+' : ''}${move.home}% / away ${move.away >= 0 ? '+' : ''}${move.away}% — ${move.reason}`);
 
-      const { error } = await supabase.from('match_events').insert({
+      const { data: inserted, error } = await supabase.from('match_events').insert({
         ...baseRow,
         home_delta_pct: move.home,
         away_delta_pct: move.away,
         ai_reason: move.reason,
         status: 'pending',
-      });
-      if(error) console.error('  Failed to log match event:', error.message);
-      else console.log('  Logged for admin approval.');
+      }).select('id').single();
+
+      if(error){ console.error('  Failed to log match event:', error.message); continue; }
+
+      if(!AUTO_APPLY){
+        console.log('  Logged for admin approval.');
+        continue;
+      }
+
+      // Only apply on our own if BOTH sides are within the safe band.
+      const biggest = Math.max(Math.abs(move.home), Math.abs(move.away));
+      if(biggest > AUTO_APPLY_MAX_PCT){
+        console.log(`  Held for review — ${biggest}% exceeds the ${AUTO_APPLY_MAX_PCT}% auto-apply limit.`);
+        continue;
+      }
+
+      const { error: applyErr } = await supabase.rpc('auto_apply_match_event', { p_event_id: inserted.id });
+      if(applyErr) console.error('  Auto-apply failed, left pending:', applyErr.message);
+      else console.log('  Applied automatically.');
     }
   }
-  console.log('\nDone. Review pending price changes in admin.html -> Price Approvals.');
+  console.log(AUTO_APPLY
+    ? '\nDone. Anything held for review is in admin.html -> Price Approvals.'
+    : '\nDone. Review pending price changes in admin.html -> Price Approvals.');
 }
 
 main().catch(err=>{ console.error('Fatal error:', err); process.exit(1); });
