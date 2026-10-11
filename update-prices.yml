@@ -15,6 +15,10 @@ name: Update PitchMarket prices
         description: 'Milliseconds between AI calls. Raise to 8000 if the log shows HTTP 429 rate limits.'
         required: false
         default: '4500'
+      ai_batch_size:
+        description: 'Matches priced per AI call. 10 is the default. Lower it if replies come back incomplete.'
+        required: false
+        default: '10'
 
 jobs:
   update-prices:
@@ -42,10 +46,14 @@ jobs:
           AI_PROVIDER: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '3' }}
-          # Minimum gap between AI calls. The free Gemini tier caps requests
-          # per minute, and on a full matchday there can be 40+ matches to
-          # price — without this gap the cap is hit and every remaining match
-          # fails. 4500ms is roughly 13 calls a minute.
+          # How many matches go into a single AI request. One call per
+          # matchday instead of one per match — a 10-match Saturday costs
+          # one request, not ten, which is what keeps a real matchday inside
+          # the free tier's daily cap. Set to 1 for one call per match.
+          AI_BATCH_SIZE: ${{ github.event.inputs.ai_batch_size || '10' }}
+          # Minimum gap between AI calls, to stay under the per-minute cap.
+          # With batching there are far fewer calls, so this costs very
+          # little time overall.
           AI_MIN_GAP_MS: ${{ github.event.inputs.ai_min_gap_ms || '4500' }}
           # Auto-apply prices without approval. Set to 'false' to review
           # every change by hand instead. Moves larger than

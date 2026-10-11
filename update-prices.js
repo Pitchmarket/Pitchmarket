@@ -54,6 +54,11 @@ const LOOKBACK_DAYS = parseInt(process.env.LOOKBACK_DAYS || '3', 10);
 // every remaining match of the day as skipped, with no reason recorded.
 const AI_MIN_GAP_MS = parseInt(process.env.AI_MIN_GAP_MS || '4500', 10);
 const AI_MAX_RETRIES = parseInt(process.env.AI_MAX_RETRIES || '4', 10);
+// How many matches to price in a single AI request. One request per
+// MATCHDAY instead of one per match: a 10-match Saturday costs one call,
+// not ten, which is what keeps a real matchday inside the free tier's
+// daily cap. Set to 1 to go back to one call per match.
+const AI_BATCH_SIZE = Math.max(1, Math.min(25, parseInt(process.env.AI_BATCH_SIZE || '10', 10)));
 // If this many AI calls fail back to back, the provider is down or the
 // daily quota is gone. Stop the run rather than writing dozens of
 // skipped rows — unlogged matches get picked up on the next run.
@@ -286,34 +291,97 @@ async function fetchFinishedMatches(code, dateFrom, dateTo){
 }
 
 // ============================================================
-// Modular AI provider layer. Both functions return the same shape:
-//   { home, away, reason }   on success
-//   { error: '<why>' }       on failure
-// so the caller can record a real reason instead of an unexplained
-// "skipped". Swapping AI_PROVIDER never touches anything else.
+// Modular AI provider layer.
+//
+// Prices a BATCH of matches in one request — one call per matchday
+// rather than one per match. A 10-match Saturday used to cost 10
+// requests; it now costs 1, which is what keeps a real matchday inside
+// the free tier's daily cap instead of blowing through it.
+//
+// Both providers return the same shape:
+//   { moves: Map(index -> { home, away, reason }) }  on success
+//   { error: '<why>' }                              on failure
+// The Map is keyed by each match's position in the batch, so a reply
+// that covers only some of them is still usable — the missing ones get
+// retried rather than the whole batch being thrown away. Swapping
+// AI_PROVIDER never touches anything else.
 // ============================================================
-function buildPrompt(homeName, awayName, homeScore, awayScore, competitionName){
-  return `A football match just finished.
-Competition: ${competitionName}
-Home team: ${homeName}
-Away team: ${awayName}
-Final score: ${homeName} ${homeScore} - ${awayScore} ${awayName}
+function buildBatchPrompt(items){
+  const lines = items.map((it, i) =>
+    `${i + 1}. [${it.competitionName}] ${it.homeName} ${it.homeScore} - ${it.awayScore} ${it.awayName}`
+  ).join('\n');
 
-Decide how much each team's stock price should move as a percentage, reflecting the result. Consider margin of victory, and that a home draw is milder than an away draw. Winners go up, losers go down, draws move slightly for both (usually toward the run of play if the score suggests one side dominated). Keep moves realistic: routine results should be small (1-4%), landslide or shock results can be larger (up to 15%), draws are usually under 2%.
+  return `These ${items.length} football match${items.length === 1 ? '' : 'es'} have just finished. For EACH one, decide how much each team's stock price should move as a percentage, reflecting the result.
 
-Respond with ONLY this JSON shape, nothing else, no markdown fences:
-{"home_delta_pct": <number, can be negative>, "away_delta_pct": <number, can be negative>, "reason": "<one short sentence>"}`;
+Consider margin of victory, and that a home draw is milder than an away draw. Winners go up, losers go down, draws move slightly for both (usually toward the run of play if the score suggests one side dominated). Keep moves realistic: routine results should be small (1-4%), landslide or shock results can be larger (up to 15%), draws are usually under 2%. Judge each match on its own merits — do not make them all the same size.
+
+Matches:
+${lines}
+
+Respond with ONLY a JSON array, one object per match, covering all ${items.length}, nothing else, no markdown fences:
+[{"match": <the number above>, "home_delta_pct": <number, can be negative>, "away_delta_pct": <number, can be negative>, "reason": "<one short sentence>"}]`;
 }
 
-function parseAIResponse(text){
+// Pull the JSON array out of a reply and key it by match number. Tolerant
+// on purpose: fenced code, a wrapper object, or prose either side of the
+// array are all survivable, and an entry missing its "match" number falls
+// back to its position. Anything the model omits simply isn't in the Map.
+function parseBatchResponse(text, expectedCount){
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  let parsed;
   try{
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    const clamp = (n) => Math.max(-20, Math.min(20, Number(n) || 0));
-    return { home: clamp(parsed.home_delta_pct), away: clamp(parsed.away_delta_pct), reason: parsed.reason || '' };
+    parsed = JSON.parse(cleaned);
   } catch(e){
-    console.error('  Could not parse AI response:', text.slice(0, 300));
-    return { error: 'the AI returned something that was not valid JSON' };
+    const span = cleaned.match(/\[[\s\S]*\]/);
+    let ok = false;
+    if(span){
+      try{ parsed = JSON.parse(span[0]); ok = true; } catch(e2){ /* fall through */ }
+    }
+    if(!ok){
+      // Last resort: a reply cut off mid-array still has whole objects in
+      // it. Salvage those rather than discarding a batch of good answers
+      // because the final entry was clipped.
+      const objects = cleaned.match(/\{[^{}]*\}/g) || [];
+      const salvaged = [];
+      for(const o of objects){
+        try{ salvaged.push(JSON.parse(o)); } catch(e3){ /* skip that one */ }
+      }
+      if(salvaged.length === 0){
+        console.error('  Could not parse AI response:', cleaned.slice(0, 400));
+        return { error: 'the AI returned something that was not valid JSON' };
+      }
+      console.log(`  AI reply was malformed — salvaged ${salvaged.length} complete entr${salvaged.length === 1 ? 'y' : 'ies'} from it.`);
+      parsed = salvaged;
+    }
   }
+
+  // Accept a bare array, or an object with the array under some key.
+  let rows = Array.isArray(parsed) ? parsed : null;
+  if(!rows && parsed && typeof parsed === 'object'){
+    rows = Object.values(parsed).find(v => Array.isArray(v)) || null;
+    // A single-match batch may legitimately come back as one object.
+    if(!rows && ('home_delta_pct' in parsed)) rows = [parsed];
+  }
+  if(!rows) return { error: 'the AI reply contained no list of price moves' };
+
+  const clamp = (n) => Math.max(-20, Math.min(20, Number(n) || 0));
+  const moves = new Map();
+  rows.forEach((row, position) => {
+    if(!row || typeof row !== 'object') return;
+    const num = Number(row.match);
+    // "match" is 1-based in the prompt; fall back to list position.
+    const idx = Number.isFinite(num) ? num - 1 : position;
+    if(idx < 0 || idx >= expectedCount) return;
+    if(row.home_delta_pct == null && row.away_delta_pct == null) return;
+    moves.set(idx, {
+      home: clamp(row.home_delta_pct),
+      away: clamp(row.away_delta_pct),
+      reason: typeof row.reason === 'string' ? row.reason : '',
+    });
+  });
+
+  if(moves.size === 0) return { error: 'the AI reply had no usable price moves in it' };
+  return { moves };
 }
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -332,9 +400,29 @@ async function paceAICall(){
 // just burns the clock.
 function isRetryable(status){ return status === 429 || status === 408 || (status >= 500 && status < 600); }
 
-async function askGemini(homeName, awayName, homeScore, awayScore, competitionName){
+// Errors there is no point carrying on through. A 429 that survived every
+// retry means the quota is gone for now; 401/403 means the key is wrong;
+// 400/404 means the model name is wrong. None of those will fix
+// themselves in the next few seconds, and because one batch now covers
+// ten matches, waiting for a streak of four would abandon forty of them.
+function isFatal(status){
+  return status === 429 || status === 401 || status === 403 || status === 400 || status === 404;
+}
+function fatalHint(status){
+  if(status === 429) return 'rate limit or daily quota exhausted — this resets on its own';
+  if(status === 401 || status === 403) return 'the API key was rejected';
+  if(status === 400 || status === 404) return 'the request or model name was rejected';
+  return '';
+}
+
+async function askGemini(items){
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-  const body = JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(homeName, awayName, homeScore, awayScore, competitionName) }] }] });
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text: buildBatchPrompt(items) }] }],
+    // Room for one object per match, plus slack. Without this a long
+    // batch can be cut off mid-array and parse as a failure.
+    generationConfig: { maxOutputTokens: 400 + items.length * 120 },
+  });
 
   for(let attempt = 0; attempt <= AI_MAX_RETRIES; attempt++){
     await paceAICall();
@@ -354,7 +442,7 @@ async function askGemini(homeName, awayName, homeScore, awayScore, competitionNa
       const data = await res.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
       if(!text) return { error: 'Gemini returned an empty response' };
-      return parseAIResponse(text);
+      return parseBatchResponse(text, items.length);
     }
 
     const errText = (await res.text()).slice(0, 500);
@@ -367,16 +455,20 @@ async function askGemini(homeName, awayName, homeScore, awayScore, competitionNa
       continue;
     }
     console.error(`  Gemini API error ${res.status}:`, errText);
-    return { error: `Gemini HTTP ${res.status}${res.status === 429 ? ' — rate limit or daily quota exhausted' : ''}` };
+    const hint = fatalHint(res.status);
+    return {
+      error: `Gemini HTTP ${res.status}${hint ? ' — ' + hint : ''}`,
+      fatal: isFatal(res.status),
+    };
   }
-  return { error: 'Gemini failed after all retries' };
+  return { error: 'Gemini failed after all retries', fatal: true };
 }
 
-async function askClaude(homeName, awayName, homeScore, awayScore, competitionName){
+async function askClaude(items){
   const body = JSON.stringify({
     model: process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001',
-    max_tokens: 300,
-    messages: [{ role: 'user', content: buildPrompt(homeName, awayName, homeScore, awayScore, competitionName) }],
+    max_tokens: 400 + items.length * 120,
+    messages: [{ role: 'user', content: buildBatchPrompt(items) }],
   });
 
   for(let attempt = 0; attempt <= AI_MAX_RETRIES; attempt++){
@@ -401,7 +493,7 @@ async function askClaude(homeName, awayName, homeScore, awayScore, competitionNa
       const data = await res.json();
       const text = data.content?.[0]?.text?.trim() || '';
       if(!text) return { error: 'Claude returned an empty response' };
-      return parseAIResponse(text);
+      return parseBatchResponse(text, items.length);
     }
 
     const errText = (await res.text()).slice(0, 500);
@@ -412,14 +504,46 @@ async function askClaude(homeName, awayName, homeScore, awayScore, competitionNa
       continue;
     }
     console.error(`  Claude API error ${res.status}:`, errText);
-    return { error: `Claude HTTP ${res.status}` };
+    const hint = fatalHint(res.status);
+    return {
+      error: `Claude HTTP ${res.status}${hint ? ' — ' + hint : ''}`,
+      fatal: isFatal(res.status),
+    };
   }
-  return { error: 'Claude failed after all retries' };
+  return { error: 'Claude failed after all retries', fatal: true };
 }
 
-async function askForPriceMove(homeName, awayName, homeScore, awayScore, competitionName){
-  if(AI_PROVIDER === 'claude') return askClaude(homeName, awayName, homeScore, awayScore, competitionName);
-  return askGemini(homeName, awayName, homeScore, awayScore, competitionName);
+async function askForPriceMoves(items){
+  if(AI_PROVIDER === 'claude') return askClaude(items);
+  return askGemini(items);
+}
+
+// Price a batch, then make ONE follow-up call for anything the model
+// left out. A model that drops the last two matches of a ten-match list
+// is a normal failure mode, and re-asking for just those two is far
+// cheaper than discarding eight good answers and starting over.
+//
+// Returns { moves: Map(originalIndex -> move), error?: '<why>' }.
+// An error means the whole batch failed; a Map short of some entries
+// means those specific matches couldn't be priced.
+async function priceBatch(items){
+  const first = await askForPriceMoves(items);
+  if(first.error) return { moves: new Map(), error: first.error, fatal: !!first.fatal };
+
+  const moves = first.moves;
+  const missing = items.map((_, i) => i).filter(i => !moves.has(i));
+  if(missing.length === 0) return { moves };
+
+  console.log(`  ${missing.length} of ${items.length} came back unpriced — asking again for just those.`);
+  const retry = await askForPriceMoves(missing.map(i => items[i]));
+  if(!retry.error){
+    // Indexes in the retry are positions within `missing`, so map back.
+    for(const [retryIdx, move] of retry.moves) {
+      const originalIdx = missing[retryIdx];
+      if(originalIdx !== undefined) moves.set(originalIdx, move);
+    }
+  }
+  return { moves };
 }
 // ============================================================
 
@@ -489,6 +613,7 @@ async function main(){
   supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   console.log(`Using AI provider: ${AI_PROVIDER}${AI_PROVIDER === 'gemini' ? ` (${GEMINI_MODEL})` : ''}`);
+  console.log(`Batching: up to ${AI_BATCH_SIZE} match(es) per AI call.`);
   console.log(`Pacing: one AI call per ${AI_MIN_GAP_MS}ms, up to ${AI_MAX_RETRIES} retries each.`);
   console.log(AUTO_APPLY
     ? `Auto-apply: ON — moves up to ${AUTO_APPLY_MAX_PCT}% applied immediately, anything larger held for review.`
@@ -511,6 +636,10 @@ async function main(){
     if(matches === null){ console.log('  Skipping this competition — the data feed errored.'); continue; }
     console.log(`  ${matches.length} finished match(es) found in range.`);
 
+    // ---- Phase 1: work out which matches actually need pricing ----
+    // Everything resolvable without the AI is settled here, so the batch
+    // we send contains only matches that genuinely need an answer.
+    const toPrice = [];
     for(const match of matches){
       const matchId = String(match.id);
       if(await alreadyLogged(matchId)){ continue; }
@@ -568,19 +697,51 @@ async function main(){
         continue;
       }
 
-      console.log(`  ${match.homeTeam.name} ${homeScore}-${awayScore} ${match.awayTeam.name}`);
-      const move = await askForPriceMove(match.homeTeam.name, match.awayTeam.name, homeScore, awayScore, match.competition?.name || code);
+      toPrice.push({
+        baseRow,
+        homeName: match.homeTeam.name,
+        awayName: match.awayTeam.name,
+        homeScore, awayScore,
+        competitionName: match.competition?.name || code,
+      });
+    }
 
-      if(!move || move.error){
-        const why = move?.error || 'the AI provider returned nothing';
-        console.log(`  Skipping — ${why}`);
-        await logSkip(baseRow, `AI pricing failed: ${why}. The teams matched fine — this is not a naming problem.`);
-        summary.aiFailed++;
+    if(toPrice.length === 0){ console.log('  Nothing new to price.'); continue; }
+
+    // ---- Phase 2: price them in batches ----
+    const batchCount = Math.ceil(toPrice.length / AI_BATCH_SIZE);
+    console.log(`  ${toPrice.length} match(es) to price — ${batchCount} AI call${batchCount === 1 ? '' : 's'}.`);
+
+    for(let start = 0; start < toPrice.length; start += AI_BATCH_SIZE){
+      if(aborted) break;
+      const batch = toPrice.slice(start, start + AI_BATCH_SIZE);
+      for(const it of batch) console.log(`    ${it.homeName} ${it.homeScore}-${it.awayScore} ${it.awayName}`);
+
+      const { moves, error: batchError, fatal } = await priceBatch(batch);
+
+      if(batchError){
+        // The whole call failed, so every match in it is unpriced. This
+        // counts as ONE failed call against the streak, not one per match.
+        console.log(`  Batch failed — ${batchError}`);
+        for(const it of batch){
+          await logSkip(it.baseRow, `AI pricing failed: ${batchError}. The teams matched fine — this is not a naming problem.`);
+          summary.aiFailed++;
+        }
         aiFailStreak++;
+
+        // Stop at once on an error that won't resolve itself mid-run.
+        // One batch is ten matches, so waiting for a streak would abandon
+        // far more work than it saves.
+        if(fatal){
+          console.error(`\n!! Stopping this run — ${batchError}`);
+          console.error('!! Everything already priced above is saved. The rest is left for the');
+          console.error('!! next run, which retries skipped matches automatically.');
+          aborted = true;
+          break;
+        }
         if(aiFailStreak >= AI_FAIL_STREAK_ABORT){
           console.error(`\n!! ${aiFailStreak} AI calls failed back to back — stopping this run.`);
-          console.error('!! The provider is down, the key is wrong, or the quota is spent.');
-          console.error('!! Remaining matches are left unlogged on purpose, so the next run retries them.');
+          console.error('!! Remaining matches are left for the next run, which retries them.');
           aborted = true;
           break;
         }
@@ -588,35 +749,47 @@ async function main(){
       }
       aiFailStreak = 0;
 
-      console.log(`  Proposed: home ${move.home >= 0 ? '+' : ''}${move.home}% / away ${move.away >= 0 ? '+' : ''}${move.away}% — ${move.reason}`);
+      for(let i = 0; i < batch.length; i++){
+        const it = batch[i];
+        const move = moves.get(i);
 
-      const { data: inserted, error } = await supabase.from('match_events').insert({
-        ...baseRow,
-        home_delta_pct: move.home,
-        away_delta_pct: move.away,
-        ai_reason: move.reason,
-        status: 'pending',
-      }).select('id').single();
+        if(!move){
+          console.log(`  ${it.homeName} v ${it.awayName} — the AI left this one out of its reply.`);
+          await logSkip(it.baseRow, 'AI pricing failed: the provider left this match out of its reply, twice. The teams matched fine — this is not a naming problem.');
+          summary.aiFailed++;
+          continue;
+        }
 
-      if(error){ console.error('  Failed to log match event:', error.message); summary.dbFailed++; continue; }
+        console.log(`  ${it.homeName} v ${it.awayName}: home ${move.home >= 0 ? '+' : ''}${move.home}% / away ${move.away >= 0 ? '+' : ''}${move.away}% — ${move.reason}`);
 
-      if(!AUTO_APPLY){
-        console.log('  Logged for admin approval.');
-        summary.pending++;
-        continue;
+        const { data: inserted, error } = await supabase.from('match_events').insert({
+          ...it.baseRow,
+          home_delta_pct: move.home,
+          away_delta_pct: move.away,
+          ai_reason: move.reason,
+          status: 'pending',
+        }).select('id').single();
+
+        if(error){ console.error('  Failed to log match event:', error.message); summary.dbFailed++; continue; }
+
+        if(!AUTO_APPLY){
+          console.log('    Logged for admin approval.');
+          summary.pending++;
+          continue;
+        }
+
+        // Only apply on our own if BOTH sides are within the safe band.
+        const biggest = Math.max(Math.abs(move.home), Math.abs(move.away));
+        if(biggest > AUTO_APPLY_MAX_PCT){
+          console.log(`    Held for review — ${biggest}% exceeds the ${AUTO_APPLY_MAX_PCT}% auto-apply limit.`);
+          summary.held++;
+          continue;
+        }
+
+        const { error: applyErr } = await supabase.rpc('auto_apply_match_event', { p_event_id: inserted.id });
+        if(applyErr){ console.error('    Auto-apply failed, left pending:', applyErr.message); summary.pending++; }
+        else { console.log('    Applied automatically.'); summary.applied++; }
       }
-
-      // Only apply on our own if BOTH sides are within the safe band.
-      const biggest = Math.max(Math.abs(move.home), Math.abs(move.away));
-      if(biggest > AUTO_APPLY_MAX_PCT){
-        console.log(`  Held for review — ${biggest}% exceeds the ${AUTO_APPLY_MAX_PCT}% auto-apply limit.`);
-        summary.held++;
-        continue;
-      }
-
-      const { error: applyErr } = await supabase.rpc('auto_apply_match_event', { p_event_id: inserted.id });
-      if(applyErr){ console.error('  Auto-apply failed, left pending:', applyErr.message); summary.pending++; }
-      else { console.log('  Applied automatically.'); summary.applied++; }
     }
   }
 
