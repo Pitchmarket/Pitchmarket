@@ -277,9 +277,22 @@ function fold(name){
     .trim();
 }
 
-function normalize(name, isUCL){
-  const aliased = (isUCL && UCL_ALIASES[name]) || NAME_ALIASES[name] || name;
-  return fold(aliased);
+// Every name this feed name could be stored as on the site, most
+// specific first.
+//
+// This is deliberately a LIST, not a single translation. An alias used to
+// replace the feed name outright, which meant an alias pointing at a name
+// you don't use would break a match that the feed's own name would have
+// made on its own: "Stade Brestois 29" was aliased to "Brest", so a row
+// literally called "Stade Brestois 29" stopped matching. Aliases are now
+// additive — they can only ever add a way to match, never remove one.
+function candidateKeys(name, isUCL){
+  const out = [];
+  const push = (v) => { const f = fold(v); if(f && !out.includes(f)) out.push(f); };
+  if(isUCL && UCL_ALIASES[name]) push(UCL_ALIASES[name]);
+  if(NAME_ALIASES[name]) push(NAME_ALIASES[name]);
+  push(name);                      // the feed's own name, unchanged
+  return out;
 }
 
 // Returns an array of matches, or null if the feed itself errored —
@@ -630,11 +643,14 @@ async function getLeagueTeams(league){
 
 function findTeamRow(teams, teamName, isUCL){
   if(!teams) return null;
-  const norm = normalize(teamName, isUCL);
-  return teams.find(t => {
-    const tName = isUCL ? t.name.replace(' (UCL)', '') : t.name;
-    return fold(tName) === norm;
-  }) || null;
+  const siteKey = (t) => fold(isUCL ? t.name.replace(' (UCL)', '') : t.name);
+  // Candidates are tried in order, so an intentional alias still wins over
+  // a coincidental match on the raw name.
+  for(const key of candidateKeys(teamName, isUCL)){
+    const hit = teams.find(t => siteKey(t) === key);
+    if(hit) return hit;
+  }
+  return null;
 }
 
 // A match counts as "already handled" only if it produced a real result.
@@ -690,6 +706,7 @@ async function main(){
 
   const summary = { considered: 0, applied: 0, held: 0, pending: 0, noTeam: 0, aiFailed: 0, dbFailed: 0 };
   const unmatched = new Map();   // competition code -> Set of unresolved feed names
+  const leagueNames = new Map(); // competition code -> the team names actually on the site
   let aiFailStreak = 0;
   let aborted = false;
 
@@ -743,16 +760,17 @@ async function main(){
         continue;
       }
 
-      if(!homeTeam){
-        console.log(`  Could not match home team "${match.homeTeam.name}" (${leagueKey}).`);
+      const noteUnmatched = (side, feedName) => {
+        console.log(`  Could not match ${side} team "${feedName}" (${leagueKey}).`);
+        console.log(`    Tried: ${candidateKeys(feedName, code === 'CL').map(k => `"${k}"`).join(', ')}`);
         if(!unmatched.has(code)) unmatched.set(code, new Set());
-        unmatched.get(code).add(match.homeTeam.name);
-      }
-      if(!awayTeam){
-        console.log(`  Could not match away team "${match.awayTeam.name}" (${leagueKey}).`);
-        if(!unmatched.has(code)) unmatched.set(code, new Set());
-        unmatched.get(code).add(match.awayTeam.name);
-      }
+        unmatched.get(code).add(feedName);
+        // Record what the league actually holds, so the summary can show
+        // the two lists side by side instead of leaving you to guess.
+        if(!leagueNames.has(code)) leagueNames.set(code, (teams || []).map(t => t.name).sort());
+      };
+      if(!homeTeam) noteUnmatched('home', match.homeTeam.name);
+      if(!awayTeam) noteUnmatched('away', match.awayTeam.name);
 
       if(!homeTeam && !awayTeam){
         await logSkip(baseRow,
@@ -869,10 +887,17 @@ async function main(){
 
   if(unmatched.size){
     console.log('\n--- Names the feed sent that your site has nothing for ---');
-    console.log('(add the club in admin, or paste these lines into NAME_ALIASES and fill in the site name)');
     for(const [code, names] of unmatched){
-      console.log(`\n  ${code} (${COMPETITIONS[code]}):`);
-      for(const n of [...names].sort()) console.log(`    '${n.replace(/'/g, "\\'")}': '',`);
+      console.log(`\n  ${code} (${COMPETITIONS[code]})`);
+      console.log('  The feed sent these, and nothing on your site matched:');
+      for(const n of [...names].sort()) console.log(`    ${n}`);
+      const onSite = leagueNames.get(code);
+      if(onSite && onSite.length){
+        console.log(`  Your ${COMPETITIONS[code]} tab currently holds:`);
+        console.log(`    ${onSite.join(' · ')}`);
+      }
+      console.log('  Fix: rename the club in admin to match the feed, or add an alias:');
+      for(const n of [...names].sort()) console.log(`    '${n.replace(/'/g, "\\'")}': '<your site name>',`);
     }
   }
 
