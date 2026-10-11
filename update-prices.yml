@@ -11,10 +11,17 @@ name: Update PitchMarket prices
         description: 'How many days back to check (use 14 for a catch-up run after fixing team names)'
         required: false
         default: '3'
+      ai_min_gap_ms:
+        description: 'Milliseconds between AI calls. Raise to 8000 if the log shows HTTP 429 rate limits.'
+        required: false
+        default: '4500'
 
 jobs:
   update-prices:
     runs-on: ubuntu-latest
+    # Pacing the AI calls makes a busy matchday take a few minutes rather
+    # than seconds. This ceiling just stops a stuck run billing all day.
+    timeout-minutes: 45
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -35,8 +42,14 @@ jobs:
           AI_PROVIDER: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '3' }}
-          # Auto-apply prices without approval. Set to 'true' to switch on.
-          # Moves larger than AUTO_APPLY_MAX_PCT are still held for review.
+          # Minimum gap between AI calls. The free Gemini tier caps requests
+          # per minute, and on a full matchday there can be 40+ matches to
+          # price — without this gap the cap is hit and every remaining match
+          # fails. 4500ms is roughly 13 calls a minute.
+          AI_MIN_GAP_MS: ${{ github.event.inputs.ai_min_gap_ms || '4500' }}
+          # Auto-apply prices without approval. Set to 'false' to review
+          # every change by hand instead. Moves larger than
+          # AUTO_APPLY_MAX_PCT are always held for review either way.
           AUTO_APPLY: 'true'
           AUTO_APPLY_MAX_PCT: '8'
           # To switch to Claude later: change AI_PROVIDER above to "claude",
