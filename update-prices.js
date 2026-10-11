@@ -59,6 +59,9 @@ const AI_MAX_RETRIES = parseInt(process.env.AI_MAX_RETRIES || '4', 10);
 // not ten, which is what keeps a real matchday inside the free tier's
 // daily cap. Set to 1 to go back to one call per match.
 const AI_BATCH_SIZE = Math.max(1, Math.min(25, parseInt(process.env.AI_BATCH_SIZE || '10', 10)));
+// Output token ceiling per AI call. Only worth touching if the log says
+// the model ran out of budget mid-answer.
+const AI_MAX_OUTPUT = parseInt(process.env.AI_MAX_OUTPUT || '0', 10);
 // If this many AI calls fail back to back, the provider is down or the
 // daily quota is gone. Stop the run rather than writing dozens of
 // skipped rows — unlogged matches get picked up on the next run.
@@ -415,14 +418,48 @@ function fatalHint(status){
   return '';
 }
 
+// Two request shapes. "strict" asks Gemini to emit JSON directly and to
+// skip its reasoning pass — the current Flash models are thinking models,
+// and thinking both costs output tokens and puts prose in the reply.
+// "plain" is the fallback for any model or endpoint that rejects those
+// options, so an unsupported setting can never take the whole run down.
+function geminiBody(items, strict){
+  const generationConfig = {
+    // Generous: thinking tokens, when enabled, are drawn from this same
+    // budget, so a tight limit gets spent before the answer even starts.
+    maxOutputTokens: AI_MAX_OUTPUT || (1500 + items.length * 220),
+    temperature: 0.4,
+  };
+  if(strict){
+    generationConfig.responseMimeType = 'application/json';
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+  return JSON.stringify({
+    contents: [{ parts: [{ text: buildBatchPrompt(items) }] }],
+    generationConfig,
+  });
+}
+
+// A thinking model returns several parts, and the reasoning trace can come
+// FIRST. Reading parts[0] therefore grabs the thinking, not the answer —
+// which is exactly how valid replies ended up reported as invalid JSON.
+// Take every non-thought part; fall back to all parts if that's empty.
+function extractGeminiText(data){
+  const candidate = data.candidates?.[0];
+  const parts = candidate?.content?.parts || [];
+  const textOf = (list) => list.filter(p => typeof p?.text === 'string').map(p => p.text).join('');
+  const answer = textOf(parts.filter(p => !p?.thought));
+  return {
+    text: (answer || textOf(parts)).trim(),
+    finishReason: candidate?.finishReason || '',
+    partCount: parts.length,
+  };
+}
+
 async function askGemini(items){
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-  const body = JSON.stringify({
-    contents: [{ parts: [{ text: buildBatchPrompt(items) }] }],
-    // Room for one object per match, plus slack. Without this a long
-    // batch can be cut off mid-array and parse as a failure.
-    generationConfig: { maxOutputTokens: 400 + items.length * 120 },
-  });
+  let strict = true;
+  let body = geminiBody(items, strict);
 
   for(let attempt = 0; attempt <= AI_MAX_RETRIES; attempt++){
     await paceAICall();
@@ -440,9 +477,36 @@ async function askGemini(items){
 
     if(res.ok){
       const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-      if(!text) return { error: 'Gemini returned an empty response' };
-      return parseBatchResponse(text, items.length);
+      const { text, finishReason, partCount } = extractGeminiText(data);
+
+      if(!text){
+        if(finishReason === 'MAX_TOKENS'){
+          return { error: 'Gemini used its whole token budget before answering (raise AI_MAX_OUTPUT or lower AI_BATCH_SIZE)' };
+        }
+        return { error: `Gemini returned an empty response${finishReason ? ' (finishReason: ' + finishReason + ')' : ''}` };
+      }
+
+      const parsed = parseBatchResponse(text, items.length);
+      if(parsed.error){
+        // Say what the reply actually looked like, so the next failure is
+        // diagnosable from the log alone rather than by guesswork.
+        console.error(`  Reply had ${partCount} part(s), finishReason ${finishReason || 'unknown'}, ${text.length} chars.`);
+        if(finishReason === 'MAX_TOKENS'){
+          return { error: 'Gemini ran out of output tokens mid-answer (lower AI_BATCH_SIZE, or raise AI_MAX_OUTPUT)' };
+        }
+      }
+      return parsed;
+    }
+
+    // An option this model doesn't support shouldn't cost us the run —
+    // drop back to the plain request and try once more before giving up.
+    if(res.status === 400 && strict){
+      const why = (await res.text()).slice(0, 300);
+      console.log('  Gemini rejected the strict JSON request — retrying in plain mode.');
+      console.log(`    (${why})`);
+      strict = false;
+      body = geminiBody(items, strict);
+      continue;
     }
 
     const errText = (await res.text()).slice(0, 500);
@@ -467,7 +531,7 @@ async function askGemini(items){
 async function askClaude(items){
   const body = JSON.stringify({
     model: process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001',
-    max_tokens: 400 + items.length * 120,
+    max_tokens: AI_MAX_OUTPUT || (1500 + items.length * 220),
     messages: [{ role: 'user', content: buildBatchPrompt(items) }],
   });
 
