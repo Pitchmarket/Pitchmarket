@@ -295,15 +295,113 @@ function candidateKeys(name, isUCL){
   return out;
 }
 
+// football-data's free tier allows 10 requests a minute, and this script
+// now makes two calls per competition instead of one. Retry a 429 rather
+// than losing a whole league's matchday to a rate limit.
+async function footballData(path, label){
+  const url = `https://api.football-data.org/v4/${path}`;
+  for(let attempt = 0; attempt < 4; attempt++){
+    const res = await fetch(url, { headers: { 'X-Auth-Token': FOOTBALL_DATA_API_KEY } });
+    if(res.ok) return res.json();
+    if(res.status === 429 && attempt < 3){
+      const wait = 15000 * (attempt + 1);
+      console.log(`  football-data rate limit on ${label} — waiting ${wait / 1000}s.`);
+      await sleep(wait);
+      continue;
+    }
+    console.error(`football-data.org error for ${label}:`, res.status, (await res.text()).slice(0, 300));
+    return null;
+  }
+  return null;
+}
+
 // Returns an array of matches, or null if the feed itself errored —
 // which is a different thing from "no matches played", and shouldn't
 // be treated as a quiet day.
 async function fetchFinishedMatches(code, dateFrom, dateTo){
-  const url = `https://api.football-data.org/v4/competitions/${code}/matches?status=FINISHED&dateFrom=${dateFrom}&dateTo=${dateTo}`;
-  const res = await fetch(url, { headers: { 'X-Auth-Token': FOOTBALL_DATA_API_KEY } });
-  if(!res.ok){ console.error(`football-data.org error for ${code}:`, res.status, (await res.text()).slice(0, 300)); return null; }
-  const data = await res.json();
+  const data = await footballData(
+    `competitions/${code}/matches?status=FINISHED&dateFrom=${dateFrom}&dateTo=${dateTo}`,
+    `${code} matches`
+  );
+  if(!data) return null;
   return data.matches || [];
+}
+
+// The current league table, which is the context the AI was missing. Without
+// it, "Liverpool 2-0 Brighton" is just a 2-0 — the model can't tell whether
+// Brighton are second or bottom, so every win looks equally routine.
+//
+// One request per competition, and only for competitions that actually have
+// matches to price, so a quiet league costs nothing. Returns a Map keyed by
+// the folded team name, or null if standings aren't available (some cup
+// formats have none, which is survivable — the run just loses this context).
+const standingsCache = new Map();
+async function fetchStandings(code){
+  if(standingsCache.has(code)) return standingsCache.get(code);
+  const data = await footballData(`competitions/${code}/standings`, `${code} standings`);
+  if(!data || !Array.isArray(data.standings)){
+    standingsCache.set(code, null);
+    return null;
+  }
+
+  const table = new Map();
+  for(const group of data.standings){
+    // TOTAL is the combined home+away table; HOME and AWAY are splits of it.
+    if(group.type && group.type !== 'TOTAL') continue;
+    for(const row of (group.table || [])){
+      const name = row.team?.name;
+      if(!name) continue;
+      table.set(fold(name), {
+        name,
+        position: row.position,
+        played: row.playedGames,
+        points: row.points,
+        goalDifference: row.goalDifference,
+        // football-data sends form as "W,W,D,L,W" when it has it.
+        form: typeof row.form === 'string' ? row.form.replace(/,/g, '') : '',
+        groupName: group.group || '',
+      });
+    }
+  }
+  standingsCache.set(code, table.size ? table : null);
+  return standingsCache.get(code);
+}
+
+// What the AI is told about one side of a match: where they sit and what
+// they're currently worth on the site. Both matter — the table says how good
+// they are, the price says how much of that is already priced in.
+function describeSide(teamName, standing, teamRow){
+  const bits = [];
+  if(standing){
+    bits.push(`${standing.position}${ordinalSuffix(standing.position)}`);
+    bits.push(`${standing.points}pts`);
+    if(standing.form) bits.push(`form ${standing.form}`);
+  }
+  if(teamRow) bits.push(`price ${Number(teamRow.price).toFixed(2)}`);
+  return bits.length ? `${teamName} (${bits.join(', ')})` : teamName;
+}
+
+// The table as compact text, one club per line, with the site's own price
+// beside each. The price column is what lets the model see that a club is
+// already expensive for its position, or cheap for it.
+function buildTableRows(standings, teams, isUCL){
+  const rows = [...standings.values()].sort((a, b) => (a.position || 99) - (b.position || 99));
+  return rows.slice(0, 40).map(r => {
+    const row = teams ? findTeamRow(teams, r.name, isUCL) : null;
+    const price = row ? Number(row.price).toFixed(2) : '—';
+    const gd = r.goalDifference > 0 ? `+${r.goalDifference}` : `${r.goalDifference}`;
+    return `  ${String(r.position).padStart(2)}. ${r.name.padEnd(28).slice(0, 28)}` +
+           ` ${String(r.played).padStart(2)}pl ${String(r.points).padStart(2)}pts ` +
+           `GD ${gd.padStart(3)}  ${(r.form || '').padEnd(5)}  price ${price}`;
+  });
+}
+
+function ordinalSuffix(n){
+  if(n % 100 >= 11 && n % 100 <= 13) return 'th';
+  if(n % 10 === 1) return 'st';
+  if(n % 10 === 2) return 'nd';
+  if(n % 10 === 3) return 'rd';
+  return 'th';
 }
 
 // ============================================================
@@ -324,18 +422,35 @@ async function fetchFinishedMatches(code, dateFrom, dateTo){
 // ============================================================
 function buildBatchPrompt(items){
   const lines = items.map((it, i) =>
-    `${i + 1}. [${it.competitionName}] ${it.homeName} ${it.homeScore} - ${it.awayScore} ${it.awayName}`
+    `${i + 1}. ${describeSide(it.homeName, it.homeStanding, it.homeRow)} ${it.homeScore} - ${it.awayScore} ${describeSide(it.awayName, it.awayStanding, it.awayRow)}`
   ).join('\n');
 
-  return `These ${items.length} football match${items.length === 1 ? '' : 'es'} have just finished. For EACH one, decide how much each team's stock price should move as a percentage, reflecting the result.
+  // Every match in a batch comes from one competition, so the table is
+  // included once rather than per match.
+  const competition = items[0] ? items[0].competitionName : '';
+  const table = items[0] && items[0].tableRows && items[0].tableRows.length
+    ? `\nCurrent ${competition} table:\n` + items[0].tableRows.join('\n') + '\n'
+    : '';
 
-Consider margin of victory, and that a home draw is milder than an away draw. Winners go up, losers go down, draws move slightly for both (usually toward the run of play if the score suggests one side dominated). Keep moves realistic: routine results should be small (1-4%), landslide or shock results can be larger (up to 15%), draws are usually under 2%. Judge each match on its own merits — do not make them all the same size.
+  return `These ${items.length} ${competition} match${items.length === 1 ? '' : 'es'} have just finished. For EACH one, decide how much each team's stock price should move as a percentage.
+
+These are tradeable stocks in a game, so a price should move by how much the result CHANGES what a club looks worth — not simply by who won.
+${table}
+How to size each move:
+- What matters is whether the result was expected, not the scoreline on its own. Use the table positions, the form and the current prices above to judge that.
+- Beating a side ABOVE you in the table, or priced higher than you, is a genuine statement: 4-8% for a convincing win, up to 12-15% for a thrashing or a real shock.
+- Beating a side far BELOW you is expected and should barely move: 1-3%, even on a big scoreline. A 4-0 over a relegation side tells us nothing new.
+- Losing to a side below you, or priced below you, is worse than losing to the leaders: 4-9% down. Losing to a title rival is mildly bad, not catastrophic: 2-4%.
+- Draws are usually under 2%, but weight them by expectation too — a draw away at a far stronger side is a small positive for the underdog and a small negative for the favourite.
+- Margin amplifies a move, it doesn't decide it. Judge the opponent first, the scoreline second.
+- Form matters: a win that ends a bad run, or a loss that extends one, should move further than the same result mid-season from a steady side.
+- The two sides are NOT mirror images. The winner gaining 6% does not mean the loser drops 6%.
 
 Matches:
 ${lines}
 
 Respond with ONLY a JSON array, one object per match, covering all ${items.length}, nothing else, no markdown fences:
-[{"match": <the number above>, "home_delta_pct": <number, can be negative>, "away_delta_pct": <number, can be negative>, "reason": "<one short sentence>"}]`;
+[{"match": <the number above>, "home_delta_pct": <number, can be negative>, "away_delta_pct": <number, can be negative>, "reason": "<one short sentence naming why the result was or wasn't expected>"}]`;
 }
 
 // Pull the JSON array out of a reply and key it by match number. Tolerant
@@ -416,6 +531,23 @@ async function paceAICall(){
 // just burns the clock.
 function isRetryable(status){ return status === 429 || status === 408 || (status >= 500 && status < 600); }
 
+// Transient: the provider's problem, not your data's. Nothing about the
+// match is wrong, so these must NOT leave a skipped row behind — the
+// match is simply left unlogged for the next run to pick up. A 503 on
+// Google's side filling your approvals queue with twenty permanent-looking
+// failures is noise, not information.
+function isTransient(status){ return status === 429 || status === 408 || (status >= 500 && status < 600); }
+
+// How long to wait before retrying a provider wobble. Longer than the old
+// backoff, because an overloaded Gemini commonly stays overloaded for a
+// few minutes, and jittered so repeated runs don't retry in lockstep.
+function backoffMs(attempt, status, hintedSeconds){
+  if(hintedSeconds) return (hintedSeconds + 1) * 1000;
+  const base = (status >= 500 && status < 600) ? 8000 : 5000;
+  const grown = Math.min(60000, base * Math.pow(2, attempt));
+  return Math.round(grown * (0.75 + Math.random() * 0.5));
+}
+
 // Errors there is no point carrying on through. A 429 that survived every
 // retry means the quota is gone for now; 401/403 means the key is wrong;
 // 400/404 means the model name is wrong. None of those will fix
@@ -484,8 +616,8 @@ async function askGemini(items){
         body,
       });
     } catch(e){
-      if(attempt < AI_MAX_RETRIES){ await sleep(2000 * Math.pow(2, attempt)); continue; }
-      return { error: `network error reaching Gemini: ${e.message}` };
+      if(attempt < AI_MAX_RETRIES){ await sleep(backoffMs(attempt, 0)); continue; }
+      return { error: `network error reaching Gemini: ${e.message}`, transient: true };
     }
 
     if(res.ok){
@@ -526,7 +658,7 @@ async function askGemini(items){
     if(isRetryable(res.status) && attempt < AI_MAX_RETRIES){
       // Google usually says exactly how long to wait — use that if present.
       const hinted = /"retryDelay"\s*:\s*"(\d+)s"/.exec(errText);
-      const backoff = hinted ? (parseInt(hinted[1], 10) + 1) * 1000 : 5000 * Math.pow(2, attempt);
+      const backoff = backoffMs(attempt, res.status, hinted ? parseInt(hinted[1], 10) : 0);
       console.log(`  Gemini ${res.status} — waiting ${Math.round(backoff/1000)}s, retry ${attempt + 1}/${AI_MAX_RETRIES}.`);
       await sleep(backoff);
       continue;
@@ -536,9 +668,10 @@ async function askGemini(items){
     return {
       error: `Gemini HTTP ${res.status}${hint ? ' — ' + hint : ''}`,
       fatal: isFatal(res.status),
+      transient: isTransient(res.status),
     };
   }
-  return { error: 'Gemini failed after all retries', fatal: true };
+  return { error: 'Gemini failed after all retries', transient: true };
 }
 
 async function askClaude(items){
@@ -562,8 +695,8 @@ async function askClaude(items){
         body,
       });
     } catch(e){
-      if(attempt < AI_MAX_RETRIES){ await sleep(2000 * Math.pow(2, attempt)); continue; }
-      return { error: `network error reaching Claude: ${e.message}` };
+      if(attempt < AI_MAX_RETRIES){ await sleep(backoffMs(attempt, 0)); continue; }
+      return { error: `network error reaching Claude: ${e.message}`, transient: true };
     }
 
     if(res.ok){
@@ -575,7 +708,7 @@ async function askClaude(items){
 
     const errText = (await res.text()).slice(0, 500);
     if(isRetryable(res.status) && attempt < AI_MAX_RETRIES){
-      const backoff = 5000 * Math.pow(2, attempt);
+      const backoff = backoffMs(attempt, res.status);
       console.log(`  Claude ${res.status} — waiting ${Math.round(backoff/1000)}s, retry ${attempt + 1}/${AI_MAX_RETRIES}.`);
       await sleep(backoff);
       continue;
@@ -585,9 +718,10 @@ async function askClaude(items){
     return {
       error: `Claude HTTP ${res.status}${hint ? ' — ' + hint : ''}`,
       fatal: isFatal(res.status),
+      transient: isTransient(res.status),
     };
   }
-  return { error: 'Claude failed after all retries', fatal: true };
+  return { error: 'Claude failed after all retries', transient: true };
 }
 
 async function askForPriceMoves(items){
@@ -605,7 +739,10 @@ async function askForPriceMoves(items){
 // means those specific matches couldn't be priced.
 async function priceBatch(items){
   const first = await askForPriceMoves(items);
-  if(first.error) return { moves: new Map(), error: first.error, fatal: !!first.fatal };
+  if(first.error) return {
+    moves: new Map(), error: first.error,
+    fatal: !!first.fatal, transient: !!first.transient,
+  };
 
   const moves = first.moves;
   const missing = items.map((_, i) => i).filter(i => !moves.has(i));
@@ -704,7 +841,8 @@ async function main(){
   const dateFrom = new Date(now.getTime() - LOOKBACK_DAYS*24*60*60*1000).toISOString().slice(0,10);
   console.log(`Window: ${dateFrom} to ${dateTo}`);
 
-  const summary = { considered: 0, applied: 0, held: 0, pending: 0, noTeam: 0, aiFailed: 0, dbFailed: 0 };
+  const summary = { considered: 0, applied: 0, held: 0, pending: 0, noTeam: 0, aiFailed: 0, dbFailed: 0, deferred: 0 };
+  let deferredNote = '';         // why the run stopped, if it did
   const unmatched = new Map();   // competition code -> Set of unresolved feed names
   const leagueNames = new Map(); // competition code -> the team names actually on the site
   let aiFailStreak = 0;
@@ -784,11 +922,24 @@ async function main(){
         homeName: match.homeTeam.name,
         awayName: match.awayTeam.name,
         homeScore, awayScore,
+        homeRow: homeTeam, awayRow: awayTeam,
         competitionName: match.competition?.name || code,
       });
     }
 
     if(toPrice.length === 0){ console.log('  Nothing new to price.'); continue; }
+
+    // Only now fetch the table — a league with nothing to price costs no
+    // extra API call.
+    const standings = await fetchStandings(code);
+    const teams = await getLeagueTeams(leagueKey);
+    const tableRows = standings ? buildTableRows(standings, teams, code === 'CL') : [];
+    if(!standings) console.log('  No standings available for this competition — pricing without table context.');
+    for(const it of toPrice){
+      it.homeStanding = standings ? standings.get(fold(it.homeName)) : null;
+      it.awayStanding = standings ? standings.get(fold(it.awayName)) : null;
+      it.tableRows = tableRows;
+    }
 
     // ---- Phase 2: price them in batches ----
     const batchCount = Math.ceil(toPrice.length / AI_BATCH_SIZE);
@@ -799,28 +950,33 @@ async function main(){
       const batch = toPrice.slice(start, start + AI_BATCH_SIZE);
       for(const it of batch) console.log(`    ${it.homeName} ${it.homeScore}-${it.awayScore} ${it.awayName}`);
 
-      const { moves, error: batchError, fatal } = await priceBatch(batch);
+      const { moves, error: batchError, fatal, transient } = await priceBatch(batch);
 
       if(batchError){
-        // The whole call failed, so every match in it is unpriced. This
-        // counts as ONE failed call against the streak, not one per match.
+        // A provider-level failure — overloaded, rate limited, unreachable,
+        // or misconfigured — says nothing about these matches. Writing a
+        // skipped row for each one would fill the approvals queue with
+        // permanent-looking failures for something that fixes itself, so
+        // leave them unlogged and let the next run pick them up.
+        if(transient || fatal){
+          console.error(`\n!! Stopping this run — ${batchError}`);
+          console.error(`!! ${batch.length} match(es) in this batch deferred, with nothing written.`);
+          console.error('!! Everything priced above is saved. The next run picks up the rest.');
+          summary.deferred += batch.length;
+          deferredNote = batchError;
+          aborted = true;
+          break;
+        }
+
+        // Anything else is the model mishandling this particular request
+        // (an unparseable reply that survived a retry), which IS worth a
+        // row, because it may not fix itself.
         console.log(`  Batch failed — ${batchError}`);
         for(const it of batch){
           await logSkip(it.baseRow, `AI pricing failed: ${batchError}. The teams matched fine — this is not a naming problem.`);
           summary.aiFailed++;
         }
         aiFailStreak++;
-
-        // Stop at once on an error that won't resolve itself mid-run.
-        // One batch is ten matches, so waiting for a streak would abandon
-        // far more work than it saves.
-        if(fatal){
-          console.error(`\n!! Stopping this run — ${batchError}`);
-          console.error('!! Everything already priced above is saved. The rest is left for the');
-          console.error('!! next run, which retries skipped matches automatically.');
-          aborted = true;
-          break;
-        }
         if(aiFailStreak >= AI_FAIL_STREAK_ABORT){
           console.error(`\n!! ${aiFailStreak} AI calls failed back to back — stopping this run.`);
           console.error('!! Remaining matches are left for the next run, which retries them.');
@@ -884,6 +1040,15 @@ async function main(){
   console.log(`Skipped — no team matched: ${summary.noTeam}`);
   console.log(`Skipped — AI call failed:  ${summary.aiFailed}`);
   console.log(`Skipped — database error:  ${summary.dbFailed}`);
+  console.log(`Deferred to the next run:  ${summary.deferred}`);
+
+  if(summary.deferred > 0){
+    console.log(`\nThis run stopped early: ${deferredNote}`);
+    console.log('That is the AI provider, not your data. No rows were written for the');
+    console.log('deferred matches, so nothing appears in Price Approvals and the next');
+    console.log('run prices them normally. If it was a 503, Google was overloaded —');
+    console.log('it clears on its own, usually within minutes.');
+  }
 
   if(unmatched.size){
     console.log('\n--- Names the feed sent that your site has nothing for ---');
