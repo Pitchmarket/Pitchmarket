@@ -8,6 +8,18 @@ Where the project stands before public launch. Update this file in the same pull
 
 Launch blockers, roughly in the order to tackle them.
 
+### Running the competition
+
+- **Reset the world before Christmas** (hard deadline). Clear `holdings`, `trades` and `price_history`; set every balance to 2,000.
+- **Close the price-lag exploit.** Lock a team from kickoff until its price update applies, or players can trade on results the price doesn't reflect yet.
+- **Publish the rules before entry opens:** exact start and end timestamps with timezone, eligibility, and how the winner is decided.
+- **Write the tie-break rule** for equal final balances. There's a cash pot, so this must be settled up front.
+- **State the multi-account rule.** Nothing stops one person running several accounts and keeping the best. CAPTCHA doesn't solve this.
+- **Verify the leaderboard maths** by hand for two accounts: total = coins + holdings at current price.
+- **Decide whether the organiser plays** (see open decisions).
+
+### Platform
+
 1. **Commit the database schema.** Add `supabase-schema.sql` with every table, RLS policy and function (`trade`, `get_leaderboard`, `approve_match_event`, `auto_apply_match_event`, `clear_read_notifications`). Nothing below can be reviewed until this is in the repo.
 2. **Lock down admin.** Prove a plain signed-in account can't edit `teams` or `site_settings`, approve `match_events`, or call the admin functions. Remove the "create admin account" button (`admin.html:259`).
 3. **Lock down player data.** Players must not be able to update their own `coin_balance`, `is_pro`, `is_ultimate` or `pro_expires_at`. `holdings`, `trades`, `watchlist` and `notifications` must be readable and writable only by their owner.
@@ -22,6 +34,8 @@ Launch blockers, roughly in the order to tackle them.
 
 Not blocking launch, but wanted soon after.
 
+- **Trade rate limit.** A few seconds' cooldown between trades, enforced in the `trade` function, so a script can't fire hundreds of trades around a price update.
+- **Data-outage policy.** What happens to the standings if the price pipeline is down for a week.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
 - **Real price charts.** Replace the generated hero chart and table sparklines (`genSeries`, `index.html:731`) with data from `price_history`. Update or remove the hardcoded cup spotlight chart.
 - **Server-side Pro limits.** The watchlist limit (5 free, 25 Pro, unlimited Ultimate) is only checked in the browser (`index.html:1340`).
@@ -52,7 +66,9 @@ Not blocking launch, but wanted soon after.
 ## Open decisions
 
 - **Launch with Pro, or hide it?** Shipping Pro needs Stripe links, a webhook, cancellation handling and server-side limits. Hiding it means removing or toggling the Pro band in admin.
-- **Leaderboard prizes?** If there are any, contest and sweepstakes law applies and needs checking per country. Fan Coins must stay unbuyable and uncashable either way.
+- **Is the organiser playing or running it?** Admin can change prices by hand, so competing as well is a conflict of interest. Pick one.
+- **Tie-break and multi-account rules** (see Next up). Both need a written answer before entry opens.
+- **Cash pot legality.** The competition has a cash prize, so contest and sweepstakes law applies and needs checking per country. Fan Coins must stay unbuyable and uncashable.
 - **Auto-apply limit.** Currently moves up to 8% apply without review (`AUTO_APPLY_MAX_PCT`). Keep it, lower it for launch, or turn auto-apply off for the first weeks?
 - **AI provider.** Stay on Gemini's free tier, or move to Claude (paid) for better pricing judgment and fewer quota failures?
 - **Paid data and AI tiers.** Whether to pay for football-data.org and the AI provider to avoid rate limits on busy matchdays. Also confirm football-data.org's terms allow use on a site that takes payments.
