@@ -644,8 +644,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 </head>
 <body>
 
-<div class="ad-rail ad-rail-left" id="adRailLeft"><span id="adRailLeftText">AD SPACE<br>160×400</span></div>
-<div class="ad-rail ad-rail-right" id="adRailRight"><span id="adRailRightText">AD SPACE<br>160×400</span></div>
+<div class="ad-rail ad-rail-left" id="adRailLeft" style="display:none;"><span id="adRailLeftText"></span></div>
+<div class="ad-rail ad-rail-right" id="adRailRight" style="display:none;"><span id="adRailRightText"></span></div>
 
 <div class="ticker-wrap"><div class="ticker-track mono" id="tickerTrack"></div></div>
 <div class="config-banner" id="configBanner">Add your Supabase URL and anon key to the CONFIG block near the top of this file to enable real sign-in and trading.</div>
@@ -698,7 +698,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 
 <section class="hero" style="border-bottom:1px solid var(--border-soft); padding-top:64px;">
   <div class="hero-copy">
-    <div class="eyebrow" id="heroEyebrow">LIVE MARKET · 47,208 traders online</div>
+    <div class="eyebrow" id="heroEyebrow">FREE TO PLAY · SEASON-LONG COMPETITION</div>
     <h1 class="display"><span id="heroLine1">Every club</span><br><span id="heroLine2">has a price.</span><br><span class="line2" id="heroLine3">Trade the table.</span></h1>
     <p id="heroSubhead">Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.</p>
     <div class="hero-actions">
@@ -724,11 +724,11 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   </div>
 </section>
 
-<div style="padding:20px 0 0;" id="adTopBanner">
+<div style="padding:20px 0 0; display:none;" id="adTopBanner">
   <div class="ad-banner">
     <div class="ad-body">
       <span class="ad-tag" id="adTopTag">Sponsored</span>
-      <div class="ad-copy" id="adTopCopy"><b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.</div>
+      <div class="ad-copy" id="adTopCopy"></div>
     </div>
     <a href="#" class="ad-cta" id="adTopCta">Shop now ↗</a>
   </div>
@@ -745,11 +745,11 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   <div class="index-grid" id="indexGrid"></div>
 </section>
 
-<div style="padding:0;" id="adNativeBanner">
+<div style="padding:0; display:none;" id="adNativeBanner">
   <div class="ad-banner ad-native">
     <div class="ad-body">
       <span class="ad-tag" id="adNativeTag">Sponsored</span>
-      <div class="ad-copy" id="adNativeCopy"><b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.</div>
+      <div class="ad-copy" id="adNativeCopy"></div>
     </div>
     <a href="#" class="ad-cta" id="adNativeCta">Try free ↗</a>
   </div>
@@ -1190,15 +1190,15 @@ let indices = [
 // ============================================================
 let siteContent = {
   hero: {
-    eyebrow:'LIVE MARKET · 47,208 traders online',
+    eyebrow:'FREE TO PLAY · SEASON-LONG COMPETITION',
     line1:'Every club', line2:'has a price.', line3:'Trade the table.',
     subhead:"Trade equity in Europe's top five leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing.",
     stat1_n:'82', stat1_l:'Listed clubs & teams',
     stat2_n:'9', stat2_l:'Markets covered',
     stat3_n:'2,000', stat3_l:'Starting coins, everyone',
   },
-  ad_top: { tag:'Sponsored', copy:"<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.", cta_text:'Shop now ↗', cta_url:'#' },
-  ad_native: { tag:'Sponsored', copy:'<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.', cta_text:'Try free ↗', cta_url:'#' },
+  ad_top: { tag:'Sponsored', copy:'', cta_text:'', cta_url:'#' },
+  ad_native: { tag:'Sponsored', copy:'', cta_text:'', cta_url:'#' },
   spotlight: {
     eyebrow:'SPOTLIGHT · HAPPENING THIS WEEK', title:'Qualifying is where fortunes turn',
     desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
@@ -1264,10 +1264,9 @@ let siteContent = {
       {label:'About', href:'#classes'},
       {label:'Rules of trading', href:'#leaderboard'},
       {label:'Risk disclosure', href:'#disclaimer'},
-      {label:'Contact', href:'mailto:hello@pitchmarket.example'},
     ],
   },
-  ad_rails:{ left:'AD SPACE<br>160×400', right:'AD SPACE<br>160×400' },
+  ad_rails:{ left:'', right:'' },
   disclaimer:{ text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
 };
 
@@ -1294,6 +1293,9 @@ function renderSiteContent(){
   document.getElementById('adNativeCopy').innerHTML = c.ad_native.copy;
   document.getElementById('adNativeCta').textContent = c.ad_native.cta_text;
   document.getElementById('adNativeCta').href = c.ad_native.cta_url;
+  // An ad with no copy is hidden, so blanking it in admin removes it from the page.
+  document.getElementById('adTopBanner').style.display = c.ad_top.copy ? '' : 'none';
+  document.getElementById('adNativeBanner').style.display = c.ad_native.copy ? '' : 'none';
   // spotlight
   document.getElementById('spotlightEyebrow').textContent = c.spotlight.eyebrow;
   document.getElementById('spotlightTitle').textContent = c.spotlight.title;
@@ -1390,6 +1392,8 @@ function renderSiteContent(){
   const arr = document.getElementById('adRailRightText');
   if(arl && ar.left != null) arl.innerHTML = ar.left;
   if(arr && ar.right != null) arr.innerHTML = ar.right;
+  document.getElementById('adRailLeft').style.display = ar.left ? '' : 'none';
+  document.getElementById('adRailRight').style.display = ar.right ? '' : 'none';
 }
 renderSiteContent();
 

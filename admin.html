@@ -251,12 +251,11 @@ tbody tr:last-child td{ border-bottom:none; }
 <div id="gate">
   <div class="gate-card">
     <div class="gate-title display">Admin</div>
-    <div class="gate-sub">Sign in with the exact email you put in the SQL policy.</div>
+    <div class="gate-sub">Sign in with your admin account.</div>
     <div id="gateMsg" class="gate-msg"></div>
     <div class="field"><label>Email</label><input id="email" type="email" placeholder="you@example.com"></div>
     <div class="field"><label>Password</label><input id="password" type="password" placeholder="••••••••"></div>
     <button class="btn primary" id="signInBtn">Sign in</button>
-    <button class="btn ghost" id="signUpBtn">First time — create admin account</button>
   </div>
 </div>
 
@@ -533,16 +532,6 @@ async function signIn(){
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if(error){ showMsg(error.message, 'err'); return; }
   onAuthed(data.user);
-}
-
-async function signUp(){
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  if(!sb){ showMsg('Add your Supabase URL/key to the CONFIG block first.', 'err'); return; }
-  if(password.length < 6){ showMsg('Password needs at least 6 characters.', 'err'); return; }
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if(error){ showMsg(error.message, 'err'); return; }
-  showMsg('Account created. If email confirmation is on in your Supabase project, check your inbox, then sign in. Otherwise you are signed in already — click Sign in.', 'ok');
 }
 
 function onAuthed(user){
@@ -1283,7 +1272,6 @@ document.querySelectorAll('.editor-block').forEach(block=>{
 });
 
 document.getElementById('signInBtn').addEventListener('click', signIn);
-document.getElementById('signUpBtn').addEventListener('click', signUp);
 document.getElementById('signOutBtn').addEventListener('click', async ()=>{
   await sb.auth.signOut();
   location.reload();
