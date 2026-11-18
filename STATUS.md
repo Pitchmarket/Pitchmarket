@@ -21,7 +21,7 @@ Launch blockers, roughly in the order to tackle them.
 ### Platform
 
 1. **Commit the database schema.** Add `supabase-schema.sql` with every table, RLS policy and function (`trade`, `get_leaderboard`, `approve_match_event`, `auto_apply_match_event`, `clear_read_notifications`). Nothing below can be reviewed until this is in the repo.
-2. **Lock down admin.** Prove a plain signed-in account can't edit `teams` or `site_settings`, approve `match_events`, or call the admin functions. Remove the "create admin account" button (`admin.html:259`).
+2. **Lock down admin.** Prove a plain signed-in account can't edit `teams` or `site_settings`, approve `match_events`, or call the admin functions.
 3. **Lock down player data.** Players must not be able to update their own `coin_balance`, `is_pro`, `is_ultimate` or `pro_expires_at`. `holdings`, `trades`, `watchlist` and `notifications` must be readable and writable only by their owner.
 4. **Audit the `trade` function.** It must use the price stored in the database, reject zero and negative quantities, check balance and holdings in one transaction, and run with a fixed `search_path`.
 5. **Fix team-name matching.** Run the workflow by hand with `lookback_days: 14` and clear every name in the run summary's "unmatched" list.
@@ -51,7 +51,7 @@ Not blocking launch, but wanted soon after.
 
 | Issue | Where | Impact |
 |---|---|---|
-| Admin page has no role check; any signed-in user sees the dashboard, and it offers sign-up | `admin.html:548` | Safe only if RLS blocks every admin write. Unverified. |
+| Admin page has no role check; any signed-in user sees the dashboard | `admin.html:548` | Safe only if RLS blocks every admin write. Unverified. |
 | Schema, RLS and functions are not in the repo | README | Backend can't be rebuilt or reviewed |
 | Admin-edited site content and checkout links are inserted as raw HTML | `index.html:963`, `index.html:1012` | A compromised admin account could run script on every visitor's page |
 | Both HTML files point at production Supabase | `index.html:398`, `admin.html:244` | Local testing changes live data |
@@ -59,8 +59,6 @@ Not blocking launch, but wanted soon after.
 | Stripe checkout links are placeholders, so Pro plans show no buy button | `index.html:917` | Pro can't be bought |
 | Nothing sets `is_pro` / `pro_expires_at` after payment | (missing) | Paying users wouldn't get Pro |
 | Hero chart and sparklines are generated, not real history | `index.html:731` | Charts don't reflect real price moves |
-| Placeholder contact email `hello@pitchmarket.example` | `index.html:956` | Contact link goes nowhere |
-| Ad rails still show "AD SPACE 160×400" | `index.html:406` | Looks unfinished |
 | Default Claude model in the updater is out of date | `update-prices.js:870` | Only matters if `AI_PROVIDER=claude` |
 | football-data.org free tier: 10 requests/min; Gemini free tier: daily cap | `update-prices.js` | A busy matchday can defer matches to the next run |
 
