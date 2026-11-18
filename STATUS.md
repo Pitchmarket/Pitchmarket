@@ -10,7 +10,7 @@ Launch blockers, roughly in the order to tackle them.
 
 ### Running the competition
 
-- **Reset the world before Christmas** (hard deadline). Clear `holdings`, `trades` and `price_history`; set every balance to 2,000.
+- **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql`: it clears `holdings` and `trades` and sets every balance to 2,000. Prices and price history stay, so the charts keep their data.
 - **Close the price-lag exploit.** Lock a team from kickoff until its price update applies, or players can trade on results the price doesn't reflect yet.
 - **Publish the rules before entry opens:** exact start and end timestamps with timezone, eligibility, and how the winner is decided.
 - **Write the tie-break rule** for equal final balances. There's a cash pot, so this must be settled up front.
@@ -32,7 +32,7 @@ Not blocking launch, but wanted soon after.
 - **Trade rate limit.** A few seconds' cooldown between trades, enforced in the `trade` function, so a script can't fire hundreds of trades around a price update.
 - **Data-outage policy.** What happens to the standings if the price pipeline is down for a week.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
-- **Real price charts.** Replace the generated hero chart and table sparklines (`genSeries`, `index.html:731`) with data from `price_history`. Update or remove the hardcoded cup spotlight chart.
+- **Spotlight chart.** The table, index cards and hero chart now draw real price history. The cup spotlight chart still uses prices typed into admin; link it to a real club or remove it.
 - **Pro lifecycle.** Handle cancellations, failed payments and expiry through Stripe webhooks.
 - **Auth hardening.** Custom SMTP sender in Supabase, email confirmation, and CAPTCHA on sign-up.
 - **Updater alerting.** Make sure failed scheduled runs notify someone who will act on them.
@@ -50,7 +50,8 @@ Not blocking launch, but wanted soon after.
 | No password reset | `index.html` | Players who forget a password are locked out |
 | Stripe checkout links are placeholders, so Pro plans show no buy button | `index.html:917` | Pro can't be bought |
 | Nothing sets `is_pro` / `pro_expires_at` after payment | (missing) | Paying users wouldn't get Pro |
-| Hero chart and sparklines are generated, not real history | `index.html:731` | Charts don't reflect real price moves |
+| Volume column in the club table is made up | `index.html` (`renderTable`) | Looks like real trading volume but isn't |
+| Admin "Market indices" editor no longer changes the index cards once team data loads; they're built from each league's real prices | `admin.html` | Editing it has no visible effect |
 | Default Claude model in the updater is out of date | `update-prices.js:870` | Only matters if `AI_PROVIDER=claude` |
 | football-data.org free tier: 10 requests/min; Gemini free tier: daily cap | `update-prices.js` | A busy matchday can defer matches to the next run |
 
