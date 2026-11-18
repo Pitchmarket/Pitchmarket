@@ -34,8 +34,7 @@ Launch blockers, roughly in the order to tackle them.
 
 Not blocking launch, but wanted soon after.
 
-- **Make the site look designed, not vibe coded.** One deliberate type scale, spacing system and set of components across `index.html` and `admin.html`, replacing the generic AI-template look.
-- **Theme picker.** Let players choose a look: Normal (default), Light, Dark, Retro, Football, Gold, Stock market, FIFA and Football Manager. Build each theme as a set of CSS variables over one shared stylesheet, and remember the player's choice.
+- **Retro theme.** The theme picker is live with eight looks; Retro is the one still to build, once there's a reference image.
 - **Trade rate limit.** A few seconds' cooldown between trades, enforced in the `trade` function, so a script can't fire hundreds of trades around a price update.
 - **Data-outage policy.** What happens to the standings if the price pipeline is down for a week.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
