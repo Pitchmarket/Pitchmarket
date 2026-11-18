@@ -20,15 +20,12 @@ Launch blockers, roughly in the order to tackle them.
 
 ### Platform
 
-1. **Commit the database schema.** Add `supabase-schema.sql` with every table, RLS policy and function (`trade`, `get_leaderboard`, `approve_match_event`, `auto_apply_match_event`, `clear_read_notifications`). Nothing below can be reviewed until this is in the repo.
-2. **Lock down admin.** Prove a plain signed-in account can't edit `teams` or `site_settings`, approve `match_events`, or call the admin functions.
-3. **Lock down player data.** Players must not be able to update their own `coin_balance`, `is_pro`, `is_ultimate` or `pro_expires_at`. `holdings`, `trades`, `watchlist` and `notifications` must be readable and writable only by their owner.
-4. **Audit the `trade` function.** It must use the price stored in the database, reject zero and negative quantities, check balance and holdings in one transaction, and run with a fixed `search_path`.
-5. **Fix team-name matching.** Run the workflow by hand with `lookback_days: 14` and clear every name in the run summary's "unmatched" list.
-6. **Add password reset.** `index.html` has no "forgot password" flow.
-7. **Decide on Pro for launch** (see open decisions). If it ships, build the Stripe webhook that sets Pro status.
-8. **Legal pages.** Terms of service and a privacy policy, and a check of gambling and contest rules.
-9. **Hosting and domain** with HTTPS, then set the Site URL and redirect URLs in Supabase Auth.
+1. **Run `supabase-security-fixes.sql`** in the Supabase SQL Editor. Until it runs, the live database lets a player sell the same shares twice by sending two sells at once (tested: 2,000 coins became 3,000), lets anyone apply pending match results early, allows HTML in display names, and shows the start of each player's email address on the leaderboard.
+2. **Fix team-name matching.** Run the workflow by hand with `lookback_days: 14` and clear every name in the run summary's "unmatched" list.
+3. **Add password reset.** `index.html` has no "forgot password" flow.
+4. **Decide on Pro for launch** (see open decisions). If it ships, build the Stripe webhook that sets Pro status.
+5. **Legal pages.** Terms of service and a privacy policy, and a check of gambling and contest rules.
+6. **Hosting and domain** with HTTPS, then set the Site URL and redirect URLs in Supabase Auth.
 
 ## Planned work
 
@@ -39,7 +36,6 @@ Not blocking launch, but wanted soon after.
 - **Data-outage policy.** What happens to the standings if the price pipeline is down for a week.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
 - **Real price charts.** Replace the generated hero chart and table sparklines (`genSeries`, `index.html:731`) with data from `price_history`. Update or remove the hardcoded cup spotlight chart.
-- **Server-side Pro limits.** The watchlist limit (5 free, 25 Pro, unlimited Ultimate) is only checked in the browser (`index.html:1340`).
 - **Pro lifecycle.** Handle cancellations, failed payments and expiry through Stripe webhooks.
 - **Auth hardening.** Custom SMTP sender in Supabase, email confirmation, and CAPTCHA on sign-up.
 - **Updater alerting.** Make sure failed scheduled runs notify someone who will act on them.
@@ -51,8 +47,7 @@ Not blocking launch, but wanted soon after.
 
 | Issue | Where | Impact |
 |---|---|---|
-| Admin page has no role check; any signed-in user sees the dashboard | `admin.html:548` | Safe only if RLS blocks every admin write. Unverified. |
-| Schema, RLS and functions are not in the repo | README | Backend can't be rebuilt or reviewed |
+| Admin page has no role check; any signed-in user sees an empty dashboard | `admin.html` | Cosmetic: the database refuses every admin read and write from other accounts (checked against `supabase-schema.sql`) |
 | Admin-edited site content and checkout links are inserted as raw HTML | `index.html:963`, `index.html:1012` | A compromised admin account could run script on every visitor's page |
 | Both HTML files point at production Supabase | `index.html:398`, `admin.html:244` | Local testing changes live data |
 | No password reset | `index.html` | Players who forget a password are locked out |
