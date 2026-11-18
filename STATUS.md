@@ -15,17 +15,15 @@ Launch blockers, roughly in the order to tackle them.
 - **Publish the rules before entry opens:** exact start and end timestamps with timezone, eligibility, and how the winner is decided.
 - **Write the tie-break rule** for equal final balances. There's a cash pot, so this must be settled up front.
 - **State the multi-account rule.** Nothing stops one person running several accounts and keeping the best. CAPTCHA doesn't solve this.
-- **Verify the leaderboard maths** by hand for two accounts: total = coins + holdings at current price.
 - **Decide whether the organiser plays** (see open decisions).
 
 ### Platform
 
-1. **Run `supabase-security-fixes.sql`** in the Supabase SQL Editor. Until it runs, the live database lets a player sell the same shares twice by sending two sells at once (tested: 2,000 coins became 3,000), lets anyone apply pending match results early, allows HTML in display names, and shows the start of each player's email address on the leaderboard.
-2. **Fix team-name matching.** Run the workflow by hand with `lookback_days: 14` and clear every name in the run summary's "unmatched" list.
-3. **Add password reset.** `index.html` has no "forgot password" flow.
-4. **Decide on Pro for launch** (see open decisions). If it ships, build the Stripe webhook that sets Pro status.
-5. **Legal pages.** Terms of service and a privacy policy, and a check of gambling and contest rules.
-6. **Hosting and domain** with HTTPS, then set the Site URL and redirect URLs in Supabase Auth.
+1. **Fix team-name matching.** Run the workflow by hand with `lookback_days: 14` and clear every name in the run summary's "unmatched" list.
+2. **Add password reset.** `index.html` has no "forgot password" flow.
+3. **Decide on Pro for launch** (see open decisions). If it ships, build the Stripe webhook that sets Pro status.
+4. **Legal pages.** Terms of service and a privacy policy, and a check of gambling and contest rules.
+5. **At public launch, set the Site URL** (and redirect URLs) in Supabase Auth to the live address, so sign-up and password emails link to the site. The site is already hosted with HTTPS on GitHub Pages; a custom domain is optional.
 
 ## Planned work
 
