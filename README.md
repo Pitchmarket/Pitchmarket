@@ -35,7 +35,7 @@ The site uses [Supabase](https://supabase.com) for auth and data. The browser us
 
 **Functions (RPC):** `trade`, `get_leaderboard`, `approve_match_event`, `auto_apply_match_event`, `clear_read_notifications`
 
-> **TODO:** The database schema, RLS policies and functions aren't in this repo yet (the code refers to a `supabase-schema.sql`). Until they are, you can't set up your own copy of the backend. Ask a maintainer for access.
+**Schema:** [`supabase-schema.sql`](supabase-schema.sql) has every table, RLS policy, function and trigger. Run it in the SQL Editor of an empty Supabase project to set up your own copy of the backend. When you change the live database, update this file in the same pull request.
 
 ## Running locally
 
