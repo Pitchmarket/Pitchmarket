@@ -18,7 +18,8 @@
     programme:{ label:'Matchday programme', sw:['#F3EBDA','#1C2C5B','#C8102E'], fonts:'Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&family=Source+Sans+3:wght@400;600;700' },
     stickers: { label:'Sticker album',      sw:['#FFE873','#E4002B','#0057B8'], fonts:'Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800' },
     chalk:    { label:'Chalk tactics',      sw:['#25332B','#F2F2EC','#F7E27A'], fonts:'Permanent+Marker&family=Patrick+Hand' },
-    newspaper:{ label:'Back page',          sw:['#F2F0EB','#D7141A','#111111'], fonts:'Anton&family=Merriweather:wght@400;700&family=Roboto+Condensed:wght@400;700' }
+    newspaper:{ label:'Back page',          sw:['#F2F0EB','#D7141A','#111111'], fonts:'Anton&family=Merriweather:wght@400;700&family=Roboto+Condensed:wght@400;700' },
+    retro:    { label:'Retro',              sw:['#1D4FB3','#E0262E','#FFB21E'], fonts:'Press+Start+2P&family=VT323' }
   };
   window.applyTheme = function(name){
     if(!THEMES[name]) name = 'normal';
@@ -799,6 +800,77 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 [data-theme="newspaper"] .chip.down{ background:var(--drop); color:#fff; }
 [data-theme="newspaper"] .disclaimer-bar{ background:#111; }
 [data-theme="newspaper"] .disclaimer-bar p{ color:#BDBDBD; }
+
+/* ----- Retro: 16-bit football game menus ----- */
+[data-theme="retro"]{
+  --bg:#1D4FB3; --bg-deep:#0B2463;
+  --page-bg:
+    radial-gradient(circle at 50% 50%, transparent 58px, rgba(10,36,99,0.22) 59px 66px, transparent 67px) 0 0/220px 220px,
+    radial-gradient(circle at 50% 50%, rgba(10,36,99,0.15) 26px, transparent 27px) 110px 110px/220px 220px,
+    #1D4FB3;
+  --panel:#0E2A66; --panel2:#163A85; --border:#E0262E; --border-soft:rgba(255,255,255,0.12);
+  --gilt:#FFB21E; --on-gilt:#1A1000;
+  --surge:#43E04F; --drop:#FF4B4B;
+  --accent:#E0262E; --on-accent:#FFFFFF;
+  --chalk:#FFFFFF; --steel:#C9D6F5; --steel-dim:#8FA3D6;
+  --overlay:rgba(6,18,50,0.75);
+  --shadow:0 4px 0 #6E0E12;
+  --font-body:'VT323',monospace; --font-display:'Press Start 2P',monospace; --font-mono:'VT323',monospace;
+  --display-weight:400; --display-case:uppercase; --display-tracking:0;
+  --eyebrow-font:'Press Start 2P',monospace; --eyebrow-tracking:0;
+  --r-sm:0; --r-md:0; --r-lg:0;
+}
+[data-theme="retro"] body{ font-size:20px; line-height:1.25; }
+[data-theme="retro"] .eyebrow, [data-theme="retro"] .sec-eyebrow{ font-size:10px; font-weight:400; line-height:1.6; }
+[data-theme="retro"] .eyebrow{ color:var(--surge); }
+[data-theme="retro"] .eyebrow::before{ border-radius:0; background:var(--surge); }
+[data-theme="retro"] .ticker-wrap{ background:var(--bg-deep); border-bottom:3px solid var(--border); }
+[data-theme="retro"] .tick{ font-size:18px; }
+[data-theme="retro"] nav{ background:var(--bg-deep); border-bottom:none; }
+[data-theme="retro"] .brand-mark{ background:#fff; color:var(--accent); border:none; border-radius:50%; font-size:12px; }
+[data-theme="retro"] .brand-name{ font-family:var(--font-display); font-size:14px; }
+[data-theme="retro"] .brand-name span{ color:var(--gilt); }
+[data-theme="retro"] .nav-links a{ font-size:18px; color:var(--steel); text-transform:uppercase; }
+[data-theme="retro"] .nav-links a:hover{ color:var(--gilt); }
+/* Slanted red buttons, like the game's BACK / TACTICS bars */
+[data-theme="retro"] .btn-primary, [data-theme="retro"] .btn-ghost, [data-theme="retro"] .nav-cta, [data-theme="retro"] .pro-btn, [data-theme="retro"] .m-btn.primary{
+  font-family:var(--font-display); font-size:11px; font-weight:400; text-transform:uppercase;
+  clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%); padding:14px 28px;
+  background:linear-gradient(180deg,#F04048 0%,#D41F27 55%,#A8141B 100%); color:#fff; border:none; }
+[data-theme="retro"] .btn-ghost, [data-theme="retro"] .pro-btn.ghost{ background:linear-gradient(180deg,#2E62CC,#173F92); }
+[data-theme="retro"] .hero, [data-theme="retro"] section{ border-bottom:none; }
+[data-theme="retro"] .hero h1{ font-size:clamp(24px,3.4vw,44px); line-height:1.35; text-shadow:4px 4px 0 var(--bg-deep); }
+[data-theme="retro"] .hero h1 .line2{ color:var(--gilt); }
+[data-theme="retro"] .hero p{ color:#E3EAFB; font-size:22px; }
+[data-theme="retro"] .hstat .n{ font-family:var(--font-display); font-size:16px; }
+[data-theme="retro"] .hstat .l{ font-size:16px; }
+/* Section titles sit in the red FORMATION-style banner */
+[data-theme="retro"] .sec-title{
+  display:inline-block; font-size:clamp(14px,1.8vw,20px); line-height:1.4; color:#fff;
+  background:linear-gradient(90deg,#B3141C 0%,#E0262E 60%,#E0262E 100%);
+  padding:14px 40px 14px 22px; clip-path:polygon(14px 0,100% 0,calc(100% - 22px) 100%,0 100%);
+  text-shadow:3px 3px 0 #6E0E12; }
+[data-theme="retro"] .sec-desc{ color:#E3EAFB; }
+/* Panels: dark navy boxes with a thick red frame */
+[data-theme="retro"] .hero-chart, [data-theme="retro"] .class-card, [data-theme="retro"] .pro-card, [data-theme="retro"] .cupwatch, [data-theme="retro"] .wl-card, [data-theme="retro"] .lb-rule, [data-theme="retro"] .modal, [data-theme="retro"] .ad-banner{ border:4px solid var(--border); box-shadow:var(--shadow); }
+[data-theme="retro"] .index-grid, [data-theme="retro"] .pf-summary, [data-theme="retro"] .mini-caps{ gap:14px; background:none; border:none; overflow:visible; }
+[data-theme="retro"] .index-card, [data-theme="retro"] .pf-stat, [data-theme="retro"] .mc-item{ border:4px solid var(--border); box-shadow:var(--shadow); }
+[data-theme="retro"] .ic-name, [data-theme="retro"] .class-card h3{ font-family:var(--font-display); font-size:11px; font-weight:400; text-transform:uppercase; line-height:1.5; color:var(--gilt); }
+[data-theme="retro"] .ic-value, [data-theme="retro"] .hc-value, [data-theme="retro"] .pf-stat-n{ font-size:30px; }
+[data-theme="retro"] table{ background:var(--panel); border:4px solid var(--border); box-shadow:var(--shadow); }
+[data-theme="retro"] thead th{ font-size:16px; color:var(--gilt); padding-top:12px; }
+[data-theme="retro"] tbody td{ font-size:20px; }
+[data-theme="retro"] tbody tr:hover{ background:var(--accent); }
+[data-theme="retro"] .team-name{ font-weight:400; }
+[data-theme="retro"] .team-tier, [data-theme="retro"] .hc-title, [data-theme="retro"] .hc-sub, [data-theme="retro"] .ic-tier, [data-theme="retro"] .wallet-label, [data-theme="retro"] .pf-stat-l{ font-size:16px; }
+[data-theme="retro"] .tab-btn{ font-size:18px; color:var(--steel); text-transform:uppercase; }
+[data-theme="retro"] .tab-btn.active{ background:var(--accent); color:#fff; border-bottom-color:var(--accent); }
+[data-theme="retro"] .chip{ font-size:18px; }
+[data-theme="retro"] .chip.up{ background:var(--surge); color:#06260A; }
+[data-theme="retro"] .chip.down{ background:var(--drop); color:#fff; }
+[data-theme="retro"] .buy-btn{ font-size:16px; color:#fff; border-color:#fff; }
+[data-theme="retro"] .disclaimer-bar{ background:var(--bg-deep); border-top:3px solid var(--border); }
+[data-theme="retro"] .disclaimer-bar p{ font-size:16px; }
 </style>
 <!-- ============ CONFIG: paste your Supabase project values here ============ -->
 <script>
