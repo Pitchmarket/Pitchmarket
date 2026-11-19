@@ -1,0 +1,102 @@
+-- PitchMarket trade cooldown, 19 Nov 2026.
+-- Run once in the Supabase SQL Editor (paste all of it, click Run).
+-- Safe to run more than once. supabase-schema.sql already includes it.
+--
+-- Each player can make one trade every 3 seconds, so a script can't fire
+-- hundreds of trades around a price update. Needs
+-- supabase-price-lag-lock.sql to have been run first: this replaces
+-- trade() with a version that keeps the trading lock.
+
+begin;
+
+do $$
+begin
+  if to_regprocedure('public.team_lock_reason(uuid)') is null then
+    raise exception 'Run supabase-price-lag-lock.sql first, then run this file again.';
+  end if;
+end $$;
+
+create index if not exists trades_user_created on public.trades (user_id, created_at);
+
+create or replace function public.trade(p_team_id uuid, p_side text, p_qty numeric)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_price numeric;
+  v_balance numeric;
+  v_cost numeric;
+  v_shares numeric;
+  v_lock text;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in required';
+  end if;
+  -- NaN and Infinity sort above every number, so the upper cap rejects them too.
+  if p_qty is null or p_qty <= 0 or p_qty > 1000000 or p_qty <> trunc(p_qty) then
+    raise exception 'Quantity must be a whole number greater than zero';
+  end if;
+
+  -- Every trade by this player waits here until their previous one finishes.
+  select coin_balance into v_balance from profiles where id = auth.uid() for update;
+  if v_balance is null then
+    raise exception 'Sign in required';
+  end if;
+
+  -- One trade every 3 seconds per player, so a script can't fire hundreds
+  -- of trades. Checked after the lock above, so two at once can't both pass.
+  if exists (
+    select 1 from trades
+    where user_id = auth.uid() and created_at > now() - interval '3 seconds'
+  ) then
+    raise exception 'Please wait a few seconds between trades';
+  end if;
+
+  select price into v_price from teams where id = p_team_id;
+  if v_price is null then
+    raise exception 'Team not found';
+  end if;
+
+  v_lock := team_lock_reason(p_team_id);
+  if v_lock is not null then
+    raise exception '%', v_lock;
+  end if;
+
+  v_cost := v_price * p_qty;
+
+  if p_side = 'buy' then
+    if v_balance < v_cost then
+      raise exception 'Not enough Fan Coins for this trade';
+    end if;
+
+    update profiles set coin_balance = coin_balance - v_cost where id = auth.uid();
+
+    insert into holdings (user_id, team_id, shares)
+      values (auth.uid(), p_team_id, p_qty)
+      on conflict (user_id, team_id)
+      do update set shares = holdings.shares + p_qty;
+
+  elsif p_side = 'sell' then
+    select shares into v_shares from holdings
+      where user_id = auth.uid() and team_id = p_team_id for update;
+    if v_shares is null or v_shares < p_qty then
+      raise exception 'You do not own that many shares';
+    end if;
+
+    update holdings set shares = shares - p_qty
+      where user_id = auth.uid() and team_id = p_team_id;
+
+    update profiles set coin_balance = coin_balance + v_cost where id = auth.uid();
+
+  else
+    raise exception 'Invalid trade side';
+  end if;
+
+  insert into trades (user_id, team_id, side, qty, price)
+    values (auth.uid(), p_team_id, p_side, p_qty, v_price);
+end;
+$function$;
+
+commit;

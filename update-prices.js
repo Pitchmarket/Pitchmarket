@@ -208,6 +208,7 @@ const NAME_ALIASES = {
   'Coritiba FBC': 'Coritiba', 'Botafogo FR': 'Botafogo', 'EC Vitória': 'Vitória',
   'Santos FC': 'Santos', 'SC Internacional': 'Internacional', 'Mirassol FC': 'Mirassol',
   'Clube do Remo': 'Remo', 'CR Vasco da Gama': 'Vasco', 'Associação Chapecoense de Futebol': 'Chapecoense',
+  'Chapecoense AF': 'Chapecoense',
 };
 
 // The Champions League needs its OWN table, because your UCL rows use
