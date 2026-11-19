@@ -122,13 +122,13 @@ const NAME_ALIASES = {
   'RC Celta de Vigo': 'Celta', 'Rayo Vallecano de Madrid': 'Rayo Vallecano', 'Getafe CF': 'Getafe',
   'RCD Espanyol de Barcelona': 'Espanyol', 'Deportivo Alavés': 'Alavés', 'Levante UD': 'Levante',
   'CA Osasuna': 'Osasuna', 'Elche CF': 'Elche', 'RC Deportivo de La Coruña': 'Deportivo',
-  'Real Racing Club': 'Racing Santander', 'Málaga CF': 'Málaga',
+  'Real Racing Club': 'Racing Santander', 'Real Racing Club de Santander': 'Racing Santander', 'Málaga CF': 'Málaga',
   // Serie A
   'FC Internazionale Milano': 'Inter Milan', 'AC Milan': 'AC Milan', 'Juventus FC': 'Juventus',
   'SSC Napoli': 'Napoli', 'AS Roma': 'AS Roma', 'Atalanta BC': 'Atalanta',
   'SS Lazio': 'Lazio', 'ACF Fiorentina': 'Fiorentina', 'Bologna FC 1909': 'Bologna',
   'Torino FC': 'Torino', 'Udinese Calcio': 'Udinese', 'Genoa CFC': 'Genoa',
-  'US Sassuolo Calcio': 'Sassuolo', 'Cagliari Calcio': 'Cagliari', 'Parma Calcio 1913': 'Parma',
+  'US Sassuolo Calcio': 'Sassuolo', 'Cagliari Calcio': 'Cagliari', 'Parma Calcio 1913': 'Parma 1913',
   'US Lecce': 'Lecce', 'AC Monza': 'Monza', 'Como 1907': 'Como',
   'Venezia FC': 'Venezia', 'Frosinone Calcio': 'Frosinone',
   // Bundesliga
@@ -142,7 +142,7 @@ const NAME_ALIASES = {
   // Ligue 1
   'Paris Saint-Germain FC': 'Paris Saint-Germain', 'Olympique de Marseille': 'Marseille', 'AS Monaco FC': 'Monaco',
   'Olympique Lyonnais': 'Lyon', 'LOSC Lille': 'Lille', 'OGC Nice': 'Nice',
-  'Racing Club de Lens': 'Lens', 'Stade Rennais FC 1901': 'Rennes',
+  'Racing Club de Lens': 'Lens', 'Stade Rennais FC 1901': 'Stade Rennes FC 1901',
   'Racing Club de Strasbourg Alsace': 'Strasbourg', 'Toulouse FC': 'Toulouse',
   'Paris FC': 'Paris FC', 'FC Lorient': 'Lorient', 'Stade Brestois 29': 'Brest',
   'Angers SCO': 'Angers', 'Le Havre AC': 'Le Havre', 'AJ Auxerre': 'Auxerre',
