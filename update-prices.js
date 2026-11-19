@@ -79,7 +79,7 @@ let supabase; // created inside main(), after the required-variable check below
 
 // football-data.org competition code -> your `league` key in Supabase.
 // Only the leagues this free data source actually covers.
-const COMPETITIONS = {
+export const COMPETITIONS = {
   PL:  'epl',
   PD:  'laliga',
   SA:  'seriea',
@@ -267,7 +267,7 @@ const LETTER_FIXES = { 'ø':'o', 'æ':'ae', 'œ':'oe', 'ß':'ss', 'ð':'d', 'đ'
 // every comparison, so it can only make matching more forgiving —
 // "Famalicão"/"Famalicao", "N.E.C."/"NEC", "Bodø/Glimt"/"Bodo Glimt"
 // all collapse to the same string.
-function fold(name){
+export function fold(name){
   return String(name)
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase()
@@ -287,7 +287,7 @@ function fold(name){
 // made on its own: "Stade Brestois 29" was aliased to "Brest", so a row
 // literally called "Stade Brestois 29" stopped matching. Aliases are now
 // additive — they can only ever add a way to match, never remove one.
-function candidateKeys(name, isUCL){
+export function candidateKeys(name, isUCL){
   const out = [];
   const push = (v) => { const f = fold(v); if(f && !out.includes(f)) out.push(f); };
   if(isUCL && UCL_ALIASES[name]) push(UCL_ALIASES[name]);
@@ -779,7 +779,7 @@ async function getLeagueTeams(league){
   return data || [];
 }
 
-function findTeamRow(teams, teamName, isUCL){
+export function findTeamRow(teams, teamName, isUCL){
   if(!teams) return null;
   const siteKey = (t) => fold(isUCL ? t.name.replace(' (UCL)', '') : t.name);
   // Candidates are tried in order, so an intentional alias still wins over
@@ -1147,4 +1147,8 @@ async function main(){
   if(aborted) process.exit(1);
 }
 
-main().catch(err=>{ console.error('Fatal error:', err); process.exit(1); });
+// Run only when called directly: import-players.js imports the team-name
+// matching above.
+if(import.meta.url === `file://${process.argv[1]}`){
+  main().catch(err=>{ console.error('Fatal error:', err); process.exit(1); });
+}

@@ -27,8 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Import players from Wikidata
+      - name: Import players (squads from football-data.org, details from Wikidata)
         env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node import-players.js
