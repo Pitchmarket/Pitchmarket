@@ -248,6 +248,7 @@ td.num{ text-align:right; font-family:var(--font-mono); }
 td.spark-cell{ width:100px; }
 .buy-btn{ background:none; cursor:pointer; font-family:var(--font-mono); font-size:11px; border:1px solid var(--border); color:var(--steel); padding:5px 12px; border-radius:var(--r-sm); }
 .buy-btn:hover{ border-color:var(--surge); color:var(--surge); }
+.buy-btn.paused, .buy-btn.paused:hover{ cursor:not-allowed; opacity:0.6; border-color:var(--border); color:var(--steel-dim); }
 
 /* ===== Wallet chip ===== */
 .wallet-chip{
@@ -1221,6 +1222,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 let teamsLoaded = false;
 let priceHistory = {};   // team_id -> [{ t: ms, p: price }] oldest first
 let historyLoaded = false;
+let lockedTeams = new Set();   // clubs whose match has kicked off and isn't priced yet
 
 function themeToken(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 function withAlpha(hex, a){
@@ -1697,7 +1699,9 @@ function renderTable(key){
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
       '<td class="num mono">'+(Math.round(hash(t.name)%900+100))+'K</td>'+
       '<td style="white-space:nowrap;"><button class="star-btn" data-id="'+(t.id||'')+'" title="Add to watchlist">☆</button>'+
-        '<button class="buy-btn" data-id="'+(t.id||'')+'" data-name="'+t.name+'" data-price="'+t.price+'">Trade</button></td>'+
+        (lockedTeams.has(t.id)
+          ? '<button class="buy-btn paused" disabled title="Match in progress or result being priced. Trading reopens once the new price is set.">Paused</button></td>'
+          : '<button class="buy-btn" data-id="'+(t.id||'')+'" data-name="'+t.name+'" data-price="'+t.price+'">Trade</button></td>')+
     '</tr>';
   }).join('');
   // Keep the ☆/★ state correct when switching league tabs
@@ -2297,6 +2301,21 @@ function leagueComposite(key){
   };
 }
 
+// Clubs locked between kickoff and their result being priced. The database
+// enforces the lock in trade(); this only greys out the buttons.
+async function loadLockedTeams(){
+  if(!sb) return;
+  const { data, error } = await sb.rpc('get_locked_teams');
+  if(error || !data) return;
+  const next = new Set(data.map(r=>r.team_id));
+  const changed = next.size !== lockedTeams.size || [...next].some(id=>!lockedTeams.has(id));
+  lockedTeams = next;
+  if(changed && teamsLoaded){
+    const active = tabBar.querySelector('.tab-btn.active')?.dataset.key;
+    if(active && leagues[active]) renderTable(active);
+  }
+}
+
 function refreshCharts(){
   if(!teamsLoaded) return;
   buildIndices();
@@ -2542,6 +2561,8 @@ document.getElementById('tradeSubmit').addEventListener('click', async ()=>{
 initSupabase();
 loadTeamsFromDB();
 loadPriceHistory();
+loadLockedTeams();
+setInterval(loadLockedTeams, 2 * 60 * 1000);
 loadLeaderboard();
 loadSiteSettings();
 

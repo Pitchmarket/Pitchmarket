@@ -1,9 +1,10 @@
 -- PitchMarket database schema (Supabase / Postgres).
 --
 -- Exported from the live project on 18 Nov 2026, with
--- supabase-security-fixes.sql applied. Running this on an empty Supabase
--- project rebuilds the backend: tables, access rules (RLS), functions
--- and triggers. It creates no data: no teams, settings or players.
+-- supabase-security-fixes.sql and supabase-price-lag-lock.sql applied.
+-- Running this on an empty Supabase project rebuilds the backend:
+-- tables, access rules (RLS), functions and triggers. It creates no
+-- data: no teams, settings or players.
 --
 -- Keep this file in step with the live database. When you change
 -- something in the Supabase dashboard, change it here in the same pull
@@ -121,6 +122,22 @@ create table public.notifications (
   created_at  timestamptz not null default now()
 );
 
+-- Upcoming and recent matches, written by the price updater. Used to
+-- lock trading on a club between kickoff and its result being priced.
+create table public.fixtures (
+  source_match_id  text primary key,
+  competition      text,
+  home_team_id     uuid references public.teams(id) on delete set null,
+  away_team_id     uuid references public.teams(id) on delete set null,
+  home_team_name   text,
+  away_team_name   text,
+  kickoff          timestamptz not null,
+  feed_status      text,
+  updated_at       timestamptz not null default now()
+);
+create index fixtures_home_kickoff on public.fixtures (home_team_id, kickoff);
+create index fixtures_away_kickoff on public.fixtures (away_team_id, kickoff);
+
 -- =====================================================================
 -- Access rules (row level security)
 -- Players never write profiles, holdings or trades directly: every
@@ -136,6 +153,7 @@ alter table public.match_events   enable row level security;
 alter table public.price_history  enable row level security;
 alter table public.watchlist      enable row level security;
 alter table public.notifications  enable row level security;
+alter table public.fixtures       enable row level security;  -- no policies: service role only
 
 create policy "teams are publicly readable" on public.teams
   for select using (true);
@@ -190,7 +208,60 @@ create policy "users delete own notifications" on public.notifications
 -- Functions
 -- =====================================================================
 
--- Buy or sell whole shares at the price stored in the database.
+-- Why a club is locked, or null if it isn't. A club is locked from
+--    kickoff until its match event is approved or rejected (by admin or
+--    auto-apply). Postponed, cancelled or suspended matches don't lock,
+--    and no lock lasts more than 72 hours, so a broken updater can't
+--    freeze a club forever.
+create or replace function public.team_lock_reason(p_team_id uuid)
+ returns text
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select 'Trading on this team is paused until its match result ('
+         || coalesce(f.home_team_name, '?') || ' v ' || coalesce(f.away_team_name, '?')
+         || ') has been priced.'
+  from fixtures f
+  where p_team_id in (f.home_team_id, f.away_team_id)
+    and f.kickoff <= now()
+    and f.kickoff > now() - interval '72 hours'
+    and coalesce(f.feed_status, '') not in ('POSTPONED', 'CANCELLED', 'SUSPENDED')
+    and not exists (
+      select 1 from match_events e
+      where e.source_match_id = f.source_match_id
+        and e.status in ('approved', 'rejected')
+    )
+  order by f.kickoff
+  limit 1;
+$function$;
+revoke execute on function public.team_lock_reason(uuid) from public, anon, authenticated;
+
+-- Every locked club, for the site to show "Paused" buttons.
+create or replace function public.get_locked_teams()
+ returns table(team_id uuid)
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select distinct t.id
+  from fixtures f
+  cross join lateral (values (f.home_team_id), (f.away_team_id)) as t(id)
+  where t.id is not null
+    and f.kickoff <= now()
+    and f.kickoff > now() - interval '72 hours'
+    and coalesce(f.feed_status, '') not in ('POSTPONED', 'CANCELLED', 'SUSPENDED')
+    and not exists (
+      select 1 from match_events e
+      where e.source_match_id = f.source_match_id
+        and e.status in ('approved', 'rejected')
+    );
+$function$;
+
+-- Buy or sell whole shares at the price stored in the database. Refuses
+-- while the club is locked for a match (see team_lock_reason).
 create or replace function public.trade(p_team_id uuid, p_side text, p_qty numeric)
  returns void
  language plpgsql
@@ -202,6 +273,7 @@ declare
   v_balance numeric;
   v_cost numeric;
   v_shares numeric;
+  v_lock text;
 begin
   if auth.uid() is null then
     raise exception 'Sign in required';
@@ -220,6 +292,11 @@ begin
   select price into v_price from teams where id = p_team_id;
   if v_price is null then
     raise exception 'Team not found';
+  end if;
+
+  v_lock := team_lock_reason(p_team_id);
+  if v_lock is not null then
+    raise exception '%', v_lock;
   end if;
 
   v_cost := v_price * p_qty;
