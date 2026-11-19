@@ -1,0 +1,34 @@
+name: Import players for Daily Kickabout
+
+"on":
+  schedule:
+    # Every Monday at 04:41 UTC: players, clubs and careers change slowly.
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: import-players
+  cancel-in-progress: false
+
+jobs:
+  import-players:
+    runs-on: ubuntu-latest
+    # Wikidata is free but rate-limited; a normal run takes 15–30 minutes.
+    timeout-minutes: 90
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Import players from Wikidata
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node import-players.js

@@ -101,6 +101,13 @@ The run summary at the end of the workflow log lists every unmatched name, alrea
 **Adding a league.**
 Add the team rows in admin (with a new league key). If prices should update automatically, also map the football-data.org competition code to that key in `COMPETITIONS` in `update-prices.js`.
 
+## Daily Kickabout
+
+Daily football games on the main page: **Scouted** (guess the player from league, team, nationality, age, position and height) and **Journeyman** (guess the player from their career, one club at a time). Everyone gets the same puzzles each day, and a new day starts at midnight UK time. A win pays 25 Fan Coins, once per game per day.
+
+- **Player data** comes from [Wikidata](https://www.wikidata.org) (CC0, free to use for anything). `import-players.js` runs every Monday from `.github/workflows/import-players.yml`. It links each club to its Wikidata entry (`teams.wikidata_id`), then loads current players and their careers into `players` and `player_careers`. If it links a club wrongly, set that club's `wikidata_id` by hand; the importer never overwrites one.
+- **Puzzles and coins** are handled in the database: `daily_player()` picks each day's answer, `kickabout_guess()` checks guesses and pays out, and `kickabout_state()` returns what the page shows. The answer and careers can't be read from the page until a player has finished.
+
 ## Backups
 
 **Code.** Every version is in the git history. After each major change, a branch named `backup/vX.Y-YYYY-MM-DD` keeps a snapshot of the site at that point; open it on GitHub and use **Code → Download ZIP** to get it.
