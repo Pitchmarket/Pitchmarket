@@ -1,0 +1,63 @@
+name: Back up PitchMarket data
+
+"on":
+  schedule:
+    # Every night at 03:23 UTC.
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+# Pushes each backup to the data-backups branch.
+permissions:
+  contents: write
+
+concurrency:
+  group: backup-data
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Copy data out of Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node backup-data.js "$RUNNER_TEMP/backup"
+
+      # The backups live on their own branch, away from the site's code, so
+      # saving one never touches main or republishes the site.
+      - name: Save to the data-backups branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data-backups >/dev/null; then
+            git fetch --depth=1 origin +refs/heads/data-backups:refs/remotes/origin/data-backups
+            git worktree add -B data-backups "$RUNNER_TEMP/branch" origin/data-backups
+          else
+            git worktree add --detach "$RUNNER_TEMP/branch"
+            git -C "$RUNNER_TEMP/branch" checkout --orphan data-backups
+            git -C "$RUNNER_TEMP/branch" rm -rfq .
+          fi
+          cp "$RUNNER_TEMP"/backup/* "$RUNNER_TEMP/branch/"
+          cd "$RUNNER_TEMP/branch"
+          git add -A
+          # README.md carries the time, so compare everything else.
+          if git diff --cached --quiet -- . ':!README.md'; then
+            echo "No data changed since the last backup. Nothing saved."
+            exit 0
+          fi
+          git commit -q -m "Data backup $(date -u +%F)"
+          git push origin data-backups
+          echo "Saved to the data-backups branch."

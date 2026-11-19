@@ -101,6 +101,12 @@ The run summary at the end of the workflow log lists every unmatched name, alrea
 **Adding a league.**
 Add the team rows in admin (with a new league key). If prices should update automatically, also map the football-data.org competition code to that key in `COMPETITIONS` in `update-prices.js`.
 
+## Backups
+
+**Code.** Every version is in the git history. After each major change, a branch named `backup/vX.Y-YYYY-MM-DD` keeps a snapshot of the site at that point; open it on GitHub and use **Code → Download ZIP** to get it.
+
+**Data.** `.github/workflows/backup-data.yml` runs `backup-data.js` every night at 03:23 UTC and saves `teams`, `price_history` and `site_settings` to the `data-backups` branch, with a `restore.sql` that puts them back. Each night with changes is a commit on that branch, so older backups stay in its history. No player data is included (no emails, balances, holdings or trades), because the repo is public. Restore steps are in that branch's README. Run it by hand from the Actions tab (**Back up PitchMarket data → Run workflow**).
+
 ## Contributing
 
 1. Branch off `main` and open a pull request. Don't push directly to `main`.
