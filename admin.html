@@ -173,20 +173,6 @@ tbody tr:last-child td{ border-bottom:none; }
 .ck-field input:focus{ outline:none; border-color:var(--surge); }
 @media(max-width:700px){ .ck-grid{ grid-template-columns:1fr; } }
 
-/* -- spotlight -- */
-.cupwatch-prev{ background:radial-gradient(120% 160% at 0% 0%, rgba(231,181,75,0.07), transparent 55%), var(--panel); border:1px solid var(--border); border-radius:8px; padding:28px; }
-.cw-badge{ display:inline-flex; align-items:center; gap:7px; background:rgba(231,181,75,0.12); color:var(--gilt); font-family:'JetBrains Mono'; font-size:11px; padding:5px 10px; border-radius:3px; margin-bottom:16px; letter-spacing:.05em; }
-.cw-name{ font-size:24px; margin-bottom:4px; font-family:'Big Shoulders Display'; font-weight:800; text-transform:uppercase; }
-.cw-meta{ color:var(--steel); font-size:13.5px; margin-bottom:18px; }
-.cw-price-row{ display:flex; align-items:baseline; gap:14px; margin-bottom:18px; }
-.cw-price{ font-family:'JetBrains Mono'; font-size:32px; font-weight:700; color:var(--surge); }
-.coin-ic{ display:inline-block; width:12px; height:12px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #F5D687, var(--gilt) 55%, #C9932E 100%); box-shadow:inset 0 0 0 1px rgba(36,25,6,0.35); vertical-align:-1px; margin-right:3px; }
-.cw-price-chg{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; color:var(--surge); }
-.cw-stages{ display:flex; gap:8px; flex-wrap:wrap; }
-.stage-item{ display:flex; align-items:center; gap:5px; background:var(--panel2); border-radius:3px; padding:2px; }
-.cw-stage{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); border:1px solid var(--border); border-radius:3px; padding:4px 8px; }
-.stage-item:last-child .cw-stage{ color:var(--gilt); border-color:var(--gilt); }
-
 /* -- leaderboard rules -- */
 .lb-rules-prev{ display:flex; gap:14px; flex-wrap:wrap; }
 .lb-rule{ position:relative; flex:1; min-width:220px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px 30px 14px 16px; font-size:13px; color:var(--steel); }
@@ -338,12 +324,6 @@ tbody tr:last-child td{ border-bottom:none; }
         <div class="editor-frame" id="adNativeEditor"></div>
       </div>
 
-      <!-- SPOTLIGHT -->
-      <div class="editor-block" data-key="spotlight">
-        <div class="editor-block-head"><div class="editor-block-label">Spotlight story</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
-        <div class="editor-frame" id="spotlightEditor"></div>
-      </div>
-
       <!-- LEADERBOARD -->
       <div class="editor-block" data-key="leaderboard">
         <div class="editor-block-head"><div class="editor-block-label">Leaderboard</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
@@ -434,10 +414,6 @@ const settingsDefaults = {
     stat1_n:'82', stat1_l:'Listed clubs & teams', stat2_n:'9', stat2_l:'Markets covered', stat3_n:'2,000', stat3_l:'Starting coins, everyone' },
   ad_top: { tag:'Sponsored', copy:"<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.", cta_text:'Shop now ↗', cta_url:'#' },
   ad_native: { tag:'Sponsored', copy:'<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.', cta_text:'Try free ↗', cta_url:'#' },
-  spotlight: { eyebrow:'SPOTLIGHT · HAPPENING THIS WEEK', title:'Qualifying is where fortunes turn',
-    desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
-    badge:'CONFIRMED · WON PLAY-OFF ROUND', name:'Bodø/Glimt (UCL)', meta:'Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL',
-    price:'38.60', price_chg:'▲ 612% since 1st Qualifying Round', stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'] },
   leaderboard: { eyebrow:'RANKED COMPETITION', title:'Same coins. Same odds. Real prizes.',
     desc:'Every entrant starts with the same 2,000 Fan Coins — Free, Pro, or Ultimate. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
     rules:[{b:'Free to enter.',t:'No purchase, ever, changes your standing.'},{b:'Equal start.',t:'Every account begins the season at the same balance.'},{b:'Ranked by portfolio value.',t:'Coins on hand plus the live value of everything you hold.'}] },
@@ -512,7 +488,18 @@ async function signIn(){
   onAuthed(data.user);
 }
 
-function onAuthed(user){
+// The database refuses admin reads and writes from any other account. This
+// just stops a player's account from opening an empty dashboard.
+const ADMIN_EMAIL = 'pitchmarketadmin@gmail.com';
+
+async function onAuthed(user){
+  if((user.email || '').toLowerCase() !== ADMIN_EMAIL){
+    await sb.auth.signOut();
+    document.getElementById('gate').style.display = '';
+    document.getElementById('dash').style.display = 'none';
+    showMsg('This page is for the PitchMarket admin account only. To play, use the main site.', 'err');
+    return;
+  }
   document.getElementById('gate').style.display = 'none';
   document.getElementById('dash').style.display = 'block';
   document.getElementById('whoEmail').textContent = user.email;
@@ -689,7 +676,6 @@ async function loadContentSettings(){
   renderHeroEditor();
   renderAdEditor('ad_top','adTopEditor');
   renderAdEditor('ad_native','adNativeEditor');
-  renderSpotlightEditor();
   renderLeaderboardEditor();
   renderProEditor();
   renderClassesEditor();
@@ -749,45 +735,6 @@ function readAd(elId){
     else if(el.dataset.f === 'copy'){ v.copy = el.innerHTML.trim(); }
     else { v[el.dataset.f] = el.innerText.trim(); }
   });
-  return v;
-}
-
-// ---------- SPOTLIGHT ----------
-function renderSpotlightEditor(){
-  const s = currentSettings.spotlight;
-  document.getElementById('spotlightEditor').innerHTML =
-    '<div class="cupwatch-prev">'+
-      '<div class="cw-badge">'+editable(s.badge,'badge',true)+'</div>'+
-      '<div class="cw-name">'+editable(s.name,'name',true)+'</div>'+
-      '<div class="cw-meta">'+editable(s.meta,'meta',true)+'</div>'+
-      '<div class="cw-price-row"><span class="cw-price"><span class="coin-ic"></span>'+editable(s.price,'price',true)+'</span><span class="cw-price-chg">'+editable(s.price_chg,'price_chg',true)+'</span></div>'+
-      '<div class="cw-stages" id="stagesList">'+
-        s.stages.map(st=>'<div class="stage-item"><span class="cw-stage editable" contenteditable data-single="1">'+esc(st)+'</span><button class="remove-x" type="button">×</button></div>').join('')+
-      '</div>'+
-      '<button class="add-item-btn" type="button" id="addStageBtn">+ Add stage</button>'+
-    '</div>'+
-    '<div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border-soft);">'+
-      '<div style="font-size:11px; color:var(--steel-dim); text-transform:uppercase; margin-bottom:8px;">Section heading (above the card)</div>'+
-      '<div class="eyebrow">'+editable(s.eyebrow,'eyebrow',true)+'</div>'+
-      '<div class="display" style="font-size:20px; margin-bottom:6px;">'+editable(s.title,'title',true)+'</div>'+
-      '<div style="color:var(--steel); font-size:13.5px;">'+editable(s.desc,'desc',false)+'</div>'+
-    '</div>';
-  document.getElementById('addStageBtn').onclick = ()=>{
-    const div = document.createElement('div');
-    div.className='stage-item';
-    div.innerHTML = '<span class="cw-stage editable" contenteditable data-single="1">New stage</span><button class="remove-x" type="button">×</button>';
-    document.getElementById('stagesList').appendChild(div);
-    bindEnterAsBlur();
-  };
-  document.getElementById('spotlightEditor').addEventListener('click', (e)=>{
-    if(e.target.classList.contains('remove-x')) e.target.closest('.stage-item').remove();
-  });
-}
-function readSpotlight(){
-  const root = document.getElementById('spotlightEditor');
-  const v = {};
-  root.querySelectorAll('[data-f]').forEach(el=>{ v[el.dataset.f] = el.innerText.trim(); });
-  v.stages = [...root.querySelectorAll('.stage-item .cw-stage')].map(el=>el.innerText.trim());
   return v;
 }
 
@@ -1185,7 +1132,6 @@ const readers = {
   hero: readHero,
   ad_top: ()=>readAd('adTopEditor'),
   ad_native: ()=>readAd('adNativeEditor'),
-  spotlight: readSpotlight,
   leaderboard: readLeaderboard,
   pro: readPro,
   classes: readClasses,
