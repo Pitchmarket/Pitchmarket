@@ -259,6 +259,8 @@ td.spark-cell{ width:100px; }
 .wallet-icon{ width:20px; height:20px; border-radius:50%; background:var(--gilt); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--on-gilt); }
 .coin-ic{ display:inline-block; width:12px; height:12px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #F5D687, #E7B54B 55%, #C9932E 100%); box-shadow:inset 0 0 0 1px rgba(36,25,6,0.35); vertical-align:-1px; margin-right:3px; }
 .wallet-amt{ font-family:var(--font-mono); font-size:13px; font-weight:600; }
+#walletChip{ cursor:pointer; }
+#walletChip:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 .wallet-label{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; }
 
 /* ===== Ad units ===== */
@@ -916,11 +918,11 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
         <div id="notifList"></div>
       </div>
     </div>
-    <div class="wallet-chip" id="walletChip" style="display:none;">
+    <div class="wallet-chip" id="walletChip" style="display:none;" role="button" tabindex="0" title="Change your display name">
       <div class="wallet-icon">¢</div>
       <div>
         <div class="wallet-amt mono" id="walletAmt">—</div>
-        <div class="wallet-label">Fan Coins</div>
+        <div class="wallet-label" id="walletName">Fan Coins</div>
       </div>
       <span id="proBadge" style="display:none; font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--on-gilt); background:var(--gilt); padding:3px 7px; border-radius:var(--r-sm); margin-left:8px;">PRO</span>
     </div>
@@ -997,26 +999,21 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 <section id="spotlight">
   <div class="sec-head">
     <div>
-      <div class="sec-eyebrow" id="spotlightEyebrow">SPOTLIGHT · HAPPENING THIS WEEK</div>
-      <div class="sec-title display" id="spotlightTitle">Qualifying is where fortunes turn</div>
+      <div class="sec-eyebrow" id="spotlightEyebrow">SPOTLIGHT · LAST 7 DAYS</div>
+      <div class="sec-title display" id="spotlightTitle">Biggest mover of the week</div>
     </div>
-    <div class="sec-desc" id="spotlightDesc">Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.</div>
+    <div class="sec-desc" id="spotlightDesc">Picked automatically: the club whose price moved most over the last seven days, up or down. The next three biggest movers are underneath.</div>
   </div>
   <div class="cupwatch">
     <div>
-      <div class="cw-badge" id="cwBadge">CONFIRMED · WON PLAY-OFF ROUND</div>
-      <div class="cw-name display" id="cwName">Bodø/Glimt (UCL)</div>
-      <div class="cw-meta" id="cwMeta">Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL</div>
+      <div class="cw-badge" id="cwBadge">BIGGEST MOVER · LAST 7 DAYS</div>
+      <div class="cw-name display" id="cwName">Loading the market…</div>
+      <div class="cw-meta" id="cwMeta">&nbsp;</div>
       <div class="cw-price-row">
-        <div class="cw-price mono" id="cwPrice"><span class="coin-ic"></span>38.60</div>
-        <div class="cw-price-chg" id="cwPriceChg">▲ 612% since 1st Qualifying Round</div>
+        <div class="cw-price mono" id="cwPrice"></div>
+        <div class="cw-price-chg" id="cwPriceChg"></div>
       </div>
-      <div class="cw-stages" id="cwStages">
-        <div class="cw-stage">Q1 Round</div>
-        <div class="cw-stage">Q2 Round</div>
-        <div class="cw-stage">Q3 Round</div>
-        <div class="cw-stage now">Play-off won 6-5 agg · League phase secured</div>
-      </div>
+      <div class="cw-stages" id="cwStages"></div>
       <div class="mini-caps" id="miniCaps"></div>
     </div>
     <div class="cw-chart-wrap"><canvas id="cupChart"></canvas></div>
@@ -1183,6 +1180,18 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   </div>
 </div>
 
+<!-- Display name modal: asked once after sign-in while the name is still the default, and opened from the wallet -->
+<div class="modal-overlay" id="nameOverlay">
+  <div class="modal">
+    <button class="modal-close" id="nameClose" aria-label="Close">✕</button>
+    <h2>Choose your display name</h2>
+    <div class="sub">This is how you appear on the leaderboard. Use 2–24 letters, numbers, spaces, dots, dashes or underscores.</div>
+    <div class="m-msg" id="nameMsg"></div>
+    <div class="m-field"><label for="nameInput">Display name</label><input id="nameInput" maxlength="24" autocomplete="nickname"></div>
+    <button class="m-btn primary" id="nameSubmit">Save name</button>
+  </div>
+</div>
+
 <!-- New password modal: opens when a player follows a reset link from their email -->
 <div class="modal-overlay" id="resetOverlay">
   <div class="modal">
@@ -1251,6 +1260,7 @@ function themeChart(chart){
     const c = roleColor[ds.role] || roleColor.up;
     ds.borderColor = c;
     ds.pointBackgroundColor = c;
+    ds.pointBorderColor = c;
     ds.backgroundColor = withAlpha(c, 0.10);
   });
   const tip = chart.options.plugins.tooltip;
@@ -1261,7 +1271,7 @@ function themeChart(chart){
     sc.ticks.font = Object.assign({}, sc.ticks.font, { family: mono });
     if(sc.grid && sc.grid.display !== false) sc.grid.color = t('--border-soft');
   });
-  chart.update('none');
+  chart.update();   // a full update: 'none' keeps the cached point colours
   return chart;
 }
 function buildThemeMenu(){
@@ -1435,14 +1445,6 @@ let siteContent = {
   },
   ad_top: { tag:'Sponsored', copy:'', cta_text:'', cta_url:'#' },
   ad_native: { tag:'Sponsored', copy:'', cta_text:'', cta_url:'#' },
-  spotlight: {
-    eyebrow:'SPOTLIGHT · HAPPENING THIS WEEK', title:'Qualifying is where fortunes turn',
-    desc:"Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
-    badge:'CONFIRMED · WON PLAY-OFF ROUND', name:'Bodø/Glimt (UCL)',
-    meta:'Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL',
-    price:'38.60', price_chg:'▲ 612% since 1st Qualifying Round',
-    stages:['Q1 Round','Q2 Round','Q3 Round','Play-off won 6-5 agg · League phase secured'],
-  },
   leaderboard: {
     eyebrow:'RANKED COMPETITION', title:'Same coins. Same odds. Real prizes.',
     desc:'Every entrant starts with the same 2,000 Fan Coins — Free, Pro, or Ultimate. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.',
@@ -1532,18 +1534,6 @@ function renderSiteContent(){
   // An ad with no copy is hidden, so blanking it in admin removes it from the page.
   document.getElementById('adTopBanner').style.display = c.ad_top.copy ? '' : 'none';
   document.getElementById('adNativeBanner').style.display = c.ad_native.copy ? '' : 'none';
-  // spotlight
-  document.getElementById('spotlightEyebrow').textContent = c.spotlight.eyebrow;
-  document.getElementById('spotlightTitle').textContent = c.spotlight.title;
-  document.getElementById('spotlightDesc').textContent = c.spotlight.desc;
-  document.getElementById('cwBadge').textContent = c.spotlight.badge;
-  document.getElementById('cwName').textContent = c.spotlight.name;
-  document.getElementById('cwMeta').textContent = c.spotlight.meta;
-  document.getElementById('cwPrice').innerHTML = '<span class="coin-ic"></span>' + c.spotlight.price;
-  document.getElementById('cwPriceChg').textContent = c.spotlight.price_chg;
-  document.getElementById('cwStages').innerHTML = c.spotlight.stages.map((s,i)=>
-    '<div class="cw-stage'+(i===c.spotlight.stages.length-1?' now':'')+'">'+s+'</div>'
-  ).join('');
   // leaderboard
   document.getElementById('lbEyebrow').textContent = c.leaderboard.eyebrow;
   document.getElementById('lbTitle').textContent = c.leaderboard.title;
@@ -1670,18 +1660,6 @@ function buildIndices(){
 }
 buildIndices();
 
-// mini caps — other clubs with confirmed qualifying-round wins this week
-function buildMiniCaps(){
-  const list = [
-    { name:'Hapoel Beer-Sheva', price:9.60 },
-    { name:'Dinamo Zagreb', price:22.40 },
-    { name:'Slovan Bratislava', price:15.80 },
-  ];
-  document.getElementById('miniCaps').innerHTML = list.map(t=>
-    '<div class="mc-item"><div class="mc-name">'+t.name+'</div><div class="mc-price mono" style="color:var(--surge)">'+coin(t.price)+'</div></div>'
-  ).join('');
-}
-buildMiniCaps();
 
 
 // tabs + table
@@ -1786,9 +1764,12 @@ let currentIsPro = false, currentIsUltimate = false;
 
 async function refreshWallet(){
   if(!sb || !currentSession) return;
-  const { data, error } = await sb.from('profiles').select('coin_balance, is_pro, is_ultimate, pro_expires_at').eq('id', currentSession.user.id).single();
+  const { data, error } = await sb.from('profiles').select('coin_balance, is_pro, is_ultimate, pro_expires_at, display_name').eq('id', currentSession.user.id).single();
   if(!error && data){
     currentCash = Number(data.coin_balance) || 0;
+    currentName = data.display_name || '';
+    document.getElementById('walletName').textContent = (currentName || 'Fan Coins') + ' ✎';
+    maybeAskForName();
     document.getElementById('walletAmt').textContent = Math.round(data.coin_balance).toLocaleString();
     const notExpired = !data.pro_expires_at || new Date(data.pro_expires_at) > new Date();
     currentIsUltimate = !!data.is_ultimate && notExpired;
@@ -2252,7 +2233,7 @@ async function loadPriceHistory(){
   const PAGE = 1000;   // Supabase returns at most 1,000 rows per request
   for(let from = 0; ; from += PAGE){
     const { data, error } = await sb.from('price_history')
-      .select('team_id,price,changed_at')
+      .select('team_id,price,changed_at,source,label,result')
       .order('changed_at', { ascending:true }).order('id', { ascending:true })
       .range(from, from + PAGE - 1);
     if(error || !data) break;
@@ -2261,7 +2242,7 @@ async function loadPriceHistory(){
   }
   priceHistory = {};
   rows.forEach(r=>{
-    (priceHistory[r.team_id] = priceHistory[r.team_id] || []).push({ t: Date.parse(r.changed_at), p: Number(r.price) });
+    (priceHistory[r.team_id] = priceHistory[r.team_id] || []).push({ t: Date.parse(r.changed_at), p: Number(r.price), source: r.source, label: r.label, result: r.result });
   });
   historyLoaded = true;
   refreshCharts();
@@ -2318,9 +2299,84 @@ async function loadLockedTeams(){
   }
 }
 
+// ---------- Spotlight: the week's biggest mover, picked from real history ----------
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+let spotChart = null;
+
+// A club's move over the last 7 days, or null if its price didn't change.
+// The starting price is its last price before the week began; a club added
+// during the week starts from its first recorded price.
+function weeklyMove(team, leagueKey){
+  const h = priceHistory[team.id];
+  if(!h || !h.length) return null;
+  const from = Date.now() - WEEK_MS;
+  const inWeek = h.filter(p=>p.t > from);
+  if(!inWeek.length) return null;
+  const before = h.filter(p=>p.t <= from);
+  const base = before.length ? before[before.length-1].p : inWeek[0].p;
+  const cur = Number(team.price);
+  if(!base || cur === base) return null;
+  return { team, leagueKey, base, cur, pct: (cur - base) / base * 100, week: inWeek };
+}
+
+function buildSpotlight(){
+  const moves = [];
+  Object.entries(leagues).forEach(([key, lg])=> lg.teams.forEach(t=>{ const m = weeklyMove(t, key); if(m) moves.push(m); }));
+  moves.sort((a,b)=> Math.abs(b.pct) - Math.abs(a.pct));
+  const top = moves[0];
+  const name = document.getElementById('cwName');
+  if(spotChart){ spotChart.destroy(); spotChart = null; }
+  if(!top){
+    name.textContent = 'No price moves this week';
+    document.getElementById('cwMeta').textContent = 'The spotlight fills in after the next round of matches.';
+    ['cwPrice','cwPriceChg','cwStages','miniCaps'].forEach(id=> document.getElementById(id).innerHTML = '');
+    document.getElementById('miniCaps').hidden = true;
+    return;
+  }
+  const rising = top.pct >= 0;
+  const color = rising ? 'var(--surge)' : 'var(--drop)';
+  name.textContent = top.team.name;
+  document.getElementById('cwMeta').textContent = leagues[top.leagueKey].label + ' · ' + top.team.tier;
+  document.getElementById('cwPrice').innerHTML = coin(top.cur);
+  document.getElementById('cwPrice').style.color = color;
+  const chg = document.getElementById('cwPriceChg');
+  chg.textContent = fmtChg(top.pct) + ' this week';
+  chg.style.color = color;
+  // This week's results, oldest first; the latest is highlighted.
+  const games = top.week.filter(p=>p.source === 'match' && p.label);
+  document.getElementById('cwStages').innerHTML = games.map((g,i)=>
+    '<div class="cw-stage'+(i === games.length-1 ? ' now' : '')+'">'+(g.result ? escapeHtml(g.result)+' · ' : '')+escapeHtml(g.label)+'</div>'
+  ).join('');
+  const runnersUp = moves.slice(1, 4);
+  const caps = document.getElementById('miniCaps');
+  caps.hidden = runnersUp.length === 0;
+  caps.style.gridTemplateColumns = 'repeat(' + Math.max(runnersUp.length, 1) + ', 1fr)';
+  caps.innerHTML = runnersUp.map(m=>
+    '<div class="mc-item"><div class="mc-name">'+escapeHtml(m.team.name)+'</div>'+
+    '<div class="mc-price mono" style="color:'+(m.pct >= 0 ? 'var(--surge)' : 'var(--drop)')+'">'+fmtChg(m.pct)+'</div></div>'
+  ).join('');
+
+  // Chart: the last 30 days, starting from the price going into that window.
+  const h = priceHistory[top.team.id];
+  const from = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const prior = h.filter(p=>p.t <= from);
+  const pts = (prior.length ? [{ t: from, p: prior[prior.length-1].p }] : []).concat(h.filter(p=>p.t > from));
+  if(pts[pts.length-1].p !== top.cur) pts.push({ t: Date.now(), p: top.cur });
+  spotChart = themeChart(new Chart(document.getElementById('cupChart'), {
+    type:'line',
+    data:{ labels: pts.map(p=> new Date(p.t).toLocaleDateString(undefined, { day:'numeric', month:'short' })),
+      datasets:[{ data: pts.map(p=>p.p), role: rising ? 'up' : 'down', borderWidth:2.5, pointRadius:3, tension:0.3, fill:true }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ borderWidth:1, callbacks:{ label:(ctx)=> '🪙'+ctx.parsed.y.toFixed(2) } } },
+      scales:{ x:{ grid:{display:false}, ticks:{ font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:7 } },
+        y:{ ticks:{ font:{size:10}, callback:(v)=>'🪙'+v } } } }
+  }));
+}
+
 function refreshCharts(){
   if(!teamsLoaded) return;
   buildIndices();
+  if(historyLoaded) buildSpotlight();
   const active = tabBar.querySelector('.tab-btn.active')?.dataset.key;
   if(active && leagues[active]) renderTable(active);
   drawHeroChart();
@@ -2438,6 +2494,43 @@ document.getElementById('authSubmit').addEventListener('click', async ()=>{
   }
   closeAuth();
   loadTeamsFromDB();
+});
+
+// ----- Display name -----
+let currentName = '';
+const NAME_RULE = /^[A-Za-z0-9 ._-]{2,24}$/;
+function openNameModal(){
+  const input = document.getElementById('nameInput');
+  input.value = /^Trader-/i.test(currentName) ? '' : currentName;
+  document.getElementById('nameMsg').className = 'm-msg';
+  document.getElementById('nameOverlay').classList.add('open');
+  input.focus();
+}
+function closeNameModal(){ document.getElementById('nameOverlay').classList.remove('open'); }
+// New players keep "Trader-xxxxxx" until they choose; ask once per visit.
+function maybeAskForName(){
+  if(!/^Trader-/i.test(currentName)) return;
+  let asked = false;
+  try { asked = sessionStorage.getItem('pm-name-asked') === '1'; sessionStorage.setItem('pm-name-asked', '1'); } catch(e){}
+  if(!asked) openNameModal();
+}
+document.getElementById('walletChip').addEventListener('click', openNameModal);
+document.getElementById('walletChip').addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openNameModal(); } });
+document.getElementById('nameClose').addEventListener('click', closeNameModal);
+document.getElementById('nameOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'nameOverlay') closeNameModal(); });
+document.getElementById('nameInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') document.getElementById('nameSubmit').click(); });
+document.getElementById('nameSubmit').addEventListener('click', async ()=>{
+  const name = document.getElementById('nameInput').value.trim();
+  const msg = document.getElementById('nameMsg');
+  if(!NAME_RULE.test(name)){ msg.textContent = 'Use 2–24 letters, numbers, spaces, dots, dashes or underscores.'; msg.className = 'm-msg err'; return; }
+  if(/^Trader-/i.test(name)){ msg.textContent = 'Names starting with "Trader-" are kept for new accounts. Pick something else.'; msg.className = 'm-msg err'; return; }
+  const { error } = await sb.rpc('set_display_name', { p_name: name });
+  if(error){ msg.textContent = error.message; msg.className = 'm-msg err'; return; }
+  currentName = name;
+  document.getElementById('walletName').textContent = name + ' ✎';
+  msg.textContent = 'Saved. You appear as ' + name + ' on the leaderboard.'; msg.className = 'm-msg ok';
+  loadLeaderboard();
+  setTimeout(closeNameModal, 1000);
 });
 
 // ----- Password reset -----
@@ -2627,19 +2720,6 @@ function drawHeroChart(){
   }));
 }
 
-// spotlight chart
-const cupSeries = [5.40,8.90,17.20,38.60];
-themeChart(new Chart(document.getElementById('cupChart'), {
-  type:'line',
-  data:{ labels:['1st Qual. Round','2nd Qual. Round','3rd Qual. Round','Play-off (won 6-5 agg)'],
-    datasets:[{ data:cupSeries, role:'gilt', borderWidth:2.5, pointRadius:3,
-      tension:0.3, fill:true }] },
-  options:{ responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:false}, tooltip:{ borderWidth:1,
-      callbacks:{ label:(ctx)=> '🪙'+ctx.parsed.y.toFixed(2) } } },
-    scales:{ x:{ grid:{display:false}, ticks:{ font:{size:10} } },
-      y:{ ticks:{ font:{size:10}, callback:(v)=>'🪙'+v } } } }
-}));
 </script>
 
 </body>

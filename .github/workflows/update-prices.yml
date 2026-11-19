@@ -72,3 +72,60 @@ jobs:
           # add an ANTHROPIC_API_KEY secret, and uncomment the line below.
           # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node update-prices.js
+
+  # Opens one GitHub issue when the updater has failed 3 runs in a row, so
+  # someone hears about it (GitHub emails the repo's watchers about new
+  # issues), and closes it once a run succeeds again. A one-off failure,
+  # like the AI provider being briefly overloaded, doesn't trigger it.
+  alert:
+    needs: update-prices
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+    steps:
+      - name: Open or close the "Price updater is failing" issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULT: ${{ needs.update-prices.result }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Price updater is failing"
+          OPEN=$(gh issue list --state open --limit 100 --json number,title \
+            --jq ".[] | select(.title == \"$TITLE\") | .number" | head -n 1)
+
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$OPEN" ]; then
+              gh issue close "$OPEN" --comment "Working again: $RUN_URL succeeded."
+              echo "Closed issue #$OPEN."
+            fi
+            exit 0
+          fi
+          # A cancelled or skipped run says nothing about the updater.
+          if [ "$RESULT" != "failure" ]; then exit 0; fi
+
+          # This run failed. Alert only if the two runs before it failed too.
+          PREV=$(gh run list --workflow update-prices.yml --limit 10 --json databaseId,status,conclusion \
+            --jq "[.[] | select(.databaseId != $RUN_ID and .status == \"completed\") | .conclusion] | .[0:2] | join(\",\")")
+          if [ "$PREV" != "failure,failure" ]; then
+            echo "Failed, but not three runs in a row (previous: ${PREV:-none}). No alert."
+            exit 0
+          fi
+          if [ -n "$OPEN" ]; then
+            echo "Issue #$OPEN is already open."
+            exit 0
+          fi
+          gh issue create --title "$TITLE" --body "The price updater has failed three runs in a row, so match results aren't being priced and clubs that have played stay paused for trading (for up to 72 hours).
+
+          Latest failed run: $RUN_URL
+
+          Open it, click **update-prices**, and scroll to the end of the log. Common causes:
+          - **AI quota or outage:** look for HTTP 429 or 503 from Gemini. These usually clear on their own.
+          - **football-data.org errors:** look for \"football-data.org error\".
+          - **A missing or expired secret:** look for \"Missing a required environment variable\".
+
+          This issue closes itself when a run succeeds."
+          echo "Opened an issue."

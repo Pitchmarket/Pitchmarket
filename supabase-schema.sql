@@ -1,8 +1,9 @@
 -- PitchMarket database schema (Supabase / Postgres).
 --
 -- Exported from the live project on 18 Nov 2026, with
--- supabase-security-fixes.sql, supabase-price-lag-lock.sql and
--- supabase-trade-cooldown.sql applied.
+-- supabase-security-fixes.sql, supabase-price-lag-lock.sql,
+-- supabase-trade-cooldown.sql and supabase-names-and-leaderboard.sql
+-- applied.
 -- Running this on an empty Supabase project rebuilds the backend:
 -- tables, access rules (RLS), functions and triggers. It creates no
 -- data: no teams, settings or players.
@@ -39,8 +40,13 @@ create table public.profiles (
   created_at      timestamptz not null default now(),
   is_pro          boolean not null default false,
   pro_expires_at  timestamptz,
-  is_ultimate     boolean not null default false
+  is_ultimate     boolean not null default false,
+  -- Set by hand in the SQL Editor for accounts that run the competition
+  -- rather than play in it (see get_leaderboard).
+  hidden_from_leaderboard boolean not null default false
 );
+-- Display names are unique, ignoring capitals.
+create unique index profiles_display_name_unique on public.profiles (lower(display_name));
 
 create table public.holdings (
   id       uuid primary key default gen_random_uuid(),
@@ -345,7 +351,8 @@ begin
 end;
 $function$;
 
--- Top players by coins plus holdings at current prices.
+-- Top players by coins plus holdings at current prices. Hidden accounts
+-- (the organiser's) are left out.
 create or replace function public.get_leaderboard(p_limit integer default 20)
  returns table(display_name text, portfolio_value numeric)
  language sql
@@ -358,6 +365,7 @@ as $function$
   from profiles p
   left join holdings h on h.user_id = p.id
   left join teams t on t.id = h.team_id
+  where not p.hidden_from_leaderboard
   group by p.id, p.display_name, p.coin_balance
   order by portfolio_value desc
   limit p_limit;
@@ -375,7 +383,14 @@ begin
   if v_name is null or v_name !~ '^[A-Za-z0-9 ._-]{2,24}$' then
     raise exception 'Display name must be 2-24 letters, numbers, spaces, dots, dashes or underscores';
   end if;
-  update profiles set display_name = v_name where id = auth.uid();
+  if lower(v_name) like 'trader-%' then
+    raise exception 'Names starting with "Trader-" are kept for new accounts. Pick something else.';
+  end if;
+  begin
+    update profiles set display_name = v_name where id = auth.uid();
+  exception when unique_violation then
+    raise exception 'That name is already taken. Try another.';
+  end;
 end;
 $function$;
 
