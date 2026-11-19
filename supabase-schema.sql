@@ -1,7 +1,8 @@
 -- PitchMarket database schema (Supabase / Postgres).
 --
 -- Exported from the live project on 18 Nov 2026, with
--- supabase-security-fixes.sql and supabase-price-lag-lock.sql applied.
+-- supabase-security-fixes.sql, supabase-price-lag-lock.sql and
+-- supabase-trade-cooldown.sql applied.
 -- Running this on an empty Supabase project rebuilds the backend:
 -- tables, access rules (RLS), functions and triggers. It creates no
 -- data: no teams, settings or players.
@@ -58,6 +59,7 @@ create table public.trades (
   price       numeric not null,
   created_at  timestamptz not null default now()
 );
+create index trades_user_created on public.trades (user_id, created_at);
 
 create table public.site_settings (
   key         text primary key,
@@ -287,6 +289,15 @@ begin
   select coin_balance into v_balance from profiles where id = auth.uid() for update;
   if v_balance is null then
     raise exception 'Sign in required';
+  end if;
+
+  -- One trade every 3 seconds per player, so a script can't fire hundreds
+  -- of trades. Checked after the lock above, so two at once can't both pass.
+  if exists (
+    select 1 from trades
+    where user_id = auth.uid() and created_at > now() - interval '3 seconds'
+  ) then
+    raise exception 'Please wait a few seconds between trades';
   end if;
 
   select price into v_price from teams where id = p_team_id;

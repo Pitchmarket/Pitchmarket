@@ -879,7 +879,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   const SUPABASE_ANON_KEY = "sb_publishable_4gQiPEP2dmJH99ZwTjTRTQ_dxZtWqFn";
 </script>
 <!-- =========================================================================== -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -1144,7 +1144,6 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
         <th class="num">Price</th>
         <th class="num">24h</th>
         <th>Trend</th>
-        <th class="num">Volume</th>
         <th></th>
       </tr>
     </thead>
@@ -1179,7 +1178,20 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
       </div>
     </div>
     <button class="m-btn primary" id="authSubmit">Sign in</button>
+    <div class="m-toggle" id="authForgotRow"><a id="authForgot">Forgot password?</a></div>
     <div class="m-toggle">No account? <a id="authToggle">Create one</a></div>
+  </div>
+</div>
+
+<!-- New password modal: opens when a player follows a reset link from their email -->
+<div class="modal-overlay" id="resetOverlay">
+  <div class="modal">
+    <h2>Set a new password</h2>
+    <div class="sub">Choose a new password for your account.</div>
+    <div class="m-msg" id="resetMsg"></div>
+    <div class="m-field"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
+    <div class="m-field"><label>Confirm new password</label><input id="resetPassword2" type="password" autocomplete="new-password"></div>
+    <button class="m-btn primary" id="resetSubmit">Save new password</button>
   </div>
 </div>
 
@@ -1283,7 +1295,6 @@ document.addEventListener('click', (e)=>{
   if(!document.getElementById('themeWrap').contains(e.target)) document.getElementById('themeMenu').classList.remove('open');
 });
 buildThemeMenu();
-function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return Math.abs(h); }
 function sparkSVG(data, color){
   const w=100,h=30;
   if(!data || data.length < 2)
@@ -1407,17 +1418,6 @@ let leagues = {
   ]},
 };
 
-let indices = [
-  { name:'EPL-20', tier:'ENGLAND · TOP FLIGHT', value:438.62, chg:12.4 },
-  { name:'LALIGA-20', tier:'SPAIN · TOP FLIGHT', value:294.10, chg:6.7 },
-  { name:'SERIE-A-20', tier:'ITALY · TOP FLIGHT', value:238.90, chg:-2.3 },
-  { name:'BUNDES-18', tier:'GERMANY · TOP FLIGHT', value:210.55, chg:3.8 },
-  { name:'LIGUE1-18', tier:'FRANCE · TOP FLIGHT', value:167.20, chg:1.9 },
-  { name:'UCL-36', tier:'CHAMPIONS LEAGUE · DRAW AUG 27', value:92.70, chg:0.8 },
-  { name:'UEL-36', tier:'EUROPA LEAGUE · DRAW AUG 28', value:36.90, chg:0.7 },
-  { name:'CUPS-10', tier:'DOMESTIC CUPS · EARLY ROUNDS', value:12.10, chg:0.0 },
-  { name:'INTL-50', tier:'NATIONAL TEAMS', value:60.30, chg:0.5 },
-];
 
 // ============================================================
 // Default site content — used until (or unless) live settings
@@ -1649,14 +1649,14 @@ buildTicker();
 // index grid
 function buildIndices(){
   const grid = document.getElementById('indexGrid');
-  // With live data, each league gets a composite built from its clubs' real
-  // prices. Before that (or with no database), show the configured list.
+  // Each league gets a card built from its clubs' real prices. Nothing is
+  // shown until the database answers, rather than placeholder numbers.
   const cards = teamsLoaded
     ? orderedLeagueKeys().map(key=>{
         const c = leagueComposite(key);
         return { name:leagues[key].label, tier:leagues[key].teams.length+(leagues[key].teams.length===1?' club':' clubs')+' · average price', value:c.value, chg:c.chg, series:c.series };
       })
-    : indices.map(ix=>({ name:ix.name, tier:ix.tier, value:ix.value, chg:null, series:null }));
+    : [];
   grid.innerHTML = cards.map(ix=>{
     const color = ix.chg == null ? 'var(--steel-dim)' : up(ix.chg)?'var(--surge)':'var(--drop)';
     return '<div class="index-card">'+
@@ -1697,7 +1697,6 @@ function renderTable(key){
       '<td class="num mono">'+coin(t.price)+'</td>'+
       '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
-      '<td class="num mono">'+(Math.round(hash(t.name)%900+100))+'K</td>'+
       '<td style="white-space:nowrap;"><button class="star-btn" data-id="'+(t.id||'')+'" title="Add to watchlist">☆</button>'+
         (lockedTeams.has(t.id)
           ? '<button class="buy-btn paused" disabled title="Match in progress or result being priced. Trading reopens once the new price is set.">Paused</button></td>'
@@ -1755,6 +1754,9 @@ function initSupabase(){
     currentSession = session;
     updateAuthUI();
     if(session) refreshWallet();
+    // Following the reset link from the email signs the player in and
+    // fires this event; ask for the new password straight away.
+    if(event === 'PASSWORD_RECOVERY') document.getElementById('resetOverlay').classList.add('open');
   });
 }
 
@@ -2362,7 +2364,6 @@ async function loadSiteSettings(){
   if(error || !data) return;
   let orderChanged = false;
   data.forEach(row=>{
-    if(row.key === 'indices'){ indices = row.value; return; }
     if(row.key === 'league_order'){ leagueOrder = row.value; orderChanged = true; return; }
     if(siteContent[row.key] !== undefined) siteContent[row.key] = row.value;
   });
@@ -2412,6 +2413,7 @@ document.getElementById('authToggle').addEventListener('click', ()=>{
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
   document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('authForgotRow').style.display = authMode === 'signin' ? '' : 'none';
   document.getElementById('authToggle').parentElement.innerHTML = authMode === 'signin'
     ? 'No account? <a id="authToggle2">Create one</a>' : 'Have an account? <a id="authToggle2">Sign in</a>';
   document.getElementById('authToggle2').addEventListener('click', ()=> document.getElementById('authToggle').click());
@@ -2436,6 +2438,36 @@ document.getElementById('authSubmit').addEventListener('click', async ()=>{
   }
   closeAuth();
   loadTeamsFromDB();
+});
+
+// ----- Password reset -----
+document.getElementById('authForgot').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const msg = document.getElementById('authMsg');
+  if(!sb){ msg.textContent='Supabase is not configured yet.'; msg.className='m-msg err'; return; }
+  if(!email){ msg.textContent = 'Enter your email above, then click "Forgot password?" again.'; msg.className = 'm-msg err'; return; }
+  // The link in the email comes back to this page. Supabase only allows
+  // addresses listed under Authentication -> URL Configuration -> Redirect URLs.
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if(error){ msg.textContent = error.message; msg.className = 'm-msg err'; return; }
+  // Same message whether or not the account exists, so this can't be used
+  // to find out who has signed up.
+  msg.textContent = 'If there is an account for ' + email + ', a reset link is on its way. Check your inbox and spam folder.';
+  msg.className = 'm-msg ok';
+});
+
+document.getElementById('resetSubmit').addEventListener('click', async ()=>{
+  const pw = document.getElementById('resetPassword').value;
+  const pw2 = document.getElementById('resetPassword2').value;
+  const msg = document.getElementById('resetMsg');
+  if(pw.length < 6){ msg.textContent = 'Use at least 6 characters.'; msg.className = 'm-msg err'; return; }
+  if(pw !== pw2){ msg.textContent = "Those passwords don't match."; msg.className = 'm-msg err'; return; }
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if(error){ msg.textContent = error.message; msg.className = 'm-msg err'; return; }
+  msg.textContent = "Password saved. You're signed in."; msg.className = 'm-msg ok';
+  document.getElementById('resetPassword').value = '';
+  document.getElementById('resetPassword2').value = '';
+  setTimeout(()=> document.getElementById('resetOverlay').classList.remove('open'), 1200);
 });
 
 // ----- Trade modal wiring -----

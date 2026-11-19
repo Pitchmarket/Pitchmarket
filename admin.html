@@ -221,16 +221,11 @@ tbody tr:last-child td{ border-bottom:none; }
 .cc-stat .l{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; }
 @media(max-width:900px){ .classes-prev{ grid-template-columns:1fr; } }
 
-/* -- market indices -- */
-.indices-prev{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border-soft); border:1px solid var(--border-soft); border-radius:6px; overflow:hidden; }
-.index-card-prev{ position:relative; background:var(--panel); padding:16px 18px; }
-.index-card-prev .remove-x{ position:absolute; top:10px; right:10px; }
 .ic-name{ font-size:13px; font-weight:600; margin-bottom:6px; }
 .ic-tier{ font-family:'JetBrains Mono'; font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
 .ic-vals{ display:flex; gap:10px; align-items:baseline; }
 .ic-value{ font-family:'JetBrains Mono'; font-size:17px; font-weight:700; }
 .ic-chg{ font-family:'JetBrains Mono'; font-size:12px; font-weight:600; }
-@media(max-width:900px){ .indices-prev{ grid-template-columns:1fr; } }
 
 /* -- disclaimer -- */
 .disclaimer-prev{ background:#0D1712; border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
@@ -246,7 +241,7 @@ tbody tr:last-child td{ border-bottom:none; }
 </script>
 <!-- =========================================================================== -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 
 <div id="gate">
   <div class="gate-card">
@@ -367,12 +362,6 @@ tbody tr:last-child td{ border-bottom:none; }
         <div class="editor-frame" id="classesEditor"></div>
       </div>
 
-      <!-- INDICES -->
-      <div class="editor-block" data-key="indices" data-isarray="true">
-        <div class="editor-block-head"><div class="editor-block-label">Market index cards</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
-        <div class="editor-frame" id="indicesEditor"></div>
-      </div>
-
       <!-- LEAGUE ORDER -->
       <div class="editor-block" data-key="league_order" data-isarray="true">
         <div class="editor-block-head"><div class="editor-block-label">League tab order</div><div><button class="editor-save">Save</button><span class="editor-status"></span></div></div>
@@ -476,17 +465,6 @@ const settingsDefaults = {
     { icon:'EQ', title:'Club equities', desc:'Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.', stat1_n:'±4.8%', stat1_l:'Avg. matchday move', stat2_n:'2,140', stat2_l:'Clubs listed' },
     { icon:'NT', title:'National team bonds', desc:'Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.', stat1_n:'±0.6%', stat1_l:'Avg. daily move', stat2_n:'86', stat2_l:'Federations listed' },
     { icon:'CL', title:'Continental campaigns', desc:"A club's Champions League run trades as its own instrument, separate from its domestic price. Event-driven — each knockout leg can move it sharply either way.", stat1_n:'±18%', stat1_l:'Avg. move per leg', stat2_n:'32', stat2_l:'UCL instruments live' },
-  ],
-  indices: [
-    { name:'EPL-20', tier:'ENGLAND · TOP FLIGHT', value:438.62, chg:12.4 },
-    { name:'LALIGA-20', tier:'SPAIN · TOP FLIGHT', value:294.10, chg:6.7 },
-    { name:'SERIE-A-20', tier:'ITALY · TOP FLIGHT', value:238.90, chg:-2.3 },
-    { name:'BUNDES-18', tier:'GERMANY · TOP FLIGHT', value:210.55, chg:3.8 },
-    { name:'LIGUE1-18', tier:'FRANCE · TOP FLIGHT', value:167.20, chg:1.9 },
-    { name:'UCL-36', tier:'CHAMPIONS LEAGUE · DRAW AUG 27', value:92.70, chg:0.8 },
-    { name:'UEL-36', tier:'EUROPA LEAGUE · DRAW AUG 28', value:36.90, chg:0.7 },
-    { name:'CUPS-10', tier:'DOMESTIC CUPS · EARLY ROUNDS', value:12.10, chg:0.0 },
-    { name:'INTL-50', tier:'NATIONAL TEAMS', value:60.30, chg:0.5 },
   ],
   disclaimer: { text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
   brand:{ mark:'P', name_1:'Pitch', name_2:'Market',
@@ -715,7 +693,6 @@ async function loadContentSettings(){
   renderLeaderboardEditor();
   renderProEditor();
   renderClassesEditor();
-  renderIndicesEditor();
   renderDisclaimerEditor();
   renderBrandEditor();
   renderSectionsEditor();
@@ -970,42 +947,6 @@ function readClasses(){
   }));
 }
 
-// ---------- MARKET INDICES ----------
-function indexCardHTML(ix){
-  const up = ix.chg >= 0;
-  return '<div class="index-card-prev">'+
-    '<button class="remove-x" type="button">×</button>'+
-    '<div class="ic-name editable" contenteditable data-f="name" data-single="1">'+esc(ix.name)+'</div>'+
-    '<div class="ic-tier editable" contenteditable data-f="tier" data-single="1">'+esc(ix.tier)+'</div>'+
-    '<div class="ic-vals">'+
-      '<input class="num-input ic-value" data-f="value" type="number" step="0.01" value="'+ix.value+'">'+
-      '<input class="num-input ic-chg" data-f="chg" type="number" step="0.1" value="'+ix.chg+'" style="color:'+(up?'#17D9A3':'#FF5C55')+';">'+
-    '</div>'+
-  '</div>';
-}
-function renderIndicesEditor(){
-  document.getElementById('indicesEditor').innerHTML =
-    '<div class="indices-prev" id="indicesList">'+currentSettings.indices.map(indexCardHTML).join('')+'</div>'+
-    '<button class="add-item-btn" type="button" id="addIndexBtn">+ Add index card</button>';
-  document.getElementById('addIndexBtn').onclick = ()=>{
-    const div = document.createElement('div');
-    div.innerHTML = indexCardHTML({name:'NEW-IDX', tier:'DESCRIPTION', value:10, chg:0});
-    document.getElementById('indicesList').appendChild(div.firstChild);
-    bindEnterAsBlur();
-  };
-  document.getElementById('indicesEditor').addEventListener('click', (e)=>{
-    if(e.target.classList.contains('remove-x')) e.target.closest('.index-card-prev').remove();
-  });
-}
-function readIndices(){
-  return [...document.querySelectorAll('#indicesList .index-card-prev')].map(card=>({
-    name: card.querySelector('[data-f="name"]').innerText.trim(),
-    tier: card.querySelector('[data-f="tier"]').innerText.trim(),
-    value: parseFloat(card.querySelector('[data-f="value"]').value) || 0,
-    chg: parseFloat(card.querySelector('[data-f="chg"]').value) || 0,
-  }));
-}
-
 // ---------- DISCLAIMER ----------
 function renderDisclaimerEditor(){
   document.getElementById('disclaimerEditor').innerHTML =
@@ -1248,7 +1189,6 @@ const readers = {
   leaderboard: readLeaderboard,
   pro: readPro,
   classes: readClasses,
-  indices: readIndices,
   disclaimer: readDisclaimer,
   brand: readBrand,
   sections: readSections,
