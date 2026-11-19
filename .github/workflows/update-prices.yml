@@ -2,9 +2,11 @@ name: Update PitchMarket prices
 
 "on":
   schedule:
-    # Runs at minute 0 past every 6th hour (UTC). Change the "*/6" to
-    # run more or less often — e.g. "*/3" for every 3 hours.
-    - cron: '0 */6 * * *'
+    # Runs at minute 7 past every hour (UTC). Hourly keeps the trading
+    # lock short: a club unlocks within about an hour of full time, once
+    # its result is priced. Only new results go to the AI, so running
+    # more often doesn't use more AI quota.
+    - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
       lookback_days:
@@ -19,6 +21,12 @@ name: Update PitchMarket prices
         description: 'Matches priced per AI call. 10 is the default. Lower it if replies come back incomplete.'
         required: false
         default: '10'
+
+# Never run two updates at once: an overlapping run could price the same
+# match twice. A run that starts while another is going waits for it.
+concurrency:
+  group: update-prices
+  cancel-in-progress: false
 
 jobs:
   update-prices:

@@ -1,6 +1,6 @@
 # PitchMarket status
 
-_Last updated: 18 Nov 2026_
+_Last updated: 19 Nov 2026_
 
 Where the project stands before public launch. Update this file in the same pull request as the work it describes. Keep it under 10 KB: when something is done, delete it here instead of marking it done.
 
@@ -11,7 +11,7 @@ Launch blockers, roughly in the order to tackle them.
 ### Running the competition
 
 - **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql`: it clears `holdings` and `trades` and sets every balance to 2,000. Prices and price history stay, so the charts keep their data.
-- **Close the price-lag exploit.** Lock a team from kickoff until its price update applies, or players can trade on results the price doesn't reflect yet.
+- **Run `supabase-price-lag-lock.sql`** in the Supabase SQL Editor. Until it runs, players can still trade on a club after kickoff, before its result is priced. The site and price updater already handle the lock and keep working either way.
 - **Publish the rules before entry opens:** exact start and end timestamps with timezone, eligibility, and how the winner is decided.
 - **Write the tie-break rule** for equal final balances. There's a cash pot, so this must be settled up front.
 - **State the multi-account rule.** Nothing stops one person running several accounts and keeping the best. CAPTCHA doesn't solve this.
@@ -30,7 +30,7 @@ Launch blockers, roughly in the order to tackle them.
 Not blocking launch, but wanted soon after.
 
 - **Trade rate limit.** A few seconds' cooldown between trades, enforced in the `trade` function, so a script can't fire hundreds of trades around a price update.
-- **Data-outage policy.** What happens to the standings if the price pipeline is down for a week.
+- **Data-outage policy.** What happens to the standings if the price pipeline is down for a week. The trading lock lifts after 72 hours even if a result was never priced, so a long outage reopens the price-lag exploit.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
 - **Spotlight chart.** The table, index cards and hero chart now draw real price history. The cup spotlight chart still uses prices typed into admin; link it to a real club or remove it.
 - **Pro lifecycle.** Handle cancellations, failed payments and expiry through Stripe webhooks.

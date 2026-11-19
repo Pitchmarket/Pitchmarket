@@ -45,7 +45,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // How many days back to check for finished matches. Default 3 is plenty
-// for the 6-hourly schedule. Raise it temporarily (e.g. LOOKBACK_DAYS=14)
+// for the hourly schedule. Raise it temporarily (e.g. LOOKBACK_DAYS=14)
 // for a one-off catch-up run after fixing team name aliases.
 const LOOKBACK_DAYS = parseInt(process.env.LOOKBACK_DAYS || '3', 10);
 
@@ -816,6 +816,69 @@ async function logSkip(baseRow, reason){
   if(error) console.error('  Could not write the skipped row:', error.message);
 }
 
+// ============================================================
+// Fixtures for the trading lock
+//
+// Records every match in the covered competitions from 2 days ago to 7
+// days ahead, with its kickoff time, in the `fixtures` table. The
+// database's trade() function uses it to refuse trades on a club from
+// kickoff until that match's result has been priced, so nobody can
+// trade on a score the price doesn't show yet.
+//
+// One football-data request covers every competition. If it fails, the
+// run carries on pricing as normal; locks just use the last fixtures
+// saved.
+// ============================================================
+const FIXTURES_DAYS_BACK = 2;
+const FIXTURES_DAYS_AHEAD = 7;   // the feed allows at most 10 days per request
+
+async function syncFixtures(){
+  const day = 24 * 60 * 60 * 1000;
+  const from = new Date(Date.now() - FIXTURES_DAYS_BACK * day).toISOString().slice(0, 10);
+  const to = new Date(Date.now() + FIXTURES_DAYS_AHEAD * day).toISOString().slice(0, 10);
+  const codes = Object.keys(COMPETITIONS).join(',');
+  const data = await footballData(`matches?competitions=${codes}&dateFrom=${from}&dateTo=${to}`, 'fixtures');
+  if(!data){ console.log('Fixtures: could not fetch them. Trading locks use the last saved list.'); return; }
+
+  const rows = [];
+  for(const m of data.matches || []){
+    const code = m.competition?.code;
+    const leagueKey = COMPETITIONS[code];
+    if(!leagueKey || !m.utcDate) continue;
+    const teams = await getLeagueTeams(leagueKey);
+    if(teams === null) continue;
+    const isUCL = code === 'CL';
+    // Cup draws can list a fixture before both teams are known.
+    const home = m.homeTeam?.name ? findTeamRow(teams, m.homeTeam.name, isUCL) : null;
+    const away = m.awayTeam?.name ? findTeamRow(teams, m.awayTeam.name, isUCL) : null;
+    if(!home && !away) continue;   // neither club is on the site, nothing to lock
+    rows.push({
+      source_match_id: String(m.id),
+      competition: code,
+      home_team_id: home?.id || null,
+      away_team_id: away?.id || null,
+      home_team_name: m.homeTeam?.name || null,
+      away_team_name: m.awayTeam?.name || null,
+      kickoff: m.utcDate,
+      feed_status: m.status || null,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  if(rows.length){
+    const { error } = await supabase.from('fixtures').upsert(rows, { onConflict: 'source_match_id' });
+    if(error){
+      console.error('Fixtures: could not save them —', error.message);
+      console.error('  If this says the table does not exist, run supabase-price-lag-lock.sql in Supabase.');
+      return;
+    }
+  }
+  // Keep the table small. Locks never look further back than 72 hours.
+  const cutoff = new Date(Date.now() - 30 * day).toISOString();
+  await supabase.from('fixtures').delete().lt('kickoff', cutoff);
+  console.log(`Fixtures: ${rows.length} match(es) from ${from} to ${to} saved for trading locks.`);
+}
+
 async function main(){
   if(!FOOTBALL_DATA_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY){
     console.error('Missing a required environment variable (football-data / Supabase). Check your GitHub Secrets.');
@@ -835,6 +898,9 @@ async function main(){
   console.log(AUTO_APPLY
     ? `Auto-apply: ON — moves up to ${AUTO_APPLY_MAX_PCT}% applied immediately, anything larger held for review.`
     : 'Auto-apply: OFF — every change waits for approval in admin.');
+
+  try { await syncFixtures(); }
+  catch(err){ console.error('Fixtures: failed —', err.message, '— carrying on with pricing.'); }
 
   const now = new Date();
   const dateTo = now.toISOString().slice(0,10);
