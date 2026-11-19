@@ -1,0 +1,31 @@
+name: Test football-data squads (temporary)
+"on":
+  push:
+    branches: [test-squads]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch squads for each league and print counts
+        env:
+          KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+        run: |
+          node -e '
+          const codes = ["PL","PD","SA","BL1","FL1","ELC","PPL","DED","BSA"];
+          (async () => {
+            for (const c of codes) {
+              const r = await fetch("https://api.football-data.org/v4/competitions/" + c + "/teams", { headers: { "X-Auth-Token": process.env.KEY } });
+              if (!r.ok) { console.log(c, "HTTP", r.status, (await r.text()).slice(0, 200)); continue; }
+              const d = await r.json();
+              const teams = d.teams || [];
+              const squads = teams.map(t => (t.squad || []).length);
+              const all = teams.flatMap(t => (t.squad || []).map(p => ({ ...p, team: t.shortName || t.name })));
+              const withDob = all.filter(p => p.dateOfBirth).length, withNat = all.filter(p => p.nationality).length, withPos = all.filter(p => p.position).length;
+              console.log(c, "teams", teams.length, "| players", all.length, "| squad sizes", Math.min(...squads), "-", Math.max(...squads), "| dob", withDob, "nat", withNat, "pos", withPos);
+              const look = all.filter(p => /cunha|saka|yamal|nico paz|kean/i.test(p.name)).map(p => p.name + " (" + p.team + ", " + p.position + ")");
+              if (look.length) console.log("   e.g.", look.join("; "));
+              if (c === "PL") console.log("   sample keys:", Object.keys(all[0] || {}).join(","), "| positions:", [...new Set(all.map(p => p.position))].join(","));
+              await new Promise(r => setTimeout(r, 7000));
+            }
+          })();'
