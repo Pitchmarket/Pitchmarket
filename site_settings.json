@@ -1,0 +1,296 @@
+[
+ {
+  "key": "ad_native",
+  "value": {
+   "tag": "Sponsored",
+   "copy": "<b>Bet Insights Pro</b> — match previews and injury news for every club on your watchlist, daily.",
+   "cta_url": "#",
+   "cta_text": "Try free ↗"
+  },
+  "updated_at": "2026-08-22T22:04:08.165456+00:00"
+ },
+ {
+  "key": "ad_top",
+  "value": {
+   "tag": "Sponsored",
+   "copy": "<b>Nike Football</b> — new boots for the pitch, built for whoever's rocketing up your watchlist.",
+   "cta_url": "#",
+   "cta_text": "Shop now ↗"
+  },
+  "updated_at": "2026-08-22T22:04:08.165456+00:00"
+ },
+ {
+  "key": "classes",
+  "value": [
+   {
+    "desc": "Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.",
+    "icon": "EQ",
+    "title": "Club equities",
+    "stat1_l": "AVG. MATCHDAY MOVE",
+    "stat1_n": "±4.8%",
+    "stat2_l": "CLUBS LISTED",
+    "stat2_n": "2,140"
+   },
+   {
+    "desc": "Low risk, steady reward. Only time when true volatility occurs is during the major tournaments. During the year, put your money in, and watch the price steadily grow as a federation grows.",
+    "icon": "NT",
+    "title": "National team bonds",
+    "stat1_l": "AVG. DAILY MOVE",
+    "stat1_n": "±0.6%",
+    "stat2_l": "FEDERATIONS LISTED",
+    "stat2_n": "86"
+   },
+   {
+    "desc": "Continental campaign stocks are for the underdogs. Teams who aren’t registered in leagues are registered in the continental competitions, free to trade.",
+    "icon": "CL",
+    "title": "Continental campaigns",
+    "stat1_l": "AVG. MOVE PER LEG",
+    "stat1_n": "±18%",
+    "stat2_l": "UCL INSTRUMENTS LIVE",
+    "stat2_n": "32"
+   }
+  ],
+  "updated_at": "2026-09-01T00:29:56.675+00:00"
+ },
+ {
+  "key": "disclaimer",
+  "value": {
+   "text": "PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins. Any questions email Pitchmarketadmin@gmail.com"
+  },
+  "updated_at": "2026-11-18T23:48:07.808+00:00"
+ },
+ {
+  "key": "hero",
+  "value": {
+   "line1": "EVERY CLUB",
+   "line2": "HAS A PRICE.",
+   "line3": "TRADE THE TABLE.",
+   "eyebrow": "LIVE MARKET",
+   "stat1_l": "LISTED CLUBS & NATIONS",
+   "stat1_n": "231",
+   "stat2_l": "MARKETS COVERED",
+   "stat2_n": "11",
+   "stat3_l": "STARTING COINS",
+   "stat3_n": "2,000",
+   "subhead": "Trade equity in Europe's best leagues, hold Champions League runs as their own instrument, and back national teams like steady bonds — free to play, with a season-long ranked competition every entrant starts on equal footing."
+  },
+  "updated_at": "2026-09-27T04:45:50.666+00:00"
+ },
+ {
+  "key": "indices",
+  "value": [
+   {
+    "chg": 12.4,
+    "name": "EPL-20",
+    "tier": "ENGLAND · TOP FLIGHT",
+    "value": 438.62
+   },
+   {
+    "chg": 6.7,
+    "name": "LALIGA-20",
+    "tier": "SPAIN · TOP FLIGHT",
+    "value": 294.1
+   },
+   {
+    "chg": -2.3,
+    "name": "SERIE-A-20",
+    "tier": "ITALY · TOP FLIGHT",
+    "value": 238.9
+   },
+   {
+    "chg": 3.8,
+    "name": "BUNDES-18",
+    "tier": "GERMANY · TOP FLIGHT",
+    "value": 210.55
+   },
+   {
+    "chg": 1.9,
+    "name": "LIGUE1-18",
+    "tier": "FRANCE · TOP FLIGHT",
+    "value": 167.2
+   },
+   {
+    "chg": 0.8,
+    "name": "UCL-36",
+    "tier": "CHAMPIONS LEAGUE · DRAW AUG 27",
+    "value": 92.7
+   },
+   {
+    "chg": 0.5,
+    "name": "INTL-50",
+    "tier": "NATIONAL TEAMS",
+    "value": 60.3
+   },
+   {
+    "chg": 2.8,
+    "name": "PRIMEIRA-18",
+    "tier": "PORTUGAL · TOP FLIGHT",
+    "value": 118.4
+   },
+   {
+    "chg": 1.4,
+    "name": "BRASIL-20",
+    "tier": "BRAZIL · TOP FLIGHT",
+    "value": 88.6
+   },
+   {
+    "chg": 3.1,
+    "name": "EREDIV-18",
+    "tier": "NETHERLANDS · TOP FLIGHT",
+    "value": 76.3
+   },
+   {
+    "chg": -0.9,
+    "name": "EFL-24",
+    "tier": "ENGLAND · SECOND TIER",
+    "value": 45.2
+   }
+  ],
+  "updated_at": "2026-08-29T18:57:41.352+00:00"
+ },
+ {
+  "key": "leaderboard",
+  "value": {
+   "desc": "Every entrant starts with the same 2,000 Fan Coins — free or Pro. Nothing here can be bought. Top finishers on the season leaderboard win real prizes.",
+   "rules": [
+    {
+     "b": "Free to enter.",
+     "t": "No purchase, ever, changes your standing."
+    },
+    {
+     "b": "Equal start.",
+     "t": "Every account begins the season at the same balance."
+    },
+    {
+     "b": "Ranked by portfolio value.",
+     "t": "Coins on hand plus the live value of everything you hold."
+    }
+   ],
+   "title": "SAME COINS. SAME ODDS. REAL PRIZES.",
+   "eyebrow": "RANKED COMPETITION"
+  },
+  "updated_at": "2026-09-28T13:35:33.99+00:00"
+ },
+ {
+  "key": "pro",
+  "value": {
+   "desc": "Every tier competes on identical terms. Pro and Ultimate add tools, data, customization and comfort — never an edge in trading or the leaderboard.",
+   "plans": [
+    {
+     "cta": "Current plan",
+     "tier": "FREE",
+     "badge": "",
+     "feats": [
+      "Ads",
+      "Basic rankings",
+      "Basic watchlist",
+      "Standard data",
+      "Basic portfolio history",
+      "No paid feature affects competitive outcomes"
+     ],
+     "price": "$0",
+     "period": "/mo",
+     "tagline": "Play PitchMarket",
+     "featured": false,
+     "checkout_url": ""
+    },
+    {
+     "cta": "Upgrade to Pro",
+     "tier": "PRO",
+     "badge": "",
+     "feats": [
+      "No ads",
+      "Private rankings/leagues",
+      "More watchlist slots",
+      "Market simulations",
+      "Advanced portfolio analytics",
+      "Custom price/event alerts",
+      "Expanded personal history",
+      "Better profile customization"
+     ],
+     "price": "$1.99",
+     "period": "/mo",
+     "tagline": "Enhance Your Experience",
+     "featured": false,
+     "checkout_url": "PASTE_YOUR_STRIPE_PRO_MONTHLY_LINK_HERE"
+    },
+    {
+     "cta": "Upgrade to Pro Annual",
+     "tier": "PRO ANNUAL",
+     "badge": "",
+     "feats": [
+      "Everything in Pro",
+      "Save vs. paying monthly"
+     ],
+     "price": "$20",
+     "period": "/yr",
+     "tagline": "Enhance Your Experience",
+     "featured": false,
+     "checkout_url": "PASTE_YOUR_STRIPE_PRO_ANNUAL_LINK_HERE"
+    },
+    {
+     "cta": "Upgrade to Ultimate",
+     "tier": "ULTIMATE",
+     "badge": "Most popular",
+     "feats": [
+      "Everything in Pro",
+      "Unlimited watchlists",
+      "Unlimited market simulations",
+      "Full historical market data",
+      "Deeper portfolio analytics",
+      "Advanced charts & visualizations",
+      "Custom dashboards",
+      "Unlimited private rankings/leagues",
+      "Custom private league branding",
+      "AI-written portfolio recaps",
+      "Weekly/monthly personalized reports",
+      "Early access to new non-competitive features",
+      "Ultimate profile badge & cosmetics"
+     ],
+     "price": "$4.99",
+     "period": "/mo",
+     "tagline": "Analyze Everything",
+     "featured": true,
+     "checkout_url": "PASTE_YOUR_STRIPE_ULTIMATE_MONTHLY_LINK_HERE"
+    },
+    {
+     "cta": "Upgrade to Ultimate Annual",
+     "tier": "ULTIMATE ANNUAL",
+     "badge": "",
+     "feats": [
+      "Everything in Ultimate",
+      "Save vs. paying monthly"
+     ],
+     "price": "$50",
+     "period": "/yr",
+     "tagline": "Analyze Everything",
+     "featured": false,
+     "checkout_url": "PASTE_YOUR_STRIPE_ULTIMATE_ANNUAL_LINK_HERE"
+    }
+   ],
+   "title": "Play free. Go deeper if you want.",
+   "eyebrow": "MEMBERSHIP"
+  },
+  "updated_at": "2026-09-28T13:35:36.199+00:00"
+ },
+ {
+  "key": "spotlight",
+  "value": {
+   "desc": "Before the league phase even draws, clubs are already fighting through play-off ties for a place in it — and it's already producing upsets.",
+   "meta": "Norway · Beat Union Saint-Gilloise 6-5 on aggregate · Ticker BOD-UCL",
+   "name": "Bodø/Glimt (UCL)",
+   "badge": "CONFIRMED · WON PLAY-OFF ROUND",
+   "price": "£38.60",
+   "title": "Qualifying is where fortunes turn",
+   "stages": [
+    "Q1 Round",
+    "Q2 Round",
+    "Q3 Round",
+    "Play-off won 6-5 agg · League phase secured"
+   ],
+   "eyebrow": "SPOTLIGHT · HAPPENING THIS WEEK",
+   "price_chg": "▲ 612% since 1st Qualifying Round"
+  },
+  "updated_at": "2026-08-22T22:04:08.165456+00:00"
+ }
+]
