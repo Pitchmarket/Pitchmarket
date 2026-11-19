@@ -25,6 +25,7 @@ Launch blockers, roughly in the order to tackle them.
 
 Not blocking launch, but wanted soon after.
 
+- **Daily football mini-games for coins.** Short football games during the day; each win pays Fan Coins (100 per win was the starting idea). Coins must be granted by a database function that checks the win, never by the browser, and capped per day. Settle the fairness question below first.
 - **Data-outage policy.** What happens to the standings if the price pipeline is down for a week. The trading lock lifts after 72 hours even if a result was never priced, so a long outage reopens the price-lag exploit.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
 - **Pro lifecycle.** Handle cancellations, failed payments and expiry through Stripe webhooks.
@@ -45,6 +46,7 @@ Not blocking launch, but wanted soon after.
 
 ## Open decisions
 
+- **Mini-game coins and the competition.** Everyone currently starts on 2,000 coins and nothing else adds coins, which the leaderboard rules promise. If games pay coins, whoever plays most has more to trade with, and there's a cash pot. Options: a small daily cap so it stays a bonus; game coins that can't be traded and only count for a separate games leaderboard; or games give bragging rights only.
 - **Launch with Pro, or hide it?** Shipping Pro needs Stripe links, a webhook, cancellation handling and server-side limits. Hiding it means removing or toggling the Pro band in admin.
 - **Cash pot legality.** The competition has a cash prize, so contest and sweepstakes law applies and needs checking per country. Fan Coins must stay unbuyable and uncashable.
 - **Auto-apply limit.** Currently moves up to 8% apply without review (`AUTO_APPLY_MAX_PCT`). Keep it, lower it for launch, or turn auto-apply off for the first weeks?

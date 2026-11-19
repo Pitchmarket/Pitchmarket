@@ -209,6 +209,11 @@ section{ padding:56px 44px; border-bottom:1px solid var(--border-soft); }
 .cw-chart-wrap{ position:relative; height:230px; }
 .mini-caps{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border-soft); border:1px solid var(--border-soft); border-radius:var(--r-md); overflow:hidden; margin-top:22px; }
 .mc-item{ background:var(--panel2); padding:14px 16px; }
+button.mc-item{ border:none; font:inherit; color:inherit; text-align:left; cursor:pointer; box-shadow:inset 0 -2px 0 transparent; transition:background .15s; }
+button.mc-item:hover{ background:var(--panel); }
+button.mc-item[aria-pressed="true"]{ background:var(--panel); box-shadow:inset 0 -2px 0 var(--gilt); }
+button.mc-item[aria-pressed="true"] .mc-name{ color:var(--chalk); font-weight:600; }
+button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
 .mc-name{ font-size:12px; color:var(--steel); margin-bottom:4px; }
 .mc-price{ font-family:var(--font-mono); font-size:16px; font-weight:700; }
 @media(max-width:860px){ .cupwatch{ grid-template-columns:1fr; } }
@@ -1002,7 +1007,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
       <div class="sec-eyebrow" id="spotlightEyebrow">SPOTLIGHT · LAST 7 DAYS</div>
       <div class="sec-title display" id="spotlightTitle">Biggest mover of the week</div>
     </div>
-    <div class="sec-desc" id="spotlightDesc">Picked automatically: the club whose price moved most over the last seven days, up or down. The next three biggest movers are underneath.</div>
+    <div class="sec-desc" id="spotlightDesc">Picked automatically: the club whose price moved most over the last seven days, up or down. Click any of the top four underneath to see its chart.</div>
   </div>
   <div class="cupwatch">
     <div>
@@ -2319,23 +2324,37 @@ function weeklyMove(team, leagueKey){
   return { team, leagueKey, base, cur, pct: (cur - base) / base * 100, week: inWeek };
 }
 
+let spotMoves = [];      // the week's top movers, biggest first
+let spotSelected = null; // team id shown in the card; null means the biggest mover
+
 function buildSpotlight(){
   const moves = [];
   Object.entries(leagues).forEach(([key, lg])=> lg.teams.forEach(t=>{ const m = weeklyMove(t, key); if(m) moves.push(m); }));
   moves.sort((a,b)=> Math.abs(b.pct) - Math.abs(a.pct));
-  const top = moves[0];
-  const name = document.getElementById('cwName');
+  spotMoves = moves.slice(0, 4);
+  if(!spotMoves.some(m=>m.team.id === spotSelected)) spotSelected = null;
+  showSpotlight();
+}
+
+// Draws the card and chart for the selected club, and the row of top movers
+// underneath, which switch the card when clicked.
+function showSpotlight(){
+  const caps = document.getElementById('miniCaps');
   if(spotChart){ spotChart.destroy(); spotChart = null; }
-  if(!top){
-    name.textContent = 'No price moves this week';
+  if(!spotMoves.length){
+    document.getElementById('cwBadge').textContent = 'BIGGEST MOVER · LAST 7 DAYS';
+    document.getElementById('cwName').textContent = 'No price moves this week';
     document.getElementById('cwMeta').textContent = 'The spotlight fills in after the next round of matches.';
     ['cwPrice','cwPriceChg','cwStages','miniCaps'].forEach(id=> document.getElementById(id).innerHTML = '');
-    document.getElementById('miniCaps').hidden = true;
+    caps.hidden = true;
     return;
   }
+  const rank = Math.max(0, spotMoves.findIndex(m=>m.team.id === spotSelected));
+  const top = spotMoves[rank];
   const rising = top.pct >= 0;
   const color = rising ? 'var(--surge)' : 'var(--drop)';
-  name.textContent = top.team.name;
+  document.getElementById('cwBadge').textContent = (rank === 0 ? 'BIGGEST MOVER' : 'NO. ' + (rank + 1) + ' MOVER') + ' · LAST 7 DAYS';
+  document.getElementById('cwName').textContent = top.team.name;
   document.getElementById('cwMeta').textContent = leagues[top.leagueKey].label + ' · ' + top.team.tier;
   document.getElementById('cwPrice').innerHTML = coin(top.cur);
   document.getElementById('cwPrice').style.color = color;
@@ -2347,13 +2366,14 @@ function buildSpotlight(){
   document.getElementById('cwStages').innerHTML = games.map((g,i)=>
     '<div class="cw-stage'+(i === games.length-1 ? ' now' : '')+'">'+(g.result ? escapeHtml(g.result)+' · ' : '')+escapeHtml(g.label)+'</div>'
   ).join('');
-  const runnersUp = moves.slice(1, 4);
-  const caps = document.getElementById('miniCaps');
-  caps.hidden = runnersUp.length === 0;
-  caps.style.gridTemplateColumns = 'repeat(' + Math.max(runnersUp.length, 1) + ', 1fr)';
-  caps.innerHTML = runnersUp.map(m=>
-    '<div class="mc-item"><div class="mc-name">'+escapeHtml(m.team.name)+'</div>'+
-    '<div class="mc-price mono" style="color:'+(m.pct >= 0 ? 'var(--surge)' : 'var(--drop)')+'">'+fmtChg(m.pct)+'</div></div>'
+
+  // One button per top mover; the one on show is marked as selected.
+  caps.hidden = spotMoves.length < 2;
+  caps.style.gridTemplateColumns = 'repeat(' + spotMoves.length + ', 1fr)';
+  caps.innerHTML = spotMoves.map((m,i)=>
+    '<button type="button" class="mc-item" data-team="'+escapeHtml(m.team.id)+'" aria-pressed="'+(i === rank)+'" title="Show '+escapeHtml(m.team.name)+'">'+
+      '<div class="mc-name">'+escapeHtml(m.team.name)+'</div>'+
+      '<div class="mc-price mono" style="color:'+(m.pct >= 0 ? 'var(--surge)' : 'var(--drop)')+'">'+fmtChg(m.pct)+'</div></button>'
   ).join('');
 
   // Chart: the last 30 days, starting from the price going into that window.
@@ -2372,6 +2392,12 @@ function buildSpotlight(){
         y:{ ticks:{ font:{size:10}, callback:(v)=>'🪙'+v } } } }
   }));
 }
+document.getElementById('miniCaps').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.mc-item[data-team]');
+  if(!btn) return;
+  spotSelected = btn.dataset.team;
+  showSpotlight();
+});
 
 function refreshCharts(){
   if(!teamsLoaded) return;
