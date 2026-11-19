@@ -248,7 +248,7 @@ button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2
 .ka-list li[aria-selected="true"], .ka-list li:hover{ background:var(--panel2); }
 .ka-left{ font-family:var(--font-mono); font-size:13px; color:var(--steel); }
 .ka-board{ overflow-x:auto; }
-.ka-grid{ width:100%; border-collapse:separate; border-spacing:4px; min-width:640px; }
+.ka-grid{ width:100%; border-collapse:separate; border-spacing:4px; min-width:560px; }
 .ka-grid th{ font-family:var(--font-mono); font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:500; padding:0 4px 4px; text-align:center; }
 .ka-grid th:first-child{ text-align:left; }
 .ka-grid td{ padding:10px 6px; text-align:center; font-size:13px; border-radius:var(--r-sm); background:var(--panel2); line-height:1.25; }
@@ -270,7 +270,45 @@ button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2
 .ka-result.won{ background:color-mix(in srgb, var(--surge) 12%, transparent); }
 .ka-result b{ font-size:15px; }
 .ka-result .ka-share{ background:var(--accent-fill); color:var(--on-accent); border:none; border-radius:var(--r-sm); padding:9px 16px; font-weight:700; font-size:13px; cursor:pointer; }
+.lu-path{ display:flex; flex-direction:column; align-items:stretch; max-width:520px; }
+.lu-card{ border:1px solid var(--border); border-radius:var(--r-md); padding:12px 14px; background:var(--panel2); }
+.lu-card.start, .lu-card.target{ border-color:var(--gilt); }
+.lu-label{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--steel-dim); }
+.lu-name{ font-weight:700; font-size:16px; margin-top:2px; }
+.lu-trail{ color:var(--steel); font-size:12.5px; margin-top:4px; }
+.lu-link{ display:flex; align-items:center; gap:10px; padding:6px 0 6px 18px; border-left:2px solid var(--border); margin-left:20px; font-size:12.5px; color:var(--steel); }
+.lu-link.done{ border-left-color:var(--ka-match); color:var(--chalk); }
+.lu-link.pending{ border-left-style:dashed; color:var(--steel-dim); }
+.bk-list{ display:flex; flex-direction:column; gap:14px; max-width:640px; }
+.bk-q{ border:1px solid var(--border-soft); border-radius:var(--r-md); padding:14px 16px; background:var(--panel2); }
+.bk-head{ display:flex; justify-content:space-between; gap:10px; margin-bottom:6px; }
+.bk-num{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--steel-dim); }
+.bk-mark{ font-family:var(--font-mono); font-size:11px; font-weight:700; text-transform:uppercase; }
+.bk-mark.right{ color:var(--ka-match); }
+.bk-mark.wrong{ color:var(--drop); }
+.bk-text{ font-weight:600; font-size:15px; margin-bottom:12px; }
+.bk-options{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+@media(max-width:520px){ .bk-options{ grid-template-columns:1fr; } }
+.bk-option{ text-align:left; padding:10px 12px; border-radius:var(--r-sm); border:1px solid var(--border); background:var(--panel); color:var(--chalk); font-size:14px; cursor:pointer; }
+.bk-option:hover:not(:disabled){ border-color:var(--accent); }
+.bk-option:disabled{ cursor:default; }
+.bk-option.right{ background:var(--ka-match); border-color:var(--ka-match); color:var(--ka-on); font-weight:600; }
+.bk-option.wrong{ background:color-mix(in srgb, var(--drop) 18%, transparent); border-color:var(--drop); color:var(--drop); text-decoration:line-through; }
 .ka-signin{ background:var(--accent-fill); color:var(--on-accent); border:none; border-radius:var(--r-sm); padding:10px 18px; font-weight:700; font-size:13.5px; cursor:pointer; }
+
+/* Clue colours per skin: always a green and a yellow, in each skin's own shade. */
+[data-theme="chalk"]{ --ka-match:#A6D9A9; --ka-close:#F2DF8C; --ka-on:#1F2A23; }
+[data-theme="chalk"] .ka-grid td.match, [data-theme="chalk"] .ka-grid td.close{ box-shadow:inset 0 0 0 2px rgba(255,255,255,0.35); }
+[data-theme="retro"]{ --ka-match:#43E04F; --ka-close:#FFB21E; --ka-on:#0B1A3D; }
+[data-theme="stock"]{ --ka-match:#00C060; --ka-close:#FF9F1C; --ka-on:#000000; }
+[data-theme="gold"]{ --ka-match:#7DB37F; --ka-close:#E2B85C; --ka-on:#15110A; }
+[data-theme="newspaper"]{ --ka-match:#5C9E68; --ka-close:#E4C25A; --ka-on:#111111; }
+[data-theme="programme"]{ --ka-match:#6CAF7D; --ka-close:#E3BE5B; --ka-on:#1E2235; }
+[data-theme="fifa"]{ --ka-match:#A8D51C; --ka-close:#F5C518; --ka-on:#1B2A0A; }
+[data-theme="fm"]{ --ka-match:#3FCB72; --ka-close:#F4B740; --ka-on:#101114; }
+[data-theme="football"]{ --ka-match:#7CF29C; --ka-close:#FFD23F; --ka-on:#0A2D16; }
+[data-theme="stickers"]{ --ka-match:#00A651; --ka-close:#FFD400; --ka-on:#1B1B1B; }
+[data-theme="stickers"] .ka-grid td.match, [data-theme="stickers"] .ka-grid td.close{ box-shadow:inset 0 0 0 2px #1B1B1B; }
 
 /* ===== Asset classes ===== */
 .classes{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
@@ -1086,13 +1124,13 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
       <div class="sec-eyebrow">DAILY KICKABOUT</div>
       <div class="sec-title display">Today's games</div>
     </div>
-    <div class="sec-desc">New puzzles every day at midnight UK time, the same for everyone. Win a game for 25 Fan Coins.</div>
+    <div class="sec-desc">Four new puzzles every day at midnight UK time, the same for everyone. Each win pays 25 Fan Coins, so up to 100 a day.</div>
   </div>
   <div class="ka-tabs" role="tablist">
     <button type="button" class="ka-tab active" role="tab" data-game="scouted">Scouted <span class="ka-badge" id="kaBadge_scouted" hidden></span></button>
     <button type="button" class="ka-tab" role="tab" data-game="journeyman">Journeyman <span class="ka-badge" id="kaBadge_journeyman" hidden></span></button>
-    <button type="button" class="ka-tab" role="tab" disabled>Link-Up <span class="ka-badge">Soon</span></button>
-    <button type="button" class="ka-tab" role="tab" disabled>Ball Knowledge <span class="ka-badge">Soon</span></button>
+    <button type="button" class="ka-tab" role="tab" data-game="linkup">Link-Up <span class="ka-badge" id="kaBadge_linkup" hidden></span></button>
+    <button type="button" class="ka-tab" role="tab" data-game="ballknowledge">Ball Knowledge <span class="ka-badge" id="kaBadge_ballknowledge" hidden></span></button>
   </div>
   <div class="ka-panel">
     <div class="ka-intro" id="kaIntro"></div>
@@ -2812,8 +2850,10 @@ let kaPlayers = null;          // [{ id, name, club, key }] for the search box, 
 let kaPlayersLoading = null;
 let kaActive = -1;              // highlighted suggestion
 const KA_INTRO = {
-  scouted: '<b>Scouted:</b> guess today\'s mystery player in 10 tries. Each guess shows their league, team, nationality, age, position and height. <b>Green</b> is a match, <b>yellow</b> is close (age within 2 years, height within 3 cm), and arrows point towards the answer.',
+  scouted: '<b>Scouted:</b> guess today\'s mystery player in 10 tries. Each guess shows their league, team, nationality, age and position. <b>Green</b> is a match. <b>Yellow</b> means close: nationality from the same continent, or age within 2 years. Arrows point towards the answer\'s age.',
   journeyman: '<b>Journeyman:</b> name the player from their career. You start with their first club. Each wrong guess shows the next one, and once the whole career is showing you get one last guess.',
+  linkup: '<b>Link-Up:</b> connect the two players through teammates: players who were at the same club at the same time. Each player you name must have played with the last one in your chain. You win when your chain reaches the target, using 6 players at most.',
+  ballknowledge: '<b>Ball Knowledge:</b> four questions, one go at each. Get 3 or more right to win.',
 };
 const foldName = (s)=> s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ø/gi,'o').replace(/æ/gi,'ae').replace(/ß/g,'ss').toLowerCase();
 
@@ -2822,13 +2862,13 @@ async function loadKaPlayers(){
   if(!kaPlayersLoading) kaPlayersLoading = (async ()=>{
     const all = [];
     for(let from = 0; ; from += 1000){
-      const { data, error } = await sb.from('players').select('id,name,club_name')
+      const { data, error } = await sb.from('players').select('id,name,club_name,has_career')
         .eq('active', true).order('fame', { ascending:false }).order('id').range(from, from + 999);
       if(error || !data) break;
       all.push(...data);
       if(data.length < 1000) break;
     }
-    kaPlayers = all.map(p=>({ id:p.id, name:p.name, club:p.club_name || '', key:foldName(p.name) }));
+    kaPlayers = all.map(p=>({ id:p.id, name:p.name, club:p.club_name || '', key:foldName(p.name), career:p.has_career !== false }));
     return kaPlayers;
   })();
   return kaPlayersLoading;
@@ -2868,36 +2908,99 @@ function renderKickabout(){
   const st = kaState;
   document.getElementById('kaIntro').innerHTML = KA_INTRO[kaGame];
   kaBadge(kaGame, st);
-  const used = st.guesses.length;
+  const quiz = kaGame === 'ballknowledge';
+  const used = quiz ? st.questions.filter(q=>q.chosen != null).length
+             : kaGame === 'linkup' ? st.used : st.guesses.length;
   const left = st.max_guesses - used;
   const row = document.getElementById('kaGuessRow');
   const input = document.getElementById('kaInput');
-  row.hidden = st.finished;
+  // Ball Knowledge is answered with buttons, so its search box only shows
+  // to signed-out visitors as a place for the sign-in button.
+  row.hidden = st.finished || (quiz && st.signed_in);
+  document.querySelector('#kaGuessRow .ka-search').hidden = quiz;
   input.disabled = !st.signed_in;
   input.placeholder = st.signed_in ? 'Type a player\'s name…' : 'Sign in to play';
+  const unit = kaGame === 'linkup' ? 'goes' : 'guesses';
   document.getElementById('kaLeft').innerHTML = st.signed_in
-    ? left + ' of ' + st.max_guesses + ' guesses left'
+    ? left + ' of ' + st.max_guesses + ' ' + unit + ' left'
     : '<button type="button" class="ka-signin" id="kaSignIn">Sign in to play</button>';
   const signIn = document.getElementById('kaSignIn');
   if(signIn) signIn.onclick = ()=> openAuth();
 
-  document.getElementById('kaBoard').innerHTML = kaGame === 'scouted' ? renderScouted(st) : renderJourneyman(st);
+  document.getElementById('kaBoard').innerHTML =
+    kaGame === 'scouted' ? renderScouted(st) : kaGame === 'journeyman' ? renderJourneyman(st)
+    : kaGame === 'linkup' ? renderLinkup(st) : renderBallKnowledge(st);
+  document.querySelectorAll('#kaBoard .bk-option:not(:disabled)').forEach(b=> b.onclick = ()=> kaSubmit(b.dataset.i));
 
   const res = document.getElementById('kaResult');
   if(!st.finished){ res.innerHTML = ''; return; }
-  const name = escapeHtml(st.answer.name);
-  res.innerHTML = '<div class="ka-result'+(st.won ? ' won' : '')+'"><div>'+
-    (st.won ? '<b>Got it in '+used+'! It was '+name+'.</b> +25 Fan Coins.'
-            : '<b>Unlucky. It was '+name+'.</b> A new one starts at midnight UK time.')+
-    '</div><button type="button" class="ka-share" id="kaShare">Copy result</button></div>';
+  let text;
+  if(kaGame === 'linkup'){
+    const between = st.chain.filter(c=>!c.target).length;
+    const plural = (n)=> n + ' player' + (n == 1 ? '' : 's');
+    const best = st.par == null ? '' : ' The shortest possible link had ' + plural(st.par) + ' in between.';
+    text = st.won ? '<b>Linked them with ' + plural(between) + ' in between, using ' + used + ' of your 6 goes!</b> +25 Fan Coins.' + best
+                  : '<b>Out of goes.</b>' + best + ' A new one starts at midnight UK time.';
+  } else if(quiz){
+    text = st.won ? '<b>' + st.correct + ' out of 4!</b> +25 Fan Coins.'
+                  : '<b>' + st.correct + ' out of 4.</b> You needed 3. A new quiz starts at midnight UK time.';
+  } else {
+    const name = escapeHtml(st.answer.name);
+    text = st.won ? '<b>Got it in '+used+'! It was '+name+'.</b> +25 Fan Coins.'
+                  : '<b>Unlucky. It was '+name+'.</b> A new one starts at midnight UK time.';
+  }
+  res.innerHTML = '<div class="ka-result'+(st.won ? ' won' : '')+'"><div>'+text+'</div><button type="button" class="ka-share" id="kaShare">Copy result</button></div>';
   document.getElementById('kaShare').onclick = copyKaResult;
 }
 
-const KA_COLS = [['league','League'],['team','Team'],['nationality','Nationality'],['age','Age'],['position','Position'],['height','Height']];
+// Link-Up: start player, the chain so far, then the target.
+function renderLinkup(st){
+  const card = (p, label, cls)=> '<div class="lu-card '+cls+'"><div class="lu-label">'+label+'</div>'+
+    '<div class="lu-name">'+escapeHtml(p.name)+'</div>'+
+    (p.trail && p.trail.length ? '<div class="lu-trail">'+p.trail.map(escapeHtml).join(' → ')+'</div>' : '')+'</div>';
+  const link = (club, cls)=> '<div class="lu-link '+(cls || '')+'"><span>'+(club ? 'teammates at ' + escapeHtml(club) : '?')+'</span></div>';
+  let html = '<div class="lu-path">' + card(st.start, 'Start', 'start');
+  st.chain.forEach(c=>{
+    if(c.target) return;
+    html += link(c.via) + card(c, 'Link', 'link');
+  });
+  const finalLink = st.chain.find(c=>c.target);
+  if(finalLink) html += link(finalLink.via, 'done');
+  else if(st.closing) html += link(st.closing, 'done');
+  else html += link(null, 'pending');
+  html += card(st.target, 'Target', 'target') + '</div>';
+  if(st.strikes.length){
+    html += '<div class="ka-wrong" style="margin-top:14px;">' + st.strikes.map(x=>
+      '<span title="'+(x.reason === 'no_data' ? 'We don\'t have career data for this player yet' : x.reason === 'not_linked' ? 'Not a teammate of the last player in your chain' : 'Never teammates with ' + escapeHtml(x.after || ''))+'">'+
+      escapeHtml(x.name) + (x.reason === 'no_data' ? ' (no career data)' : '') + '</span>').join('') + '</div>';
+  }
+  return html;
+}
+
+// Ball Knowledge: answered questions show the right answer; the next one
+// is open; later ones stay hidden.
+function renderBallKnowledge(st){
+  const next = st.questions.findIndex(q=>q.chosen == null);
+  return '<div class="bk-list">' + st.questions.map((q,i)=>{
+    if(next !== -1 && i > next) return '';
+    const answered = q.chosen != null;
+    const opts = q.options.map((o,k)=>{
+      let cls = 'bk-option';
+      if(answered && k === q.answer) cls += ' right';
+      else if(answered && k === q.chosen) cls += ' wrong';
+      return '<button type="button" class="'+cls+'" data-i="'+k+'"'+(answered || !st.signed_in ? ' disabled' : '')+'>'+escapeHtml(o)+'</button>';
+    }).join('');
+    const mark = answered ? (q.chosen === q.answer ? '<span class="bk-mark right">Right</span>' : '<span class="bk-mark wrong">Wrong</span>') : '';
+    return '<div class="bk-q"><div class="bk-head"><span class="bk-num">Question '+(i+1)+' of 4</span>'+mark+'</div>'+
+      '<div class="bk-text">'+escapeHtml(q.q)+'</div><div class="bk-options">'+opts+'</div></div>';
+  }).join('') + '</div>';
+}
+
+const KA_COLS = [['league','League'],['team','Team'],['nationality','Nationality'],['age','Age'],['position','Position']];
 function renderScouted(st){
   if(!st.guesses.length) return '';
   const cell = (f, key)=>{
-    let v = f.value == null ? '?' : escapeHtml(String(f.value)) + (key === 'height' ? ' cm' : '');
+    let v = f.value == null ? '?' : escapeHtml(String(f.value));
     const arrow = f.dir === 'up' ? '↑' : f.dir === 'down' ? '↓' : '';
     const label = f.dir === 'up' ? 'answer is higher' : f.dir === 'down' ? 'answer is lower' : '';
     return '<td class="'+f.result+'" title="'+f.result+(label ? ', '+label : '')+'">'+v+(arrow ? '<span class="dir" aria-label="'+label+'">'+arrow+'</span>' : '')+'</td>';
@@ -2920,15 +3023,21 @@ function renderJourneyman(st){
 }
 
 function copyKaResult(){
-  const st = kaState, n = st.guesses.length;
+  const st = kaState, n = (st.guesses || []).length;
   const day = new Date(st.day + 'T12:00:00Z').toLocaleDateString('en-GB', { day:'numeric', month:'short' });
   let text;
   if(kaGame === 'scouted'){
     const sq = { match:'🟩', close:'🟨', miss:'⬛', unknown:'⬛' };
     text = 'PitchMarket Scouted ' + day + ': ' + (st.won ? n : 'X') + '/10\n' +
       st.guesses.map(g=> KA_COLS.map(([k])=> sq[g[k].result]).join('')).join('\n');
-  } else {
+  } else if(kaGame === 'journeyman'){
     text = 'PitchMarket Journeyman ' + day + ': ' + (st.won ? n : 'X') + '/' + st.max_guesses + ' ' + (st.won ? '✅' : '❌');
+  } else if(kaGame === 'linkup'){
+    text = 'PitchMarket Link-Up ' + day + ': ' + st.start.name + ' → ' + st.target.name + ', ' +
+      (st.won ? 'linked using ' + st.used + ' (best ' + st.par + ') ✅' : 'not linked ❌');
+  } else {
+    text = 'PitchMarket Ball Knowledge ' + day + ': ' + st.correct + '/4 ' +
+      st.questions.map(q=> q.chosen === q.answer ? '🟩' : '🟥').join('');
   }
   text += '\n' + location.origin + location.pathname + '#kickabout';
   const btn = document.getElementById('kaShare');
@@ -2943,11 +3052,17 @@ function kaSuggest(){
   const list = document.getElementById('kaList');
   const q = foldName(input.value.trim());
   if(q.length < 2 || !kaPlayers){ list.hidden = true; input.setAttribute('aria-expanded','false'); return; }
-  const guessed = new Set((kaState?.guesses || []).map(g=>g.id));
+  const st = kaState || {};
+  const used = st.game === 'linkup'
+    ? [st.start, ...(st.chain || []), ...(st.strikes || [])].filter(Boolean)
+    : (st.guesses || []);
+  const guessed = new Set(used.map(g=>g.id));
   // Names starting with what was typed come first, then any word that does.
   const starts = [], words = [];
+  // Link-Up can only check teammates for players with a career on file.
+  const needCareer = kaGame === 'linkup';
   for(const p of kaPlayers){
-    if(guessed.has(p.id)) continue;
+    if(guessed.has(p.id) || (needCareer && !p.career)) continue;
     if(p.key.startsWith(q)) starts.push(p);
     else if(p.key.includes(' ' + q) || p.key.includes('-' + q)) words.push(p);
     if(starts.length >= 8) break;
