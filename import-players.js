@@ -196,57 +196,69 @@ async function fetchPlayers(teams){
   for(const group of chunks(clubIds, 25)){
     n++;
     const rows = await sparql(`
-      SELECT ?p ?name ?dob ?club ?start ?pos ?posLabel ?h ?unit ?nat ?natLabel ?cit ?citLabel ?links WHERE {
+      SELECT ?p ?name ?dob ?club ?start ?pos ?posLabel ?h ?unit ?nat ?natLabel ?natContLabel ?cit ?citLabel ?citContLabel ?links WHERE {
         VALUES ?club { ${group.map(q => 'wd:' + q).join(' ')} }
         ?p p:P54 ?st . ?st ps:P54 ?club .
         FILTER NOT EXISTS { ?st pq:P582 ?end }
         OPTIONAL { ?st pq:P580 ?start }
-        ?p wdt:P106 wd:Q937857 ; wdt:P569 ?dob ; wikibase:sitelinks ?links .
+        ?p wdt:P106 wd:Q937857 ; wdt:P21 wd:Q6581097 ; wdt:P569 ?dob ; wikibase:sitelinks ?links .
         FILTER(YEAR(?dob) >= ${OLDEST_BIRTH_YEAR})
         # Skip memberships the player has since moved on from: a later club
-        # spell (national teams aside) means this one is stale.
+        # spell means this one is stale. National teams don't count: Wikidata
+        # files senior sides like England under football clubs too, which
+        # used to drop Saka, Foden and most other internationals.
         FILTER NOT EXISTS {
           ?p p:P54 ?later . ?later ps:P54 ?other ; pq:P580 ?laterStart .
           FILTER(BOUND(?start) && ?laterStart > ?start && ?other != ?club)
           ?other wdt:P31/wdt:P279* wd:Q476028 .
+          FILTER NOT EXISTS { ?other wdt:P31/wdt:P279* wd:Q6979593 }
         }
         OPTIONAL { ?p rdfs:label ?en FILTER(LANG(?en) = "en") }
         OPTIONAL { ?p rdfs:label ?mul FILTER(LANG(?mul) = "mul") }
         BIND(COALESCE(?en, ?mul) AS ?name)
         OPTIONAL { ?p wdt:P413 ?pos }
         OPTIONAL { ?p p:P2048/psv:P2048 [ wikibase:quantityAmount ?h ; wikibase:quantityUnit ?unit ] }
-        OPTIONAL { ?p wdt:P1532 ?nat }
-        OPTIONAL { ?p wdt:P27 ?cit }
+        OPTIONAL { ?p wdt:P1532 ?nat . OPTIONAL { ?nat wdt:P30 ?natCont } }
+        OPTIONAL { ?p wdt:P27 ?cit . OPTIONAL { ?cit wdt:P30 ?citCont } }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
       }`, `players ${n}`);
     for(const r of rows){
       if(!r.name || /^Q\d+$/.test(r.name)) continue;
       let p = players.get(r.p);
       if(!p) players.set(r.p, p = { id: r.p, name: r.name, birth_date: r.dob.slice(0, 10), fame: Number(r.links) || 0,
-        clubs: new Map(), positions: new Set(), heights: [], nats: new Set(), cits: new Set() });
+        clubs: new Map(), positions: new Set(), heights: [], nats: new Map(), cits: new Map() });
       p.clubs.set(r.club, r.start || '');
       if(r.posLabel && !/^Q\d+$/.test(r.posLabel)) p.positions.add(r.posLabel);
       if(r.h){
         const cm = r.unit === 'Q11573' ? Number(r.h) * 100 : Number(r.h);   // metres or centimetres
         if(cm >= 150 && cm <= 215) p.heights.push(Math.round(cm));
       }
-      if(r.natLabel && !/^Q\d+$/.test(r.natLabel)) p.nats.add(r.natLabel);
-      if(r.citLabel && !/^Q\d+$/.test(r.citLabel)) p.cits.add(r.citLabel);
+      // Country -> continent; the first continent seen wins for countries
+      // that span two (Turkey, Russia).
+      const cont = (c) => !c || /^Q\d+$/.test(c) ? null : c === 'Insular Oceania' ? 'Oceania' : c;
+      if(r.natLabel && !/^Q\d+$/.test(r.natLabel) && !p.nats.get(r.natLabel)) p.nats.set(r.natLabel, cont(r.natContLabel));
+      if(r.citLabel && !/^Q\d+$/.test(r.citLabel) && !p.cits.get(r.citLabel)) p.cits.set(r.citLabel, cont(r.citContLabel));
     }
     console.log(`  Clubs ${(n - 1) * 25 + 1}–${Math.min(n * 25, clubIds.length)}: ${players.size} players so far.`);
   }
 
-  const out = [];
+  const best = new Map();   // "name|birth date" -> best-known entry
   for(const p of players.values()){
+    const k = p.name + '|' + p.birth_date;
+    if(!best.has(k) || p.fame > best.get(k).fame) best.set(k, p);
+  }
+  const out = [];
+  for(const p of best.values()){
     // The club joined most recently is the current one (a loan, usually).
     const [clubId] = [...p.clubs].sort((a, b) => b[1].localeCompare(a[1]))[0];
     const team = teamByClub.get(clubId);
     const position = mainPosition([...p.positions]);
-    const nats = [...(p.nats.size ? p.nats : p.cits)].sort();
+    const nats = [...(p.nats.size ? p.nats : p.cits)].sort((a, b) => a[0].localeCompare(b[0]));
     const heights = p.heights.sort((a, b) => a - b);
     out.push({
       id: p.id, name: p.name, birth_date: p.birth_date,
-      nationality: nats[0] || null,
+      nationality: nats[0] ? nats[0][0] : null,
+      continent: nats[0] ? nats[0][1] : null,
       position, position_group: positionGroup(position),
       height_cm: heights.length ? heights[Math.floor(heights.length / 2)] : null,
       team_id: team.id, club_name: team.name, league: team.league, league_label: team.league_label,
@@ -282,6 +294,7 @@ export async function fetchCareers(players, teams){
       const prev = spells.get(key);
       const loan = /loan/i.test(r.how || '') || r.how === 'Q2914547';
       const row = {
+        club_id: r.club,   // Wikidata ID: Link-Up matches teammates on this
         club: siteName.get(r.club) || r.clubLabel.replace(/\s+(F\.C\.|FC|A\.F\.C\.|AFC|CF|C\.F\.|S\.C\.|SC)$/, ''),
         start_year: r.start ? Number(r.start.slice(0, 4)) : null,
         end_year: r.end ? Number(r.end.slice(0, 4)) : null,
@@ -371,6 +384,9 @@ async function main(){
   const kept = dropMovedPlayers(players, careers);
   console.log(`  ${players.length - kept.players.length} players left out: their latest spell is at another club or has ended.`);
   ({ players, careers } = kept);
+  // Link-Up can only check teammates for players with a career on file.
+  const withCareer = new Set(careers.map(c => c.player_id));
+  for(const p of players) p.has_career = withCareer.has(p.id);
 
   if(dry){
     writeFileSync(join(dir, 'players.json'), JSON.stringify(players, null, 1));

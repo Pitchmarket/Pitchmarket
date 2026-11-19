@@ -103,10 +103,10 @@ Add the team rows in admin (with a new league key). If prices should update auto
 
 ## Daily Kickabout
 
-Daily football games on the main page: **Scouted** (guess the player from league, team, nationality, age, position and height) and **Journeyman** (guess the player from their career, one club at a time). Everyone gets the same puzzles each day, and a new day starts at midnight UK time. A win pays 25 Fan Coins, once per game per day.
+Four daily football games on the main page: **Scouted** (guess the player from league, team, nationality, age and position), **Journeyman** (guess the player from their career, one club at a time), **Link-Up** (connect two players through teammates using at most 6 players) and **Ball Knowledge** (four questions, win with 3 right). Everyone gets the same puzzles each day, and a new day starts at midnight UK time. Each win pays 25 Fan Coins, once per game per day, so 100 a day at most.
 
 - **Player data** comes from [Wikidata](https://www.wikidata.org) (CC0, free to use for anything). `import-players.js` runs every Monday from `.github/workflows/import-players.yml`. It links each club to its Wikidata entry (`teams.wikidata_id`), then loads current players and their careers into `players` and `player_careers`. If it links a club wrongly, set that club's `wikidata_id` by hand; the importer never overwrites one.
-- **Puzzles and coins** are handled in the database: `daily_player()` picks each day's answer, `kickabout_guess()` checks guesses and pays out, and `kickabout_state()` returns what the page shows. The answer and careers can't be read from the page until a player has finished.
+- **Puzzles and coins** are handled in the database: `daily_puzzle()` makes each game's puzzle for the day (Ball Knowledge questions come from `make_question()`, Link-Up pairs from `teammates_of()`), `kickabout_guess()` checks guesses and pays out, and `kickabout_state()` returns what the page shows. Answers, careers and quiz answers can't be read from the page until a player has finished.
 
 ## Backups
 

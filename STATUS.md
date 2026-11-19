@@ -1,6 +1,6 @@
 # PitchMarket status
 
-_Last updated: 19 Nov 2026_
+_Last updated: 20 Nov 2026_
 
 Where the project stands before public launch. Update this file in the same pull request as the work it describes. Keep it under 10 KB: when something is done, delete it here instead of marking it done.
 
@@ -10,7 +10,7 @@ Launch blockers, roughly in the order to tackle them.
 
 ### Running the competition
 
-- **Switch on Daily Kickabout.** Run `supabase-daily-kickabout.sql` in the Supabase SQL Editor, then run the **Import players for Daily Kickabout** workflow once from the Actions tab (it takes 15–30 minutes). Until both are done, the games section says the games aren't switched on yet. The import then runs every Monday.
+- **Switch on all four Daily Kickabout games.** Run `supabase-daily-kickabout.sql` (if not already) and then `supabase-kickabout-2.sql` in the Supabase SQL Editor, then run the **Import players for Daily Kickabout** workflow from the Actions tab (15–30 minutes). Re-run the import even if it ran before: this version adds the players it used to miss (Saka, Foden, Rice and most other internationals), each player's continent for Scouted, and the club links Link-Up needs. The import then runs every Monday.
 - **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql`: it clears `holdings` and `trades` and sets every balance to 2,000. Prices and price history stay, so the charts keep their data.
 - **Run `supabase-names-and-leaderboard.sql`** in the Supabase SQL Editor. It makes display names unique and hides the organiser's accounts (admin and 27hufferdinea) from the leaderboard. Its last line lists the hidden accounts; check they're the right ones.
 - **The organiser runs the competition and doesn't play.** The admin and 27hufferdinea accounts are hidden from the leaderboard. To hide another account, set `hidden_from_leaderboard` to true on its row in `profiles`.
@@ -26,7 +26,6 @@ Launch blockers, roughly in the order to tackle them.
 
 Not blocking launch, but wanted soon after.
 
-- **Daily Kickabout: Link-Up and Ball Knowledge.** Scouted and Journeyman are built. Link-Up: link two players through teammates (same club, overlapping years) using at most 6 players. Ball Knowledge: 4 questions a day, win with 3 right. Both pay 25 Fan Coins, like the others.
 - **Data-outage policy.** What happens to the standings if the price pipeline is down for a week. The trading lock lifts after 72 hours even if a result was never priced, so a long outage reopens the price-lag exploit.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
 - **Pro lifecycle.** Handle cancellations, failed payments and expiry through Stripe webhooks.
