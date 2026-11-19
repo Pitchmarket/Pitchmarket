@@ -2,6 +2,10 @@ name: Test football-data squads (temporary)
 "on":
   push:
     branches: [test-squads]
+    paths: ['.github/workflows/test-squads.yml']
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,8 +29,10 @@ jobs:
             }
             require("fs").writeFileSync("squads.json", JSON.stringify(out));
           })();'
-      - uses: actions/upload-artifact@v4
-        with:
-          name: squads
-          path: squads.json
-          retention-days: 1
+      - name: Commit squads.json to this temporary branch
+        run: |
+          git init -q b && cd b && git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth=1 origin test-squads && git checkout -q -b test-squads FETCH_HEAD
+          cp ../squads.json . && git add squads.json
+          git -c user.name=github-actions -c user.email=actions@github.com commit -q -m "Squads snapshot for testing"
+          git push -q origin test-squads
