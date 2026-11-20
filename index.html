@@ -282,11 +282,30 @@ button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2
 #kickabout .ka-grid tbody tr, #kickabout .ka-grid tbody tr:hover{ background:none; border:none; }
 .ka-grid td.unknown{ color:var(--steel-dim); }
 .ka-grid td .dir{ display:block; font-size:12px; margin-top:2px; }
+/* Phones: each guess becomes a card (name, then the five clues as labelled tiles) so nothing hides off to the side. */
+@media (max-width:640px){
+  .ka-grid{ min-width:0; border-spacing:0; }
+  .ka-grid thead{ display:none; }
+  .ka-grid tbody{ display:flex; flex-direction:column; gap:14px; }
+  .ka-grid tbody tr{ display:grid; grid-template-columns:repeat(6,1fr); gap:4px; }
+  .ka-grid td{ display:block; grid-column:span 2; padding:7px 4px 8px; font-size:12.5px; overflow-wrap:anywhere; }
+  .ka-grid td:nth-child(5), .ka-grid td:nth-child(6){ grid-column:span 3; }
+  .ka-grid td.ka-name{ grid-column:1/-1; padding:0 2px 2px; font-size:14px; }
+  .ka-grid td[data-label]::before{ content:attr(data-label); display:block; font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; opacity:.7; margin-bottom:3px; font-weight:500; }
+  .ka-grid td .dir{ display:inline; margin:0 0 0 4px; }
+}
 .ka-career{ width:100%; border-collapse:collapse; }
 .ka-career th{ font-family:var(--font-mono); font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:500; text-align:left; padding:0 12px 8px; }
 .ka-career th.num, .ka-career td.num{ text-align:right; }
 .ka-career td{ padding:11px 12px; border-top:1px solid var(--border-soft); font-size:14px; }
 .ka-career tr.hidden-row td{ color:var(--steel-dim); letter-spacing:.2em; }
+@media (max-width:640px){
+  .ka-career th{ padding:0 4px 8px; }
+  .ka-career td{ padding:10px 4px; font-size:13px; }
+  .ka-career td:nth-child(2){ white-space:nowrap; font-size:12px; }
+  .ka-career tr.hidden-row td{ letter-spacing:.06em; }
+  .ka-career .ka-loan{ display:inline-block; margin:2px 0 0 4px; }
+}
 .ka-loan{ font-family:var(--font-mono); font-size:10px; color:var(--gilt); border:1px solid var(--gilt); border-radius:var(--r-sm); padding:1px 5px; margin-left:6px; letter-spacing:0; }
 .ka-wrong{ display:flex; gap:6px; flex-wrap:wrap; }
 .ka-wrong span{ font-size:12.5px; padding:4px 9px; border-radius:var(--r-sm); background:color-mix(in srgb, var(--drop) 12%, transparent); color:var(--drop); text-decoration:line-through; }
@@ -3224,7 +3243,7 @@ function renderScouted(st){
     let v = f.value == null ? '?' : escapeHtml(String(f.value));
     const arrow = f.dir === 'up' ? '↑' : f.dir === 'down' ? '↓' : '';
     const label = f.dir === 'up' ? 'answer is higher' : f.dir === 'down' ? 'answer is lower' : '';
-    return '<td class="'+f.result+'" title="'+f.result+(label ? ', '+label : '')+'">'+v+(arrow ? '<span class="dir" aria-label="'+label+'">'+arrow+'</span>' : '')+'</td>';
+    return '<td class="'+f.result+'" data-label="'+KA_COLS.find(c=>c[0]===key)[1]+'" title="'+f.result+(label ? ', '+label : '')+'">'+v+(arrow ? '<span class="dir" aria-label="'+label+'">'+arrow+'</span>' : '')+'</td>';
   };
   return '<table class="ka-grid"><thead><tr><th>Player</th>'+KA_COLS.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr></thead><tbody>'+
     st.guesses.map(g=>'<tr><td class="ka-name">'+escapeHtml(g.name)+'</td>'+KA_COLS.map(([k])=>cell(g[k], k)).join('')+'</tr>').join('')+
