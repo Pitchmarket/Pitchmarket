@@ -3,7 +3,8 @@
 -- Exported from the live project on 18 Nov 2026, with
 -- supabase-security-fixes.sql, supabase-price-lag-lock.sql,
 -- supabase-trade-cooldown.sql, supabase-names-and-leaderboard.sql,
--- supabase-daily-kickabout.sql and supabase-kickabout-2.sql applied.
+-- supabase-daily-kickabout.sql, supabase-kickabout-2.sql and
+-- supabase-squads.sql applied.
 -- Running this on an empty Supabase project rebuilds the backend:
 -- tables, access rules (RLS), functions and triggers. It creates no
 -- data: no teams, settings or players.
@@ -759,6 +760,9 @@ $function$;
 alter table public.players add column if not exists continent text;
 -- Whether we have the player's career, so Link-Up can check their teammates.
 alter table public.players add column if not exists has_career boolean not null default false;
+-- Whether that career's latest spell is at the player's current club, so
+-- Journeyman never shows a trail that stops short.
+alter table public.players add column if not exists career_current boolean not null default false;
 -- The Wikidata club of each career spell, so teammates are matched on the
 -- club itself rather than its name.
 alter table public.player_careers add column if not exists club_id text;
@@ -965,10 +969,11 @@ begin
     order by random() limit 1;
 
   elsif p_game = 'journeyman' then
-    -- A proper trail: 4+ spells at 3+ different clubs, every spell dated.
+    -- A proper trail: 4+ spells at 3+ different clubs, every spell dated,
+    -- and up to date with the player's current club.
     select id into v_a from (
       select p.id from players p
-      where p.active
+      where p.active and p.career_current
         and (select count(*) from player_careers c where c.player_id = p.id) >= 4
         and (select count(distinct c.club) from player_careers c where c.player_id = p.id) >= 3
         and not exists (select 1 from player_careers c where c.player_id = p.id and c.start_year is null)

@@ -10,7 +10,8 @@ Launch blockers, roughly in the order to tackle them.
 
 ### Running the competition
 
-- **Switch on all four Daily Kickabout games.** Run `supabase-daily-kickabout.sql` (if not already) and then `supabase-kickabout-2.sql` in the Supabase SQL Editor, then run the **Import players for Daily Kickabout** workflow from the Actions tab (15–30 minutes). Re-run the import even if it ran before: this version adds the players it used to miss (Saka, Foden, Rice and most other internationals), each player's continent for Scouted, and the club links Link-Up needs. The import then runs every Monday.
+- **Switch on all four Daily Kickabout games.** Run `supabase-daily-kickabout.sql`, `supabase-kickabout-2.sql` and `supabase-squads.sql` in the Supabase SQL Editor (each once, in that order), then run the **Import players for Daily Kickabout** workflow from the Actions tab (15–30 minutes). The import then runs every Monday.
+- **Championship clubs missing from the site:** Norwich City, West Bromwich Albion and Sheffield United are in the Championship feed but not on the site, so their results and players are skipped. Add them in admin if wanted.
 - **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql`: it clears `holdings` and `trades` and sets every balance to 2,000. Prices and price history stay, so the charts keep their data.
 - **Run `supabase-names-and-leaderboard.sql`** in the Supabase SQL Editor. It makes display names unique and hides the organiser's accounts (admin and 27hufferdinea) from the leaderboard. Its last line lists the hidden accounts; check they're the right ones.
 - **The organiser runs the competition and doesn't play.** The admin and 27hufferdinea accounts are hidden from the leaderboard. To hide another account, set `hidden_from_leaderboard` to true on its row in `profiles`.
