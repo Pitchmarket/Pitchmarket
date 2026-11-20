@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Open connections to the servers the page needs before it asks them for anything. -->
+<link rel="preconnect" href="https://ljpwxujlyqhlznasnhfk.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
   // Theme: applied before first paint so there's no flash of the default look.
   // THEMES lists every look the picker offers, with the Google Fonts it needs.
@@ -25,7 +31,7 @@
     if(!THEMES[name]) name = 'normal';
     document.documentElement.setAttribute('data-theme', name);
     let link = document.getElementById('themeFonts');
-    if(!link){ link = document.createElement('link'); link.rel = 'stylesheet'; link.id = 'themeFonts'; document.head.appendChild(link); }
+    if(!link){ link = document.createElement('link'); link.rel = 'stylesheet'; link.id = 'themeFonts'; link.crossOrigin = 'anonymous'; document.head.appendChild(link); }
     link.href = 'https://fonts.googleapis.com/css2?family=' + THEMES[name].fonts + '&display=swap';
     return name;
   };
@@ -145,8 +151,26 @@ nav{
   background:var(--gilt-fill); color:var(--on-gilt); padding:9px 18px; border-radius:var(--r-sm);
   font-size:13px; font-weight:700;
 }
-.nav-mobile-hide{display:flex; gap:34px; align-items:center; margin-left:auto;}
-.theme-wrap{ margin-left:18px; }
+.nav-mobile-hide{display:flex; gap:clamp(16px, 2vw, 34px); align-items:center; margin-left:auto;}
+.theme-wrap{ margin-left:10px; flex-shrink:0; }
+.help-btn{ margin-left:18px; flex-shrink:0; width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--steel); font-family:var(--font-body); font-size:15px; font-weight:700; cursor:pointer; }
+.help-btn:hover{ color:var(--chalk); border-color:var(--steel-dim); }
+@media(max-width:860px){ .help-btn{ margin-left:auto; } }
+.nav-links a, .nav-cta, .theme-btn, .help-btn{ white-space:nowrap; }
+.nav-links{ gap:clamp(16px, 2vw, 34px); }
+.brand{ flex-shrink:0; }
+/* Laptop widths: the section links move to their own row under the logo,
+   so a long display name can never push the theme or help buttons off the
+   edge of the screen. */
+@media(min-width:861px) and (max-width:1280px){
+  nav{ flex-wrap:wrap; row-gap:12px; }
+  .brand{ margin-right:auto; }
+  .nav-mobile-hide{ display:contents; }
+  .nav-links{ order:3; width:100%; overflow-x:auto; gap:24px; padding:2px 0; scrollbar-width:none; }
+  .nav-links::-webkit-scrollbar{ display:none; }
+  .theme-wrap, .help-btn{ margin-left:0; }
+  nav{ column-gap:14px; }
+}
 @media(max-width:860px){ .nav-mobile-hide{display:none;} nav{padding:16px 20px;} }
 
 /* ===== Hero ===== */
@@ -258,11 +282,30 @@ button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2
 #kickabout .ka-grid tbody tr, #kickabout .ka-grid tbody tr:hover{ background:none; border:none; }
 .ka-grid td.unknown{ color:var(--steel-dim); }
 .ka-grid td .dir{ display:block; font-size:12px; margin-top:2px; }
+/* Phones: each guess becomes a card (name, then the five clues as labelled tiles) so nothing hides off to the side. */
+@media (max-width:640px){
+  .ka-grid{ min-width:0; border-spacing:0; }
+  .ka-grid thead{ display:none; }
+  .ka-grid tbody{ display:flex; flex-direction:column; gap:14px; }
+  .ka-grid tbody tr{ display:grid; grid-template-columns:repeat(6,1fr); gap:4px; }
+  .ka-grid td{ display:block; grid-column:span 2; padding:7px 4px 8px; font-size:12.5px; overflow-wrap:anywhere; }
+  .ka-grid td:nth-child(5), .ka-grid td:nth-child(6){ grid-column:span 3; }
+  .ka-grid td.ka-name{ grid-column:1/-1; padding:0 2px 2px; font-size:14px; }
+  .ka-grid td[data-label]::before{ content:attr(data-label); display:block; font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; opacity:.7; margin-bottom:3px; font-weight:500; }
+  .ka-grid td .dir{ display:inline; margin:0 0 0 4px; }
+}
 .ka-career{ width:100%; border-collapse:collapse; }
 .ka-career th{ font-family:var(--font-mono); font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:500; text-align:left; padding:0 12px 8px; }
 .ka-career th.num, .ka-career td.num{ text-align:right; }
 .ka-career td{ padding:11px 12px; border-top:1px solid var(--border-soft); font-size:14px; }
 .ka-career tr.hidden-row td{ color:var(--steel-dim); letter-spacing:.2em; }
+@media (max-width:640px){
+  .ka-career th{ padding:0 4px 8px; }
+  .ka-career td{ padding:10px 4px; font-size:13px; }
+  .ka-career td:nth-child(2){ white-space:nowrap; font-size:12px; }
+  .ka-career tr.hidden-row td{ letter-spacing:.06em; }
+  .ka-career .ka-loan{ display:inline-block; margin:2px 0 0 4px; }
+}
 .ka-loan{ font-family:var(--font-mono); font-size:10px; color:var(--gilt); border:1px solid var(--gilt); border-radius:var(--r-sm); padding:1px 5px; margin-left:6px; letter-spacing:0; }
 .ka-wrong{ display:flex; gap:6px; flex-wrap:wrap; }
 .ka-wrong span{ font-size:12.5px; padding:4px 9px; border-radius:var(--r-sm); background:color-mix(in srgb, var(--drop) 12%, transparent); color:var(--drop); text-decoration:line-through; }
@@ -294,6 +337,16 @@ button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2
 .bk-option:disabled{ cursor:default; }
 .bk-option.right{ background:var(--ka-match); border-color:var(--ka-match); color:var(--ka-on); font-weight:600; }
 .bk-option.wrong{ background:color-mix(in srgb, var(--drop) 18%, transparent); border-color:var(--drop); color:var(--drop); text-decoration:line-through; }
+.modal.help-modal{ max-width:720px; max-height:calc(100dvh - 40px); overflow-y:auto; }
+.help-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; margin:4px 0 18px; }
+@media(max-width:620px){ .help-grid{ grid-template-columns:1fr; } }
+.help-item{ padding:12px 14px; border:1px solid var(--border-soft); border-radius:var(--r-md); background:var(--panel2); }
+.help-item h3{ font-family:var(--font-body); font-size:14px; font-weight:700; margin-bottom:4px; text-transform:none; letter-spacing:0; }
+.help-item p{ font-size:13px; color:var(--steel); line-height:1.5; }
+.help-item b{ color:var(--chalk); }
+.help-foot{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.help-toggle{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--steel); cursor:pointer; }
+.help-toggle input{ width:16px; height:16px; accent-color:var(--accent); }
 .ka-signin{ background:var(--accent-fill); color:var(--on-accent); border:none; border-radius:var(--r-sm); padding:10px 18px; font-weight:700; font-size:13.5px; cursor:pointer; }
 
 /* Clue colours per skin: always a green and a yellow, in each skin's own shade. */
@@ -358,7 +411,7 @@ td.spark-cell{ width:100px; }
 .wallet-amt{ font-family:var(--font-mono); font-size:13px; font-weight:600; }
 #walletChip{ cursor:pointer; }
 #walletChip:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
-.wallet-label{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; }
+.wallet-label{ font-size:10px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.04em; max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ===== Ad units ===== */
 .ad-banner{
@@ -971,6 +1024,34 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 [data-theme="retro"] .buy-btn{ font-size:16px; color:#fff; border-color:#fff; }
 [data-theme="retro"] .disclaimer-bar{ background:var(--bg-deep); border-top:3px solid var(--border); }
 [data-theme="retro"] .disclaimer-bar p{ font-size:16px; }
+
+/* Motion: smooth section links, eased-in sections and popups, and a
+   cross-fade between this page and admin. Off for reduced motion. */
+html{ scroll-padding-top:56px; }
+@media (prefers-reduced-motion: no-preference){
+  html{ scroll-behavior:smooth; }
+  @view-transition { navigation: auto; }
+  .modal-overlay.open{ animation:pm-fade .18s ease-out; }
+  .modal-overlay.open .modal{ animation:pm-pop .24s cubic-bezier(.2,.8,.2,1); }
+  section.rise{ opacity:0; transform:translateY(18px); }
+  section.rise.in{ opacity:1; transform:none; transition:opacity .5s ease-out, transform .5s cubic-bezier(.2,.8,.2,1); }
+  .theme-menu.open, .notif-panel.open, .ka-list:not([hidden]){ animation:pm-drop .16s ease-out; }
+  .tab-btn, .ka-tab, .nav-links a, .bk-option, .buy-btn, .btn-primary, .btn-ghost, .nav-cta{ transition:color .15s, background-color .15s, border-color .15s, transform .12s; }
+  .btn-primary:active, .nav-cta:active, .m-btn:active, .bk-option:active:not(:disabled), .buy-btn:active{ transform:scale(.97); }
+}
+@keyframes pm-fade{ from{ opacity:0; } }
+@keyframes pm-pop{ from{ opacity:0; transform:translateY(10px) scale(.98); } }
+@keyframes pm-drop{ from{ opacity:0; transform:translateY(-4px); } }
+.nav-links a.on{ color:var(--chalk); box-shadow:inset 0 -2px 0 var(--gilt); }
+/* Placeholders while the first data loads */
+.sk{ display:inline-block; height:12px; border-radius:4px; vertical-align:middle; background:linear-gradient(90deg, var(--panel2) 25%, var(--border) 50%, var(--panel2) 75%); background-size:200% 100%; }
+@media (prefers-reduced-motion: no-preference){ .sk{ animation:pm-shimmer 1.3s linear infinite; } }
+@keyframes pm-shimmer{ to{ background-position:-200% 0; } }
+
+/* "PitchMarket has been updated" note from the service worker */
+.pm-updated{ position:fixed; z-index:200; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); display:flex; align-items:center; gap:12px; padding:10px 12px 10px 16px; border-radius:999px; background:var(--panel); border:1px solid var(--border); color:var(--chalk); box-shadow:0 10px 30px rgba(0,0,0,.35); font-size:13.5px; animation:pm-rise .25s ease-out; }
+.pm-updated button{ border:none; border-radius:999px; padding:6px 14px; background:var(--accent-fill); color:var(--on-accent); font-weight:700; cursor:pointer; }
+@keyframes pm-rise{ from{ transform:translate(-50%, 12px); opacity:0; } }
 </style>
 <!-- ============ CONFIG: paste your Supabase project values here ============ -->
 <script>
@@ -978,7 +1059,6 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   const SUPABASE_ANON_KEY = "sb_publishable_4gQiPEP2dmJH99ZwTjTRTQ_dxZtWqFn";
 </script>
 <!-- =========================================================================== -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -1026,6 +1106,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
     </div>
     <button class="nav-cta" id="authBtn" style="border:none; cursor:pointer;">Sign in to trade</button>
   </div>
+  <button type="button" class="help-btn" id="helpBtn" aria-label="How PitchMarket works" title="How PitchMarket works">?</button>
   <div class="theme-wrap" id="themeWrap">
     <button class="theme-btn" id="themeBtn" aria-haspopup="true" aria-expanded="false" title="Change the look">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16c3.1 0 5.6-2.5 5.6-5.6C21.6 6 17.3 2 12 2z"/></svg>
@@ -1309,6 +1390,28 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   </div>
 </div>
 
+<!-- How PitchMarket works: shown on each visit unless switched off -->
+<div class="modal-overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal help-modal">
+    <button class="modal-close" id="helpClose" aria-label="Close">✕</button>
+    <h2 id="helpTitle">How PitchMarket works</h2>
+    <div class="sub">A free football trading game: back the clubs you rate, and finish top of the leaderboard.</div>
+    <div class="help-grid">
+      <section class="help-item"><h3>Trade clubs</h3><p>Everyone starts with <b>2,000 Fan Coins</b>. Buy shares in clubs from the Market Explorer and sell whenever you like. Fan Coins are free and have no cash value.</p></section>
+      <section class="help-item"><h3>Prices follow real results</h3><p>After every real match, each club's price moves on the result and how big an upset it was. Trading on a club <b>pauses from kickoff</b> until its new price is set, and you can make one trade every few seconds.</p></section>
+      <section class="help-item"><h3>Climb the leaderboard</h3><p>Your score is your coins plus everything you hold at today's prices. Pick a display name by tapping your coin balance at the top.</p></section>
+      <section class="help-item"><h3>Daily Kickabout</h3><p>Four new football games every day at midnight UK time: <b>Scouted</b> (guess the player from clues), <b>Journeyman</b> (guess them from their career), <b>Link-Up</b> (connect two players through teammates) and <b>Ball Knowledge</b> (a four-question quiz). Each win pays <b>25 Fan Coins</b>.</p></section>
+      <section class="help-item"><h3>Spotlight and charts</h3><p>The Spotlight shows the week's biggest price movers; click any of them to see its chart. Every chart is drawn from real price history.</p></section>
+      <section class="help-item"><h3>Watchlist and alerts</h3><p>Star a club to follow it, see its last five results and set a price you want to hear about.</p></section>
+      <section class="help-item"><h3>Make it yours</h3><p>The palette button at the top switches between 13 looks, from Normal and Dark to Retro and Chalk tactics. Your choice is remembered.</p></section>
+    </div>
+    <div class="help-foot">
+      <label class="help-toggle"><input type="checkbox" id="helpShowAgain" checked> Show this every time I open PitchMarket</label>
+      <button class="m-btn primary" id="helpDone" style="width:auto; margin:0; padding:10px 22px;">Let's play</button>
+    </div>
+  </div>
+</div>
+
 <!-- Display name modal: asked once after sign-in while the name is still the default, and opened from the wallet -->
 <div class="modal-overlay" id="nameOverlay">
   <div class="modal">
@@ -1361,8 +1464,27 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 </div>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Libraries load at the end of the page, so it draws before they arrive. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous"></script>
 <script>
+
+// ============================================================
+// MOTION — short, purposeful transitions; none when the player has asked
+// their device for reduced motion.
+// ============================================================
+const calm = ()=> matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Cross-fades a change made by update(); browsers without view transitions
+// (or with reduced motion) just make the change.
+function withTransition(update){
+  if(document.startViewTransition && !calm()) document.startViewTransition(update);
+  else update();
+}
+// Fades an element in after it has been redrawn.
+function fadeIn(el){
+  if(!el || calm() || !el.animate) return;
+  el.animate([{ opacity:0, transform:'translateY(6px)' }, { opacity:1, transform:'none' }], { duration:220, easing:'cubic-bezier(.2,.8,.2,1)' });
+}
 
 // ============================================================
 // THEMES — chart colours come from the active theme's CSS tokens
@@ -1373,6 +1495,24 @@ let teamsLoaded = false;
 let priceHistory = {};   // team_id -> [{ t: ms, p: price }] oldest first
 let historyLoaded = false;
 let lockedTeams = new Set();   // clubs whose match has kicked off and isn't priced yet
+
+// Saved copies of slow-changing data. A repeat visit draws straight away
+// from the last copy while fresh data loads behind it (stale-while-
+// revalidate). Storage can be full or blocked; everything still works
+// without it, just slower.
+const PM_CACHE = 'pm-cache-v1:';
+// Declared early: saved prices can draw the hero chart before the rest of the script runs.
+let heroChart = null;
+function cacheGet(key, maxAgeMs){
+  try {
+    const v = JSON.parse(localStorage.getItem(PM_CACHE + key));
+    if(!v || (maxAgeMs && Date.now() - v.at > maxAgeMs)) return null;
+    return v.data;
+  } catch(e){ return null; }
+}
+function cacheSet(key, data){
+  try { localStorage.setItem(PM_CACHE + key, JSON.stringify({ at: Date.now(), data })); } catch(e){}
+}
 
 function themeToken(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 function withAlpha(hex, a){
@@ -1413,7 +1553,7 @@ function buildThemeMenu(){
       '<span class="theme-sw" style="background:linear-gradient(135deg,'+th.sw[0]+' 0 50%,'+th.sw[1]+' 50% 75%,'+th.sw[2]+' 75%)"></span>'+
       th.label+'</button>'
   ).join('');
-  menu.querySelectorAll('.theme-opt').forEach(opt=> opt.onclick = ()=>{
+  menu.querySelectorAll('.theme-opt').forEach(opt=> opt.onclick = ()=> withTransition(()=>{
     const name = applyTheme(opt.dataset.themeKey);
     try { localStorage.setItem('pm-theme', name); } catch(e){}
     menu.classList.remove('open'); btn.setAttribute('aria-expanded','false');
@@ -1422,7 +1562,7 @@ function buildThemeMenu(){
     const restyle = ()=> Object.values(Chart.instances).forEach(themeChart);
     restyle();
     if(document.fonts) document.fonts.ready.then(restyle);
-  });
+  }));
 }
 document.getElementById('themeBtn').onclick = (e)=>{
   e.stopPropagation();
@@ -1755,7 +1895,16 @@ renderSiteContent();
 function up(v){ return v>=0; }
 
 // ticker tape
+// Until real prices arrive (first visit, nothing saved yet) the ticker,
+// cards and table show grey placeholders rather than the built-in sample
+// clubs, so made-up prices never flash up first.
+const awaitingData = ()=> !teamsLoaded && supaConfigured();
+const skel = (w)=> '<span class="sk" style="width:'+w+'"></span>';
 function buildTicker(){
+  if(awaitingData()){
+    document.getElementById('tickerTrack').innerHTML = Array.from({ length: 24 }, ()=> '<span class="tick">'+skel('140px')+'</span>').join('');
+    return;
+  }
   const tickerItems = [];
   Object.values(leagues).forEach(l=> l.teams.forEach(t=> tickerItems.push(t)));
   const html = tickerItems.map(t=>
@@ -1768,6 +1917,10 @@ buildTicker();
 // index grid
 function buildIndices(){
   const grid = document.getElementById('indexGrid');
+  if(awaitingData()){
+    grid.innerHTML = Array.from({ length: 4 }, ()=> '<div class="index-card">'+skel('60%')+'<div style="height:10px"></div>'+skel('40%')+'<div style="height:14px"></div>'+skel('80%')+'</div>').join('');
+    return;
+  }
   // Each league gets a card built from its clubs' real prices. Nothing is
   // shown until the database answers, rather than placeholder numbers.
   const cards = teamsLoaded
@@ -1795,6 +1948,10 @@ buildIndices();
 const tabBar = document.getElementById('tabBar');
 const tableBody = document.getElementById('tableBody');
 function renderTable(key){
+  if(awaitingData()){
+    tableBody.innerHTML = Array.from({ length: 8 }, ()=> '<tr class="sk-row"><td>'+skel('46%')+'</td><td class="num">'+skel('64px')+'</td><td class="num">'+skel('56px')+'</td><td>'+skel('90px')+'</td><td></td></tr>').join('');
+    return;
+  }
   const data = leagues[key].teams;
   tableBody.innerHTML = data.map(t=>{
     const series = teamSeries(t, 20);
@@ -1832,6 +1989,7 @@ function buildTabs(){
       tabBar.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       renderTable(btn.dataset.key);
+      fadeIn(tableBody);
     });
   });
   renderTable(orderedKeys[0]);
@@ -1857,14 +2015,23 @@ function initSupabase(){
     return;
   }
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let loadedFor;   // the player whose data is on screen (null = signed out)
   sb.auth.onAuthStateChange((event, session)=>{
     currentSession = session;
-    updateAuthUI();
-    if(session) refreshWallet();
-    if(typeof loadKickabout === 'function') loadKickabout();
     // Following the reset link from the email signs the player in and
     // fires this event; ask for the new password straight away.
     if(event === 'PASSWORD_RECOVERY') document.getElementById('resetOverlay').classList.add('open');
+    // Supabase reports the same sign-in several times on load (and again
+    // whenever the session token refreshes). Load a player's data once.
+    const uid = session ? session.user.id : null;
+    if(uid === loadedFor) return;
+    loadedFor = uid;
+    updateAuthUI();
+    if(session) refreshWallet();
+    if(typeof loadKickabout === 'function'){
+      for(const k in kaStates) delete kaStates[k];   // another player's games
+      loadKickabout();
+    }
   });
 }
 
@@ -2357,25 +2524,39 @@ tableBody.addEventListener('click', (e)=>{
 // price_history (one row per price change) plus the current price.
 // ============================================================
 
+// Price history only grows (a row per price change), so the saved copy is
+// kept and only newer rows are fetched. A full refetch once a week catches
+// anything edited by hand.
 async function loadPriceHistory(){
   if(!sb) return;
-  const rows = [];
+  const saved = cacheGet('history', 7 * 864e5);
+  let rows = saved ? saved.rows : [];   // [id, team_id, price, time, source, label, result]
+  if(saved && !historyLoaded){ buildHistory(rows); refreshCharts(); }
+  const since = rows.length ? new Date(Math.max(...rows.map(r => r[3]))).toISOString() : null;
+  const known = new Set(rows.map(r => r[0]));
+  const fresh = [];
   const PAGE = 1000;   // Supabase returns at most 1,000 rows per request
   for(let from = 0; ; from += PAGE){
-    const { data, error } = await sb.from('price_history')
-      .select('team_id,price,changed_at,source,label,result')
-      .order('changed_at', { ascending:true }).order('id', { ascending:true })
-      .range(from, from + PAGE - 1);
-    if(error || !data) break;
-    rows.push(...data);
+    let q = sb.from('price_history').select('id,team_id,price,changed_at,source,label,result');
+    if(since) q = q.gte('changed_at', since);
+    const { data, error } = await q.order('changed_at', { ascending:true }).order('id', { ascending:true }).range(from, from + PAGE - 1);
+    if(error || !data) return;
+    for(const r of data) if(!known.has(r.id)) fresh.push([r.id, r.team_id, Number(r.price), Date.parse(r.changed_at), r.source, r.label, r.result]);
     if(data.length < PAGE) break;
   }
-  priceHistory = {};
-  rows.forEach(r=>{
-    (priceHistory[r.team_id] = priceHistory[r.team_id] || []).push({ t: Date.parse(r.changed_at), p: Number(r.price), source: r.source, label: r.label, result: r.result });
-  });
-  historyLoaded = true;
+  if(saved && !fresh.length){ historyLoaded = true; return; }   // already up to date
+  rows = rows.concat(fresh);
+  cacheSet('history', { rows });
+  buildHistory(rows);
   refreshCharts();
+}
+function buildHistory(rows){
+  priceHistory = {};
+  for(const r of rows){
+    (priceHistory[r[1]] = priceHistory[r[1]] || []).push({ t: r[3], p: r[2], source: r[4], label: r[5], result: r[6] });
+  }
+  for(const id in priceHistory) priceHistory[id].sort((a, b) => a.t - b.t);
+  historyLoaded = true;
 }
 
 // A club's recent prices, ending at its current price. null if fewer than 2.
@@ -2522,6 +2703,7 @@ document.getElementById('miniCaps').addEventListener('click', (e)=>{
   if(!btn) return;
   spotSelected = btn.dataset.team;
   showSpotlight();
+  fadeIn(document.querySelector('#spotlight .cupwatch > div'));
 });
 
 function refreshCharts(){
@@ -2533,10 +2715,20 @@ function refreshCharts(){
   drawHeroChart();
 }
 
+// Clubs and prices: drawn from the saved copy first, then refreshed.
+let teamsJson = '';
 async function loadTeamsFromDB(){
   if(!sb) return;
-  const { data, error } = await sb.from('teams').select('*').order('league_order').order('price', { ascending:false });
+  if(!teamsLoaded){ const saved = cacheGet('teams'); if(saved) applyTeams(saved); }
+  const { data, error } = await sb.from('teams').select('id,name,tier,price,chg,league,league_label,league_order').order('league_order').order('price', { ascending:false });
   if(error || !data || data.length === 0) return;
+  cacheSet('teams', data);
+  applyTeams(data);
+}
+function applyTeams(data){
+  const json = JSON.stringify(data);
+  if(json === teamsJson) return;   // nothing changed since the saved copy
+  teamsJson = json;
 
   // Rebuild `leagues` entirely from the database, grouped by league key.
   // This is what lets a brand-new league (or a brand-new team) added from
@@ -2567,8 +2759,14 @@ async function loadTeamsFromDB(){
 
 async function loadSiteSettings(){
   if(!sb) return;
-  const { data, error } = await sb.from('site_settings').select('*');
+  const saved = cacheGet('settings');
+  if(saved) applySiteSettings(saved);
+  const { data, error } = await sb.from('site_settings').select('key,value');
   if(error || !data) return;
+  cacheSet('settings', data);
+  if(!saved || JSON.stringify(saved) !== JSON.stringify(data)) applySiteSettings(data);
+}
+function applySiteSettings(data){
   let orderChanged = false;
   data.forEach(row=>{
     if(row.key === 'league_order'){ leagueOrder = row.value; orderChanged = true; return; }
@@ -2581,9 +2779,16 @@ async function loadSiteSettings(){
 
 async function loadLeaderboard(){
   if(!sb) return;
+  const saved = cacheGet('leaderboard');
+  if(saved) renderLeaderboard(saved);
   const { data, error } = await sb.rpc('get_leaderboard', { p_limit: 20 });
+  if(error) return;
+  cacheSet('leaderboard', data || []);
+  renderLeaderboard(data || []);
+}
+function renderLeaderboard(data){
   const body = document.getElementById('leaderboardBody');
-  if(error || !data || data.length === 0){
+  if(!data.length){
     body.innerHTML = '<tr><td colspan="3" style="color:var(--steel-dim); padding:20px 14px;">No ranked trades yet — be the first on the board.</td></tr>';
     return;
   }
@@ -2647,6 +2852,32 @@ document.getElementById('authSubmit').addEventListener('click', async ()=>{
   loadTeamsFromDB();
 });
 
+// ----- How PitchMarket works -----
+// Shown on every visit until the player unticks "Show this every time".
+function helpPref(){ try { return localStorage.getItem('pm-help') !== 'off'; } catch(e){ return true; } }
+function openHelp(){
+  document.getElementById('helpShowAgain').checked = helpPref();
+  document.getElementById('helpOverlay').classList.add('open');
+  document.getElementById('helpDone').focus();
+}
+let nameAfterHelp = false;   // a new player's name prompt waits for this box to close
+function closeHelp(){
+  const overlay = document.getElementById('helpOverlay');
+  if(!overlay.classList.contains('open')) return;
+  overlay.classList.remove('open');
+  if(nameAfterHelp){ nameAfterHelp = false; openNameModal(); }
+}
+document.getElementById('helpBtn').addEventListener('click', openHelp);
+document.getElementById('helpClose').addEventListener('click', closeHelp);
+document.getElementById('helpDone').addEventListener('click', closeHelp);
+document.getElementById('helpOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'helpOverlay') closeHelp(); });
+document.getElementById('helpShowAgain').addEventListener('change', (e)=>{
+  try { localStorage.setItem('pm-help', e.target.checked ? 'on' : 'off'); } catch(err){}
+});
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeHelp(); });
+// A reset link from a password email opens its own box instead.
+if(helpPref() && !/type=recovery/.test(location.hash)) openHelp();
+
 // ----- Display name -----
 let currentName = '';
 const NAME_RULE = /^[A-Za-z0-9 ._-]{2,24}$/;
@@ -2663,7 +2894,9 @@ function maybeAskForName(){
   if(!/^Trader-/i.test(currentName)) return;
   let asked = false;
   try { asked = sessionStorage.getItem('pm-name-asked') === '1'; sessionStorage.setItem('pm-name-asked', '1'); } catch(e){}
-  if(!asked) openNameModal();
+  if(asked) return;
+  if(document.getElementById('helpOverlay').classList.contains('open')) nameAfterHelp = true;
+  else openNameModal();
 }
 document.getElementById('walletChip').addEventListener('click', openNameModal);
 document.getElementById('walletChip').addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openNameModal(); } });
@@ -2857,27 +3090,35 @@ const KA_INTRO = {
 };
 const foldName = (s)=> s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ø/gi,'o').replace(/æ/gi,'ae').replace(/ß/g,'ss').toLowerCase();
 
+// The game search box's player list: loaded the first time the games come
+// into view or the box is used, fetched in parallel, and kept for a day
+// (the list changes once a week).
 async function loadKaPlayers(){
   if(kaPlayers || !sb) return kaPlayers;
   if(!kaPlayersLoading) kaPlayersLoading = (async ()=>{
-    const all = [];
-    for(let from = 0; ; from += 1000){
-      const { data, error } = await sb.from('players').select('id,name,club_name,has_career')
+    let list = cacheGet('players', 864e5);
+    if(!list){
+      const page = (from, count) => sb.from('players').select('id,name,club_name,has_career', count ? { count:'exact' } : undefined)
         .eq('active', true).order('fame', { ascending:false }).order('id').range(from, from + 999);
-      if(error || !data) break;
-      all.push(...data);
-      if(data.length < 1000) break;
+      const first = await page(0, true);
+      if(first.error || !first.data){ kaPlayersLoading = null; return null; }
+      const rest = await Promise.all(Array.from({ length: Math.max(0, Math.ceil((first.count || 0) / 1000) - 1) }, (_, i) => page((i + 1) * 1000)));
+      list = first.data.concat(...rest.map(r => r.data || [])).map(p => [p.id, p.name, p.club_name || '', p.has_career !== false]);
+      cacheSet('players', list);
     }
-    kaPlayers = all.map(p=>({ id:p.id, name:p.name, club:p.club_name || '', key:foldName(p.name), career:p.has_career !== false }));
+    kaPlayers = list.map(([id, name, club, career]) => ({ id, name, club, key: foldName(name), career }));
     return kaPlayers;
   })();
   return kaPlayersLoading;
 }
 
+const kaStates = {};   // last state seen per game, so switching tabs draws at once
 async function loadKickabout(){
   if(!sb) return;
+  if(kaStates[kaGame]){ kaState = kaStates[kaGame]; renderKickabout(); }
   const msg = document.getElementById('kaMsg');
-  const { data, error } = await sb.rpc('kickabout_state', { p_game: kaGame });
+  let { data, error } = await sb.rpc('kickabout_state', { p_game: kaGame });
+  if(!error && (!data || !data.game)) error = { message: 'The games couldn\'t load just now. Try again in a minute.' };
   if(error){
     kaState = null;
     document.getElementById('kaIntro').innerHTML = KA_INTRO[kaGame];
@@ -2890,9 +3131,8 @@ async function loadKickabout(){
     return;
   }
   msg.className = 'm-msg';
-  kaState = data;
+  kaState = kaStates[kaGame] = data;
   renderKickabout();
-  loadKaPlayers();
 }
 
 function kaBadge(game, st){
@@ -3003,7 +3243,7 @@ function renderScouted(st){
     let v = f.value == null ? '?' : escapeHtml(String(f.value));
     const arrow = f.dir === 'up' ? '↑' : f.dir === 'down' ? '↓' : '';
     const label = f.dir === 'up' ? 'answer is higher' : f.dir === 'down' ? 'answer is lower' : '';
-    return '<td class="'+f.result+'" title="'+f.result+(label ? ', '+label : '')+'">'+v+(arrow ? '<span class="dir" aria-label="'+label+'">'+arrow+'</span>' : '')+'</td>';
+    return '<td class="'+f.result+'" data-label="'+KA_COLS.find(c=>c[0]===key)[1]+'" title="'+f.result+(label ? ', '+label : '')+'">'+v+(arrow ? '<span class="dir" aria-label="'+label+'">'+arrow+'</span>' : '')+'</td>';
   };
   return '<table class="ka-grid"><thead><tr><th>Player</th>'+KA_COLS.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr></thead><tbody>'+
     st.guesses.map(g=>'<tr><td class="ka-name">'+escapeHtml(g.name)+'</td>'+KA_COLS.map(([k])=>cell(g[k], k)).join('')+'</tr>').join('')+
@@ -3093,7 +3333,7 @@ async function kaSubmit(id){
   input.disabled = false;
   if(error){ msg.textContent = error.message; msg.className = 'm-msg err'; return; }
   msg.className = 'm-msg';
-  kaState = data;
+  kaState = kaStates[kaGame] = data;
   renderKickabout();
   if(data.won) refreshWallet();
   if(!data.finished) input.focus();
@@ -3118,15 +3358,44 @@ document.querySelectorAll('.ka-tab[data-game]').forEach(tab=> tab.addEventListen
   tab.classList.add('active');
   kaGame = tab.dataset.game;
   document.getElementById('kaMsg').className = 'm-msg';
-  loadKickabout();
+  loadKickabout().then(()=> fadeIn(document.querySelector('.ka-panel')));
 }));
-loadKickabout();
-setInterval(loadLockedTeams, 2 * 60 * 1000);
+// Menu: underline the section on screen.
+if('IntersectionObserver' in window){
+  const links = new Map([...document.querySelectorAll('.nav-links a[href^="#"]')].map(a=> [a.getAttribute('href').slice(1), a]));
+  const spy = new IntersectionObserver((entries)=>{
+    for(const e of entries) if(e.isIntersecting){
+      links.forEach(a=> a.classList.remove('on'));
+      const a = links.get(e.target.id); if(a) a.classList.add('on');
+    }
+  }, { rootMargin:'-45% 0px -50% 0px' });
+  links.forEach((a, id)=>{ const sec = document.getElementById(id); if(sec) spy.observe(sec); });
+}
+// Sections below the fold ease in as they scroll into view. Anything on
+// screen at load is left alone, so the first view is complete at once.
+if('IntersectionObserver' in window && !calm()){
+  const rise = new IntersectionObserver((entries)=>{
+    for(const e of entries) if(e.isIntersecting){ e.target.classList.add('in'); rise.unobserve(e.target); }
+  }, { rootMargin:'0px 0px -8% 0px' });
+  document.querySelectorAll('section').forEach(sec=>{
+    if(sec.getBoundingClientRect().top > innerHeight){ sec.classList.add('rise'); rise.observe(sec); }
+  });
+}
+
+// The games load once the sign-in state is known (onAuthStateChange).
+// The search box's player list starts loading when the games come into view.
+if('IntersectionObserver' in window){
+  const io = new IntersectionObserver((entries)=>{ if(entries.some(e=>e.isIntersecting)){ io.disconnect(); loadKaPlayers(); } }, { rootMargin:'400px' });
+  io.observe(document.getElementById('kickabout'));
+}
+// Trading locks change at kickoff: re-check every 2 minutes while the page is
+// on screen, and straight away when the player comes back to it.
+setInterval(()=>{ if(!document.hidden) loadLockedTeams(); }, 2 * 60 * 1000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) loadLockedTeams(); });
 loadLeaderboard();
 loadSiteSettings();
 
 // hero chart — the first league's composite, from real price history
-let heroChart = null;
 function drawHeroChart(){
   const keys = orderedLeagueKeys();
   if(!teamsLoaded || !keys.length) return;
@@ -3156,5 +3425,22 @@ function drawHeroChart(){
 
 </script>
 
+
+<script>
+  // Repeat visits load from the browser (sw.js). When a newer version of the
+  // page has been saved in the background, offer to reload it.
+  if('serviceWorker' in navigator && isSecureContext){
+    navigator.serviceWorker.addEventListener('message', (e)=>{
+      if(!e.data || e.data.type !== 'pm-updated' || document.getElementById('pmUpdated')) return;
+      const bar = document.createElement('div');
+      bar.id = 'pmUpdated';
+      bar.className = 'pm-updated';
+      bar.innerHTML = '<span>PitchMarket has been updated.</span> <button type="button">Refresh</button>';
+      bar.querySelector('button').onclick = ()=> location.reload();
+      document.body.appendChild(bar);
+    });
+    addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+</script>
 </body>
 </html>
