@@ -8,7 +8,8 @@
   "price": 571.44,
   "chg": 5.1,
   "updated_at": "2026-11-08T04:30:41.424077+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8682"
  },
  {
   "id": "01cda0cf-6bb5-4ae3-af00-62e7cb53ee86",
@@ -19,7 +20,8 @@
   "price": 99.03,
   "chg": -3,
   "updated_at": "2026-11-06T22:43:47.64156+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q126334"
  },
  {
   "id": "0333ffe7-b089-48c8-aba3-54bd69752767",
@@ -30,7 +32,8 @@
   "price": 53.57,
   "chg": 8.5,
   "updated_at": "2026-11-05T18:13:34.232238+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "037156cb-8ee8-4982-bdeb-945c624173b7",
@@ -41,7 +44,8 @@
   "price": 140.39,
   "chg": -3.2,
   "updated_at": "2026-11-08T21:41:26.987451+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8749"
  },
  {
   "id": "03e68c75-fd57-4fd8-be64-1b95fb80e1d7",
@@ -52,7 +56,8 @@
   "price": 170.31,
   "chg": 1,
   "updated_at": "2026-11-08T04:30:37.990027+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q18716"
  },
  {
   "id": "05774c02-55a5-488e-b556-bfe33942487f",
@@ -63,7 +68,8 @@
   "price": 85.19,
   "chg": 2.1,
   "updated_at": "2026-11-09T04:44:47.954298+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q75684"
  },
  {
   "id": "07192e53-1f72-4c32-a55d-7b5b665ece59",
@@ -74,7 +80,8 @@
   "price": 386.24,
   "chg": 2.2,
   "updated_at": "2026-11-08T21:41:09.711413+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q1130849"
  },
  {
   "id": "075355fd-67d4-442f-a0a7-f82ac525dd07",
@@ -85,7 +92,8 @@
   "price": 202.06,
   "chg": 2.1,
   "updated_at": "2026-11-08T21:42:26.110541+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q128446"
  },
  {
   "id": "076a68b9-de8a-4ebd-b8dd-57b49ea39b6b",
@@ -96,7 +104,8 @@
   "price": 69.51,
   "chg": -2,
   "updated_at": "2026-11-04T23:12:57.393422+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "0954ee8c-501b-48c2-9ef9-c0e70d824982",
@@ -107,7 +116,8 @@
   "price": 212.47,
   "chg": -1.8,
   "updated_at": "2026-11-08T21:41:32.943093+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q1120838"
  },
  {
   "id": "0a0541cf-d60f-4b1d-a447-cc76b4eea0b8",
@@ -118,7 +128,8 @@
   "price": 332.95,
   "chg": 1.8,
   "updated_at": "2026-11-08T21:41:32.482782+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q1543"
  },
  {
   "id": "0a286ca2-f678-4908-8049-b88e2124c3ec",
@@ -129,7 +140,8 @@
   "price": 141.97,
   "chg": -5.2,
   "updated_at": "2026-11-08T21:41:53.241855+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q704"
  },
  {
   "id": "0af9726b-5248-4bb6-98fa-4105824165bd",
@@ -140,7 +152,8 @@
   "price": 40.42,
   "chg": -4.5,
   "updated_at": "2026-11-04T23:12:58.199526+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "0afaf104-cca0-44cf-8789-0477dd2e7951",
@@ -151,7 +164,8 @@
   "price": 124.26,
   "chg": -0.5,
   "updated_at": "2026-11-08T04:30:37.990027+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q18708"
  },
  {
   "id": "0b09bf60-dc31-4fd3-8e50-1182d7df9ab6",
@@ -162,7 +176,8 @@
   "price": 25.09,
   "chg": 4.5,
   "updated_at": "2026-11-07T21:28:52.369807+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q24904"
  },
  {
   "id": "0b322e79-5b66-4496-a621-321a6f619c9a",
@@ -173,7 +188,8 @@
   "price": 52.1,
   "chg": 0.5,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "0ba90c37-38f0-4acb-a177-a42956f27080",
@@ -184,7 +200,8 @@
   "price": 86.75,
   "chg": 1.1,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "0d4e1c85-7f8c-4fa7-b93d-f5432f06943a",
@@ -195,7 +212,8 @@
   "price": 28.78,
   "chg": -2.5,
   "updated_at": "2026-11-09T04:44:47.954298+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q622432"
  },
  {
   "id": "0ead95ce-e840-47e0-9d78-3b9d20ae1758",
@@ -206,7 +224,8 @@
   "price": 66.1,
   "chg": 4.3,
   "updated_at": "2026-08-31T07:30:20.066006+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q12236"
  },
  {
   "id": "0f8e0009-7c33-44d5-a5b1-cc358f3f7a45",
@@ -217,7 +236,8 @@
   "price": 53.63,
   "chg": -2.5,
   "updated_at": "2026-11-04T23:12:55.535919+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "1252c559-171d-4603-bd08-0b090b9bf2fc",
@@ -228,7 +248,8 @@
   "price": 115.3,
   "chg": 4.2,
   "updated_at": "2026-09-08T12:25:17.18+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q19509"
  },
  {
   "id": "129d3259-209f-4c14-969d-7e9e35635dcc",
@@ -239,7 +260,8 @@
   "price": 98.21,
   "chg": 2.5,
   "updated_at": "2026-11-08T21:42:44.294451+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q11938"
  },
  {
   "id": "1378b35f-8247-44d3-bdcd-2a6a5c2563f8",
@@ -250,7 +272,8 @@
   "price": 92.15,
   "chg": 0.4,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "162f8640-9a87-4e8d-b79a-e23838dd4d4f",
@@ -261,7 +284,8 @@
   "price": 50.14,
   "chg": 7.5,
   "updated_at": "2026-11-03T22:55:04.285086+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "16c95d9d-099c-4613-9cf1-f82227cd82e6",
@@ -272,7 +296,8 @@
   "price": 84.08,
   "chg": -4.5,
   "updated_at": "2026-11-03T22:55:04.012145+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "17ecf5f2-0304-4038-917d-8f2f04a25845",
@@ -283,7 +308,8 @@
   "price": 52.51,
   "chg": -2.1,
   "updated_at": "2026-11-07T04:43:15.95688+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q1386869"
  },
  {
   "id": "18935ebb-cc18-4751-917d-600ecc1acf8b",
@@ -294,7 +320,8 @@
   "price": 86.1,
   "chg": 0.5,
   "updated_at": "2026-11-08T21:42:43.850385+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q19603"
  },
  {
   "id": "18c11b69-1865-470c-8323-848dbef9704f",
@@ -305,7 +332,8 @@
   "price": 148.54,
   "chg": -2,
   "updated_at": "2026-11-08T21:41:10.77492+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19571"
  },
  {
   "id": "1a99d179-a6a7-4a92-8890-fb6edafa3d69",
@@ -316,7 +344,8 @@
   "price": 117.57,
   "chg": -1.2,
   "updated_at": "2026-11-07T21:27:53.504662+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2768"
  },
  {
   "id": "1bc489cf-e6dd-44b4-b636-1d04bfa6c4a9",
@@ -327,7 +356,8 @@
   "price": 296.54,
   "chg": 4.5,
   "updated_at": "2026-11-08T04:30:45.507299+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2739"
  },
  {
   "id": "1c60ca3b-3c57-4157-b3d8-2bb167a2b8f9",
@@ -338,7 +368,8 @@
   "price": 87.49,
   "chg": -1.4,
   "updated_at": "2026-11-19T15:32:29.148791+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q198032"
  },
  {
   "id": "1c85ff76-bc83-4525-8be8-887dc4e6e9b1",
@@ -349,7 +380,8 @@
   "price": 163.37,
   "chg": 2.1,
   "updated_at": "2026-11-08T04:30:54.625847+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q75729"
  },
  {
   "id": "1cc8b3cb-d79c-4ce0-b525-b4c93135fa40",
@@ -360,7 +392,8 @@
   "price": 109.21,
   "chg": 3.5,
   "updated_at": "2026-11-04T23:12:56.263306+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "1e159d58-c997-44c5-9bf1-8eff11aaf353",
@@ -371,7 +404,8 @@
   "price": 64,
   "chg": -4.8,
   "updated_at": "2026-11-08T21:42:25.704076+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q740637"
  },
  {
   "id": "1e93b606-d621-41b0-86bb-faf0398b59c7",
@@ -382,7 +416,8 @@
   "price": 67.01,
   "chg": -1.8,
   "updated_at": "2026-11-07T21:28:08.65218+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q692691"
  },
  {
   "id": "1ed9e6ee-63ac-4992-a3d6-e7b72c0106e0",
@@ -393,7 +428,20 @@
   "price": 41.58,
   "chg": -2,
   "updated_at": "2026-11-08T21:42:44.06561+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q24711"
+ },
+ {
+  "id": "1f13e1bb-2234-4715-b329-59d0b17aa7cc",
+  "league": "championship",
+  "league_label": "Championship",
+  "name": "Middlesbrough",
+  "tier": "ENG · TIER 2",
+  "price": 55,
+  "chg": 0,
+  "updated_at": "2026-11-19T16:34:02.403+00:00",
+  "league_order": 110,
+  "wikidata_id": "Q18661"
  },
  {
   "id": "1f46c80b-1b19-45f3-88a7-bfe6a5e445f0",
@@ -404,18 +452,20 @@
   "price": 69.95,
   "chg": 0.8,
   "updated_at": "2026-11-07T21:27:53.504662+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q13391"
  },
  {
   "id": "1fa3eef1-02be-4e39-b616-4e846831d67c",
   "league": "brazil",
   "league_label": "Série A",
-  "name": "Cruziero",
+  "name": "Cruzeiro",
   "tier": "BRA · TIER 1",
   "price": 103.5,
   "chg": 5.6,
-  "updated_at": "2026-08-29T18:54:32.916+00:00",
-  "league_order": 80
+  "updated_at": "2026-11-19T16:00:45.885+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q188277"
  },
  {
   "id": "203bfed0-3315-448a-b9e2-f00ae14e97cd",
@@ -426,7 +476,8 @@
   "price": 69.23,
   "chg": 7,
   "updated_at": "2026-11-04T23:12:57.005039+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "20aaf36f-5f52-40dc-843c-608d70cc03ba",
@@ -437,7 +488,8 @@
   "price": 68.1,
   "chg": -2.8,
   "updated_at": "2026-11-07T21:27:54.120059+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q845043"
  },
  {
   "id": "214ba634-6949-45f0-9f5b-2e9318e7b60b",
@@ -448,7 +500,8 @@
   "price": 108.4,
   "chg": -0.8,
   "updated_at": "2026-11-06T22:43:34.394549+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q10329"
  },
  {
   "id": "2398d903-172e-4d2b-80c0-5c7ccc823086",
@@ -459,7 +512,8 @@
   "price": 70.21,
   "chg": -4.2,
   "updated_at": "2026-11-08T04:30:45.507299+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q8603"
  },
  {
   "id": "25c88550-2261-48be-a8ff-eb25ef66c63d",
@@ -470,7 +524,8 @@
   "price": 57.46,
   "chg": 1.2,
   "updated_at": "2026-11-15T04:52:22.563664+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q2622870"
  },
  {
   "id": "260148fd-2508-4bab-a912-7a1af30b50c1",
@@ -481,7 +536,8 @@
   "price": 35.31,
   "chg": 3.4,
   "updated_at": "2026-11-08T04:31:00.845474+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q749589"
  },
  {
   "id": "28b326ce-aa02-4463-8cd9-903dd988c3b9",
@@ -492,7 +548,8 @@
   "price": 62.18,
   "chg": 4.5,
   "updated_at": "2026-11-06T22:43:38.562302+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q501245"
  },
  {
   "id": "29e3c828-2545-419f-9da8-58a792b2db5a",
@@ -503,7 +560,8 @@
   "price": 66.63,
   "chg": -5,
   "updated_at": "2026-11-08T21:41:46.81719+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q32494"
  },
  {
   "id": "2a72343b-1f56-4596-b0df-3c59c0b43063",
@@ -514,7 +572,8 @@
   "price": 95.1,
   "chg": -6,
   "updated_at": "2026-11-05T18:13:34.232238+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "2b605d74-1c3f-45b5-99e3-78f2f3a5c4eb",
@@ -525,7 +584,8 @@
   "price": 29.43,
   "chg": -4.2,
   "updated_at": "2026-11-02T04:30:36.114614+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q216503"
  },
  {
   "id": "2c7d24b2-7595-40a6-9136-9b4c1f10df43",
@@ -536,7 +596,8 @@
   "price": 81.78,
   "chg": 3.1,
   "updated_at": "2026-11-07T21:27:54.120059+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q1900"
  },
  {
   "id": "2ca01373-a810-41eb-afb0-529d295a9ab3",
@@ -547,7 +608,8 @@
   "price": 97.53,
   "chg": -1.5,
   "updated_at": "2026-11-07T21:28:09.582697+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q38245"
  },
  {
   "id": "30a2aca5-7afc-4f13-aeee-802262709016",
@@ -555,10 +617,11 @@
   "league_label": "Série A",
   "name": "Botafogo",
   "tier": "BRA · TIER 1",
-  "price": 71.53,
-  "chg": 3,
-  "updated_at": "2026-11-05T05:11:33.155109+00:00",
-  "league_order": 80
+  "price": 65.45,
+  "chg": -8.5,
+  "updated_at": "2026-11-19T16:02:46.930806+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q80958"
  },
  {
   "id": "319fef8d-2bc5-4461-a6fc-595556b2e7cc",
@@ -569,7 +632,8 @@
   "price": 160.96,
   "chg": 2.8,
   "updated_at": "2026-11-07T21:28:10.12629+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q4512"
  },
  {
   "id": "3361f64d-90eb-41f6-8fe9-71ccaa1c69d6",
@@ -580,7 +644,8 @@
   "price": 24.4,
   "chg": 6,
   "updated_at": "2026-11-07T21:28:28.354733+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19446"
  },
  {
   "id": "3700c2a0-216a-4c5f-90df-5486bdbe27eb",
@@ -591,7 +656,8 @@
   "price": 151.95,
   "chg": 2,
   "updated_at": "2026-11-08T21:41:46.81719+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q22707"
  },
  {
   "id": "37a33aa0-d041-425d-b154-c18dad088e83",
@@ -602,7 +668,8 @@
   "price": 132.69,
   "chg": 0.9,
   "updated_at": "2026-11-07T21:27:48.595138+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8687"
  },
  {
   "id": "38267094-3b10-4919-9ac1-ba1880a57fa7",
@@ -613,7 +680,8 @@
   "price": 49,
   "chg": 0,
   "updated_at": "2026-09-24T18:45:31.179853+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "386243ef-5340-4600-8c08-c8a329d39d2f",
@@ -624,7 +692,8 @@
   "price": 219.35,
   "chg": 3,
   "updated_at": "2026-11-08T21:41:10.77492+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19453"
  },
  {
   "id": "388b0d88-daa4-4e2c-b34c-3a97aad641d3",
@@ -635,7 +704,8 @@
   "price": 42.67,
   "chg": -0.8,
   "updated_at": "2026-11-07T21:28:47.044925+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q1386850"
  },
  {
   "id": "3932b67b-43d6-4864-9961-30e54b9ee73a",
@@ -646,7 +716,8 @@
   "price": 392.23,
   "chg": -11,
   "updated_at": "2026-11-08T18:30:56.231351+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q50602"
  },
  {
   "id": "3b074bb9-3b19-4942-a300-e0bfce52ac50",
@@ -657,7 +728,8 @@
   "price": 59.88,
   "chg": -0.8,
   "updated_at": "2026-11-07T21:28:25.398328+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19500"
  },
  {
   "id": "3b3c0568-2ef7-4155-a5c0-265c4fe6a69c",
@@ -668,7 +740,8 @@
   "price": 361.72,
   "chg": 2.5,
   "updated_at": "2026-11-08T21:41:32.943093+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q631"
  },
  {
   "id": "3bc10e89-be5a-44dc-8b1f-6beacd896327",
@@ -679,7 +752,8 @@
   "price": 77.11,
   "chg": 3,
   "updated_at": "2026-11-04T23:12:57.393422+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "3d4fd50c-b597-49d1-b0ed-bd2dc5cd9f3a",
@@ -690,7 +764,8 @@
   "price": 98.81,
   "chg": -0.5,
   "updated_at": "2026-11-08T21:42:43.850385+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q81888"
  },
  {
   "id": "425e96b7-e682-49c2-a2a3-df3acd6d169a",
@@ -701,7 +776,8 @@
   "price": 56.98,
   "chg": -1.8,
   "updated_at": "2026-11-08T21:42:26.110541+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q223450"
  },
  {
   "id": "4375bfb3-61e4-4a6d-bfdc-77efe4c6f7e9",
@@ -712,7 +788,8 @@
   "price": 30.38,
   "chg": -12,
   "updated_at": "2026-11-08T18:30:57.992652+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19456"
  },
  {
   "id": "45d4c429-81f8-44ab-9642-9768ee67a8ec",
@@ -723,7 +800,8 @@
   "price": 138.8,
   "chg": 13.5,
   "updated_at": "2026-11-08T18:30:56.231351+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19490"
  },
  {
   "id": "4684d70d-f763-4652-aac1-c6701036d022",
@@ -734,7 +812,8 @@
   "price": 39.6,
   "chg": 1.3,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "46f3aec9-004a-4b62-aaf4-b6695444df65",
@@ -745,7 +824,8 @@
   "price": 203.34,
   "chg": -3.8,
   "updated_at": "2026-11-19T15:32:27.785952+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q80964"
  },
  {
   "id": "481d3f5e-ecea-43ba-a553-d85aa8db0881",
@@ -756,7 +836,8 @@
   "price": 33.64,
   "chg": 1.5,
   "updated_at": "2026-11-07T21:28:25.398328+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18529"
  },
  {
   "id": "48aeae9e-9013-4f7b-91a7-8c72413cec82",
@@ -767,7 +848,8 @@
   "price": 80.55,
   "chg": 0.6,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "49355849-c2b0-4c7f-9f55-f2d7713a3725",
@@ -778,7 +860,8 @@
   "price": 88.19,
   "chg": -3,
   "updated_at": "2026-11-08T21:41:27.312612+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8806"
  },
  {
   "id": "4c38b156-86f2-4fac-ac62-db326e98d5d4",
@@ -789,7 +872,8 @@
   "price": 56.14,
   "chg": 2.5,
   "updated_at": "2026-11-07T04:43:15.95688+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q1387105"
  },
  {
   "id": "4ecce271-e3ff-4ab5-921a-f1c7cb3ebe41",
@@ -800,7 +884,8 @@
   "price": 66.9,
   "chg": 0.2,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "50964038-bb28-4dde-aa2a-64551ef6de31",
@@ -811,7 +896,8 @@
   "price": 48.34,
   "chg": 2.1,
   "updated_at": "2026-11-19T15:32:27.365871+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q2552872"
  },
  {
   "id": "50bad139-350b-4b5a-9709-818d96ba935d",
@@ -822,7 +908,8 @@
   "price": 26.37,
   "chg": 6.5,
   "updated_at": "2026-11-07T21:28:27.356606+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18662"
  },
  {
   "id": "51734885-9a57-450a-9f5a-e923df0d08b0",
@@ -833,7 +920,8 @@
   "price": 90.33,
   "chg": 15,
   "updated_at": "2026-11-05T18:13:31.633086+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "5310ee6f-a15b-42b4-950c-4b2c8732c946",
@@ -844,7 +932,8 @@
   "price": 81.31,
   "chg": 1.5,
   "updated_at": "2026-11-08T21:41:26.987451+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8823"
  },
  {
   "id": "5399b73c-f694-4065-81ff-329e17da294a",
@@ -855,7 +944,8 @@
   "price": 35.25,
   "chg": 2.2,
   "updated_at": "2026-11-07T21:28:26.796004+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18723"
  },
  {
   "id": "5432f9f1-9a29-4845-9a43-7bacd164f784",
@@ -866,7 +956,8 @@
   "price": 144.43,
   "chg": 2.2,
   "updated_at": "2026-11-08T21:41:26.554634+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8723"
  },
  {
   "id": "544205f7-2855-47c0-9cc5-6e06a01257d4",
@@ -877,7 +968,8 @@
   "price": 106.78,
   "chg": 11.5,
   "updated_at": "2026-11-09T13:44:14.216218+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q18739"
  },
  {
   "id": "548584b7-abf1-4be2-8540-de67d166d725",
@@ -888,7 +980,8 @@
   "price": 40.42,
   "chg": 6.5,
   "updated_at": "2026-11-08T21:42:25.909079+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q216459"
  },
  {
   "id": "5585c147-046f-41d7-be83-0d380039e678",
@@ -899,7 +992,8 @@
   "price": 252.23,
   "chg": -1.5,
   "updated_at": "2026-11-08T21:41:32.281104+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2609"
  },
  {
   "id": "56d14668-b4b6-41f2-9c42-9747975e9c81",
@@ -910,7 +1004,8 @@
   "price": 71.15,
   "chg": 2.5,
   "updated_at": "2026-11-03T22:55:04.137463+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "5afa5d35-1522-440f-8df6-5b0c88018734",
@@ -921,7 +1016,8 @@
   "price": 65.77,
   "chg": 2.8,
   "updated_at": "2026-11-09T04:43:51.687183+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2052"
  },
  {
   "id": "5c1e4134-2a70-4ff1-8331-c921e8d2e8b9",
@@ -932,7 +1028,8 @@
   "price": 181.46,
   "chg": 2.5,
   "updated_at": "2026-11-08T21:41:46.325913+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q104761"
  },
  {
   "id": "5ced4a7d-7e60-424c-aad2-6e3595842485",
@@ -943,7 +1040,8 @@
   "price": 61.3,
   "chg": 0.8,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "5de185b0-c790-4b4c-89fd-548917550a7b",
@@ -954,7 +1052,8 @@
   "price": 27.52,
   "chg": 3.5,
   "updated_at": "2026-11-06T22:43:53.199218+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19470"
  },
  {
   "id": "5e9602c7-2681-469d-98f7-d9a1a5ee0459",
@@ -965,7 +1064,8 @@
   "price": 250.43,
   "chg": 1.2,
   "updated_at": "2026-11-07T21:28:08.65218+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q41420"
  },
  {
   "id": "5f8de0fd-af27-48ae-ad1b-c4b5562d3fab",
@@ -976,7 +1076,8 @@
   "price": 97.2,
   "chg": 0.9,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "5fd33366-d93c-4957-8b72-8b185176d5e6",
@@ -987,7 +1088,8 @@
   "price": 287.2,
   "chg": -3.2,
   "updated_at": "2026-11-09T04:43:48.296625+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8701"
  },
  {
   "id": "60f7e848-41cd-4cf3-b9eb-11971d78c791",
@@ -998,7 +1100,8 @@
   "price": 51,
   "chg": 0,
   "updated_at": "2026-09-24T18:44:40.212751+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "61190d99-de07-434c-a43b-92a71084daa6",
@@ -1009,7 +1112,8 @@
   "price": 119.42,
   "chg": 2.5,
   "updated_at": "2026-11-04T23:12:56.657854+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "6403f947-7385-4e86-9322-8eccb5754fd1",
@@ -1020,7 +1124,8 @@
   "price": 85.71,
   "chg": -3.5,
   "updated_at": "2026-11-08T21:41:46.325913+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q104770"
  },
  {
   "id": "689c5e9f-b0b3-4aa7-8ec5-75c4f239e1b9",
@@ -1031,7 +1136,8 @@
   "price": 105.02,
   "chg": -2.4,
   "updated_at": "2026-11-07T21:28:10.12629+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q51976"
  },
  {
   "id": "694fc155-2440-4481-896c-3c18b8e1aca7",
@@ -1042,7 +1148,8 @@
   "price": 56.6,
   "chg": -5.5,
   "updated_at": "2026-11-04T23:12:57.005039+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "6b4f7b6f-2abe-4d2f-8e72-4cd959fc71cc",
@@ -1053,7 +1160,8 @@
   "price": 89.44,
   "chg": -4,
   "updated_at": "2026-11-08T21:41:10.520827+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q9653"
  },
  {
   "id": "6b6584e2-452c-4aca-ae10-f5d6285255ab",
@@ -1064,7 +1172,8 @@
   "price": 17.42,
   "chg": 4.8,
   "updated_at": "2026-11-07T21:28:28.809224+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19612"
  },
  {
   "id": "6c156d8f-155a-43f3-97e7-464ce2edb63a",
@@ -1075,7 +1184,8 @@
   "price": 168.83,
   "chg": 3.5,
   "updated_at": "2026-11-06T22:43:29.601562+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q5794"
  },
  {
   "id": "6d847432-7d2d-4d6d-b7a8-ef28e4789578",
@@ -1086,7 +1196,8 @@
   "price": 89.83,
   "chg": -1.5,
   "updated_at": "2026-11-15T04:52:22.563664+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q270995"
  },
  {
   "id": "6ded7d81-5661-4c67-a6df-f32add639362",
@@ -1097,7 +1208,8 @@
   "price": 31.01,
   "chg": -4,
   "updated_at": "2026-11-07T21:28:52.369807+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q209895"
  },
  {
   "id": "6df5c64f-f620-4804-a586-7ed5b7adea5d",
@@ -1105,10 +1217,11 @@
   "league_label": "Série A",
   "name": "Vasco",
   "tier": "BRA · TIER 1",
-  "price": 60.67,
-  "chg": 2.2,
-  "updated_at": "2026-11-15T04:52:23.201808+00:00",
-  "league_order": 80
+  "price": 63.4,
+  "chg": 4.5,
+  "updated_at": "2026-11-20T03:58:45.490435+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q5014111"
  },
  {
   "id": "6e94f820-0cda-4554-bc93-1bca8d1a8a80",
@@ -1119,7 +1232,8 @@
   "price": 160.16,
   "chg": 2.2,
   "updated_at": "2026-11-08T21:41:32.709655+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q1886"
  },
  {
   "id": "6eb45e80-f2e9-4337-a57d-84b07865d0fc",
@@ -1130,7 +1244,8 @@
   "price": 187.52,
   "chg": 1.2,
   "updated_at": "2026-11-09T04:44:48.04069+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q131499"
  },
  {
   "id": "7192b2b8-3791-49b3-b399-bbd9333dcdc8",
@@ -1141,7 +1256,8 @@
   "price": 44.7,
   "chg": 0.6,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "72cde8a7-2a9e-4e0e-a647-c47b8a5dbfe9",
@@ -1152,7 +1268,8 @@
   "price": 88.4,
   "chg": 0.3,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "72d4b36f-8e5f-4f0c-920d-28a7a0145b28",
@@ -1163,7 +1280,8 @@
   "price": 148.44,
   "chg": 3.8,
   "updated_at": "2026-11-08T21:41:52.756222+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q19516"
  },
  {
   "id": "72e1f797-caf5-43c3-a58b-88fd9ed2b805",
@@ -1174,7 +1292,8 @@
   "price": 131.71,
   "chg": 1.8,
   "updated_at": "2026-11-08T21:41:26.769158+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q10315"
  },
  {
   "id": "732545c0-c591-47f3-8036-b114c0457278",
@@ -1185,7 +1304,8 @@
   "price": 101.27,
   "chg": -7,
   "updated_at": "2026-11-09T13:44:11.857615+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q134241"
  },
  {
   "id": "744d0d85-ae7c-446f-a8fd-b87b53ee08e8",
@@ -1196,7 +1316,8 @@
   "price": 15.39,
   "chg": -1.8,
   "updated_at": "2026-11-07T21:28:26.796004+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18519"
  },
  {
   "id": "776abf0a-b470-4853-86e6-73c7ede73b2d",
@@ -1207,7 +1328,8 @@
   "price": 84.3,
   "chg": -0.2,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "7852c006-b1ed-43f9-9549-f4222e7746f8",
@@ -1218,7 +1340,20 @@
   "price": 79.54,
   "chg": 1.5,
   "updated_at": "2026-11-08T21:42:44.06561+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q191264"
+ },
+ {
+  "id": "7879efff-02e4-4af1-ab7e-5d51d086930e",
+  "league": "championship",
+  "league_label": "Championship",
+  "name": "Watford",
+  "tier": "ENG · TIER 2",
+  "price": 20.5,
+  "chg": 2.5,
+  "updated_at": "2026-11-19T16:24:54.858727+00:00",
+  "league_order": 110,
+  "wikidata_id": "Q2714"
  },
  {
   "id": "7940329e-2020-4958-82f8-65f117b0033a",
@@ -1229,7 +1364,8 @@
   "price": 52.5,
   "chg": -4,
   "updated_at": "2026-11-08T21:41:53.468875+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q328658"
  },
  {
   "id": "7ebe1d76-ed6d-4199-afc9-efe2d73cafb0",
@@ -1240,7 +1376,8 @@
   "price": 105.95,
   "chg": -1.5,
   "updated_at": "2026-11-19T15:32:28.406872+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q506832"
  },
  {
   "id": "81cd7deb-c777-4e97-b97b-b12b4c5a2ba1",
@@ -1251,7 +1388,8 @@
   "price": 95.6,
   "chg": 0.7,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "82a8afdb-7b2d-42f1-b5a5-e1d108cc6ee3",
@@ -1262,7 +1400,8 @@
   "price": 58.12,
   "chg": -5,
   "updated_at": "2026-11-07T21:28:28.354733+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18747"
  },
  {
   "id": "82b4f5d6-203d-4668-aa14-f3ae5e93a3d5",
@@ -1273,7 +1412,8 @@
   "price": 55.69,
   "chg": -3.2,
   "updated_at": "2026-11-07T21:28:12.982167+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q182876"
  },
  {
   "id": "832bcadd-bbf5-4476-aa99-f4e6253a411a",
@@ -1284,7 +1424,8 @@
   "price": 92.88,
   "chg": -4.5,
   "updated_at": "2026-11-08T21:41:46.553579+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q141971"
  },
  {
   "id": "85f574ce-3326-462f-9ef4-20ef86a70317",
@@ -1295,7 +1436,8 @@
   "price": 175.61,
   "chg": 3.8,
   "updated_at": "2026-11-09T04:43:57.535881+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q132885"
  },
  {
   "id": "880ef1d5-69eb-4008-b00e-eaa3f65e13db",
@@ -1306,7 +1448,8 @@
   "price": 37.1,
   "chg": 0.7,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "893911be-5f13-4948-b629-2424b39cd3ee",
@@ -1317,7 +1460,8 @@
   "price": 33.4,
   "chg": 0.5,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "8b49c8db-30f2-4826-ac10-024e75017a6e",
@@ -1328,7 +1472,8 @@
   "price": 66.57,
   "chg": 1.2,
   "updated_at": "2026-11-19T15:32:29.148791+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q221695"
  },
  {
   "id": "8cbd90ea-2843-42db-bd7e-8d0853a1711e",
@@ -1339,7 +1484,8 @@
   "price": 106.34,
   "chg": 5,
   "updated_at": "2026-11-03T22:55:04.012145+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "8d7ced63-17b1-4d7d-9e12-00169fdde883",
@@ -1350,7 +1496,8 @@
   "price": 82.41,
   "chg": -1.5,
   "updated_at": "2026-11-08T04:30:37.839766+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19477"
  },
  {
   "id": "8e41aabc-7f70-4f60-b8fa-7dc92ec5912a",
@@ -1361,7 +1508,8 @@
   "price": 128.65,
   "chg": 6.5,
   "updated_at": "2026-11-08T04:30:37.610557+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q1128631"
  },
  {
   "id": "8e439695-7ab3-410d-918b-4f1c23c86265",
@@ -1372,7 +1520,8 @@
   "price": 30.69,
   "chg": -2.5,
   "updated_at": "2026-11-08T21:42:44.294451+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q875120"
  },
  {
   "id": "8f3d006f-5ef8-4817-9f68-b656252c22e1",
@@ -1383,7 +1532,8 @@
   "price": 235.49,
   "chg": -3,
   "updated_at": "2026-11-08T21:41:11.024295+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q18656"
  },
  {
   "id": "900f1870-f7e3-4498-96c4-f4513b3bbf00",
@@ -1394,7 +1544,8 @@
   "price": 36.2,
   "chg": -5,
   "updated_at": "2026-11-01T04:29:07.154907+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q634829"
  },
  {
   "id": "91f6dfce-7872-44e1-aad8-2d5225a5a815",
@@ -1405,7 +1556,8 @@
   "price": 67.15,
   "chg": -0.5,
   "updated_at": "2026-11-07T21:27:48.595138+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q10286"
  },
  {
   "id": "92f57417-b417-474d-893a-33a5327242d3",
@@ -1416,7 +1568,8 @@
   "price": 34.51,
   "chg": 3,
   "updated_at": "2026-11-07T21:28:25.959879+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18736"
  },
  {
   "id": "9377e047-e07f-4e6a-85c8-88aa7bbea655",
@@ -1427,7 +1580,8 @@
   "price": 231.69,
   "chg": -7.5,
   "updated_at": "2026-11-09T13:44:14.216218+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q9616"
  },
  {
   "id": "94441c1a-0a19-4e16-8f3d-086ee17d891a",
@@ -1438,7 +1592,8 @@
   "price": 34.51,
   "chg": -1.5,
   "updated_at": "2026-11-07T21:28:29.223186+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18659"
  },
  {
   "id": "98138592-4b64-4c90-ac7c-ebe03e647ca5",
@@ -1449,7 +1604,8 @@
   "price": 654.38,
   "chg": 3.8,
   "updated_at": "2026-11-09T04:43:48.296625+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q7156"
  },
  {
   "id": "9b662444-2f4d-43a6-bdc3-5181761ae05e",
@@ -1460,7 +1616,8 @@
   "price": 83.54,
   "chg": -0.8,
   "updated_at": "2026-11-07T21:27:48.017994+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8780"
  },
  {
   "id": "a0c23f61-1b2b-4bae-b482-4770d17405f4",
@@ -1471,7 +1628,8 @@
   "price": 45.89,
   "chg": -5,
   "updated_at": "2026-11-03T22:55:03.851835+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "a0e65844-df4a-4e32-af2d-3b5f1b14607b",
@@ -1482,7 +1640,8 @@
   "price": 100.43,
   "chg": -2.1,
   "updated_at": "2026-11-08T21:41:26.769158+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q10300"
  },
  {
   "id": "a116893c-c18f-4c9b-b141-10388eea69c5",
@@ -1493,7 +1652,8 @@
   "price": 56.09,
   "chg": -3.5,
   "updated_at": "2026-11-08T21:41:53.683988+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q845137"
  },
  {
   "id": "a19aacdd-4afa-48b5-856f-119f4acac0dd",
@@ -1501,10 +1661,11 @@
   "league_label": "Série A",
   "name": "Internacional",
   "tier": "BRA · TIER 1",
-  "price": 75.36,
-  "chg": 2.5,
-  "updated_at": "2026-11-04T04:53:59.436482+00:00",
-  "league_order": 80
+  "price": 70.46,
+  "chg": -6.5,
+  "updated_at": "2026-11-20T03:58:45.490435+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q80845"
  },
  {
   "id": "a1bd536f-423e-4c8e-bd88-d20f99abd80d",
@@ -1515,7 +1676,8 @@
   "price": 95.64,
   "chg": -4,
   "updated_at": "2026-11-03T22:55:03.932384+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "a339310c-61a4-4202-a729-03f792d72a48",
@@ -1526,7 +1688,8 @@
   "price": 65.16,
   "chg": -3.8,
   "updated_at": "2026-11-07T21:28:28.809224+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q18732"
  },
  {
   "id": "a3f67825-5d35-453e-bc71-1e7a0293130f",
@@ -1537,7 +1700,8 @@
   "price": 41.2,
   "chg": 0.1,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "a3f6f45f-3cb8-4005-b88f-5d351be03250",
@@ -1548,7 +1712,8 @@
   "price": 36.22,
   "chg": -4.2,
   "updated_at": "2026-11-07T21:28:28.587294+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19487"
  },
  {
   "id": "a5e7927f-0ca4-45da-ae72-4a85d0b1a7a2",
@@ -1559,7 +1724,8 @@
   "price": 53.42,
   "chg": -0.8,
   "updated_at": "2026-11-08T04:30:50.081561+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q501693"
  },
  {
   "id": "a6daeaa2-9824-4982-b785-e28cda8f9c14",
@@ -1570,7 +1736,8 @@
   "price": 70.65,
   "chg": 1.1,
   "updated_at": "2026-11-07T21:27:48.017994+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8760"
  },
  {
   "id": "a8c481ee-9e99-483d-8c8c-2794c90e1fd3",
@@ -1581,7 +1748,8 @@
   "price": 118.5,
   "chg": 4.6,
   "updated_at": "2026-08-31T07:39:39.595372+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q106394"
  },
  {
   "id": "a9fc2668-3f29-4803-9620-7cadd9a4738c",
@@ -1592,7 +1760,8 @@
   "price": 95.93,
   "chg": -3.5,
   "updated_at": "2026-11-06T22:43:43.091125+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q101959"
  },
  {
   "id": "aa3d8984-ad23-4106-9481-ac9e7914dd89",
@@ -1603,7 +1772,8 @@
   "price": 29.44,
   "chg": 1.2,
   "updated_at": "2026-11-06T22:44:03.097209+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q269151"
  },
  {
   "id": "aa53529a-d489-4cdf-a6b7-e7b21eae0138",
@@ -1614,7 +1784,8 @@
   "price": 37.33,
   "chg": -1.2,
   "updated_at": "2026-11-07T21:28:51.975572+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q854167"
  },
  {
   "id": "abe68932-572f-4fff-a593-104f9e42c033",
@@ -1625,7 +1796,8 @@
   "price": 92.93,
   "chg": 4.5,
   "updated_at": "2026-11-06T22:43:43.091125+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q51974"
  },
  {
   "id": "ad91918c-ae08-4690-ac7c-19373a24dd97",
@@ -1636,7 +1808,8 @@
   "price": 94.4,
   "chg": 3.5,
   "updated_at": "2026-11-06T22:43:47.64156+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q19518"
  },
  {
   "id": "b075807d-d77b-49d3-ab3e-9085f9b296bf",
@@ -1647,7 +1820,8 @@
   "price": 99.54,
   "chg": 4,
   "updated_at": "2026-11-03T22:55:03.932384+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "b10d77c3-b72d-4ba1-958f-e4af2adaa822",
@@ -1658,7 +1832,8 @@
   "price": 27.3,
   "chg": -2.5,
   "updated_at": "2026-11-07T21:28:25.959879+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19604"
  },
  {
   "id": "b142da62-d022-40c7-9433-e05d39d561b1",
@@ -1669,7 +1844,8 @@
   "price": 31.1,
   "chg": -1,
   "updated_at": "2026-08-29T19:10:22.654472+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q2536715"
  },
  {
   "id": "b1a03e30-b082-4b14-bd72-6967525a4587",
@@ -1680,7 +1856,8 @@
   "price": 479.05,
   "chg": 3.4,
   "updated_at": "2026-11-07T21:28:09.161786+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q15789"
  },
  {
   "id": "b26bc5ec-c012-4b31-a0a6-930bbc313640",
@@ -1691,7 +1868,8 @@
   "price": 38.5,
   "chg": -1.8,
   "updated_at": "2026-11-08T04:30:54.625847+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q1346314"
  },
  {
   "id": "b429e465-b799-482e-b9bd-f84758ffffa7",
@@ -1702,7 +1880,8 @@
   "price": 27.78,
   "chg": 1.2,
   "updated_at": "2026-11-07T21:28:47.044925+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q1046440"
  },
  {
   "id": "b520ede0-3933-43af-b5f0-1eb1fbc7816e",
@@ -1713,7 +1892,8 @@
   "price": 89.36,
   "chg": 6.5,
   "updated_at": "2026-11-08T21:41:53.241855+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q218372"
  },
  {
   "id": "b5c5bba4-81d5-47cc-98ba-d91ccc202cf5",
@@ -1724,7 +1904,8 @@
   "price": 60.14,
   "chg": 7.5,
   "updated_at": "2026-11-04T23:12:57.848234+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "b7a76d53-b47e-4d20-a3ae-b196461bd79e",
@@ -1735,7 +1916,8 @@
   "price": 82.6,
   "chg": -3.8,
   "updated_at": "2026-09-17T00:57:24.267+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2693"
  },
  {
   "id": "b7bcd7fd-9d42-44cd-b8a9-093d1d143f53",
@@ -1743,10 +1925,11 @@
   "league_label": "Série A",
   "name": "Fluminense",
   "tier": "BRA · TIER 1",
-  "price": 118.36,
-  "chg": 7.2,
-  "updated_at": "2026-11-07T04:43:19.89489+00:00",
-  "league_order": 80
+  "price": 122.15,
+  "chg": 3.2,
+  "updated_at": "2026-11-20T03:58:46.258201+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q80987"
  },
  {
   "id": "b8c34495-0f4c-478a-9c4a-4509712f62da",
@@ -1757,7 +1940,8 @@
   "price": 129.03,
   "chg": -3.5,
   "updated_at": "2026-11-08T21:41:53.024917+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q180305"
  },
  {
   "id": "ba5f0ab9-09fc-481a-9718-80473c136174",
@@ -1768,7 +1952,8 @@
   "price": 79.97,
   "chg": -2.1,
   "updated_at": "2026-11-07T21:28:09.161786+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q105254"
  },
  {
   "id": "c0063e7d-d9ce-4c7e-a8d3-b18663b67fae",
@@ -1779,7 +1964,8 @@
   "price": 73.73,
   "chg": 0.6,
   "updated_at": "2026-11-06T22:43:34.394549+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q223620"
  },
  {
   "id": "c166399a-3c82-4693-896e-c37dfb515dc8",
@@ -1790,7 +1976,8 @@
   "price": 32.2,
   "chg": 0.4,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "c1eef1fb-79ca-47c3-8c67-98bc8d261ad4",
@@ -1801,7 +1988,8 @@
   "price": 56.34,
   "chg": 5,
   "updated_at": "2026-11-04T23:12:58.199526+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "c241816c-f19e-410a-aa46-871ecf900be6",
@@ -1812,7 +2000,8 @@
   "price": 73.99,
   "chg": -3.5,
   "updated_at": "2026-11-03T22:55:03.756953+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "c2b43cb8-b16e-4275-9f0d-9f0a492b7f1f",
@@ -1823,7 +2012,8 @@
   "price": 224.2,
   "chg": 1.5,
   "updated_at": "2026-11-08T21:41:11.024295+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q18711"
  },
  {
   "id": "c46e0622-9903-4bc0-a6d1-aae6e920d818",
@@ -1834,7 +2024,8 @@
   "price": 47.3,
   "chg": 0.9,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "c5a8fc2f-523f-4299-a6d4-2d7e822a763c",
@@ -1845,7 +2036,8 @@
   "price": 106.67,
   "chg": -3.5,
   "updated_at": "2026-11-08T21:41:09.711413+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19467"
  },
  {
   "id": "c6e97ae2-4073-4cc8-a56c-ce9cbb03f5f3",
@@ -1856,7 +2048,8 @@
   "price": 36.4,
   "chg": 0.4,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "c7151960-525a-45d1-ba8e-8e2237ff58af",
@@ -1867,7 +2060,8 @@
   "price": 48.6,
   "chg": 0.3,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "c7928e06-c483-4150-8893-9e8a87174b3e",
@@ -1878,7 +2072,8 @@
   "price": 49.56,
   "chg": 2.2,
   "updated_at": "2026-11-08T21:41:53.024917+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q210864"
  },
  {
   "id": "c7c487a9-4012-479b-a6c1-5236b4737c43",
@@ -1889,7 +2084,8 @@
   "price": 79.88,
   "chg": 3.2,
   "updated_at": "2026-11-19T15:32:26.855591+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q80955"
  },
  {
   "id": "c8f97da2-3e2f-46c5-9a57-a133d1778d63",
@@ -1900,7 +2096,8 @@
   "price": 42.55,
   "chg": -1.5,
   "updated_at": "2026-11-04T23:12:56.657854+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "c9c1ce5d-51bb-4d44-98d4-328093469a73",
@@ -1911,7 +2108,8 @@
   "price": 44.71,
   "chg": -3.5,
   "updated_at": "2026-11-07T21:27:47.444903+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q8857"
  },
  {
   "id": "c9fa357f-9838-4eb9-bebf-af24f911455e",
@@ -1922,7 +2120,8 @@
   "price": 52,
   "chg": 0,
   "updated_at": "2026-09-24T18:43:43.236362+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "ca58a256-1322-4227-a70b-42f060762830",
@@ -1933,7 +2132,8 @@
   "price": 456.54,
   "chg": 1.2,
   "updated_at": "2026-11-08T04:30:50.081561+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q483020"
  },
  {
   "id": "ca8f4b2f-0983-4361-b2c5-68f24b849e6e",
@@ -1944,7 +2144,8 @@
   "price": 188.11,
   "chg": 4.2,
   "updated_at": "2026-11-07T21:27:54.643314+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q1893"
  },
  {
   "id": "ce5db284-3b0b-447f-b641-4371c83f4c17",
@@ -1955,7 +2156,8 @@
   "price": 73.01,
   "chg": 5.5,
   "updated_at": "2026-11-03T22:55:03.851835+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "cfe0a108-309c-470f-bf70-eb08a1efc934",
@@ -1966,7 +2168,8 @@
   "price": 180.29,
   "chg": 2.5,
   "updated_at": "2026-11-08T21:41:27.312612+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q12297"
  },
  {
   "id": "d00902dc-0997-4a9a-af97-2861892e4ea9",
@@ -1977,7 +2180,8 @@
   "price": 204.07,
   "chg": 1.8,
   "updated_at": "2026-11-19T15:32:28.406872+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q17479"
  },
  {
   "id": "d1c281dd-84b3-4fd7-98cb-19f449da4253",
@@ -1988,7 +2192,8 @@
   "price": 110.33,
   "chg": 3,
   "updated_at": "2026-11-04T23:12:55.535919+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "d2d5e7ac-624e-4047-8b5a-c7285abd6c59",
@@ -1999,7 +2204,8 @@
   "price": 38.45,
   "chg": 2,
   "updated_at": "2026-11-07T21:28:29.223186+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19444"
  },
  {
   "id": "d38c99e2-fb7c-4d81-aa98-7739cf0e6f93",
@@ -2010,7 +2216,8 @@
   "price": 32.74,
   "chg": -7,
   "updated_at": "2026-11-03T22:55:04.285086+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "d53f0830-06f4-4099-9142-fda1ea5c7d84",
@@ -2021,7 +2228,8 @@
   "price": 109.17,
   "chg": -2.1,
   "updated_at": "2026-11-08T21:41:32.482782+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2074"
  },
  {
   "id": "d71856af-c572-48e9-a238-8e4afe8c0683",
@@ -2032,7 +2240,8 @@
   "price": 80.74,
   "chg": 2.1,
   "updated_at": "2026-11-08T21:41:53.468875+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q48911"
  },
  {
   "id": "d9e3261c-cf7a-4903-923b-a38eb15e3dfd",
@@ -2043,7 +2252,8 @@
   "price": 66.22,
   "chg": -2,
   "updated_at": "2026-11-03T22:55:04.137463+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "da09a630-92aa-4615-acce-b58c3dec6300",
@@ -2054,7 +2264,8 @@
   "price": 152.65,
   "chg": 13,
   "updated_at": "2026-11-04T14:52:42.635917+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "da3bcbd3-de1e-4dd0-8163-a6aa5f5da23d",
@@ -2065,7 +2276,8 @@
   "price": 109.31,
   "chg": 4.5,
   "updated_at": "2026-11-07T21:28:12.982167+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q1051013"
  },
  {
   "id": "db8adc17-3bb0-4bbc-87c2-91cd3cf60a1a",
@@ -2076,7 +2288,8 @@
   "price": 58.4,
   "chg": 0.3,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "dcdf5b3f-88bd-40b5-936f-adcbb3680e56",
@@ -2087,7 +2300,8 @@
   "price": 16.51,
   "chg": -3,
   "updated_at": "2026-11-06T22:43:53.199218+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19451"
  },
  {
   "id": "dcec8665-39f1-4d5c-b0db-10fb6d5b695b",
@@ -2098,7 +2312,8 @@
   "price": 264.06,
   "chg": 1.2,
   "updated_at": "2026-11-08T21:41:32.281104+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2641"
  },
  {
   "id": "dd0be714-c7a0-4c3b-8b33-1b78f9b8e4bc",
@@ -2109,7 +2324,8 @@
   "price": 75.07,
   "chg": -6.5,
   "updated_at": "2026-11-04T23:12:57.848234+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "ddc38e23-da20-4fb8-bb2f-d41f76c5a7bf",
@@ -2120,7 +2336,8 @@
   "price": 79.65,
   "chg": 3.2,
   "updated_at": "2026-11-08T21:41:53.683988+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q185163"
  },
  {
   "id": "df14ab82-a4d0-4ec3-b9ea-e8b1fc596911",
@@ -2131,7 +2348,8 @@
   "price": 50.16,
   "chg": -14.5,
   "updated_at": "2026-11-05T18:13:31.633086+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "dffa38d1-25cd-44ba-a911-cd763051880f",
@@ -2142,7 +2360,8 @@
   "price": 29.11,
   "chg": -4.5,
   "updated_at": "2026-11-08T21:42:44.522476+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q24680"
  },
  {
   "id": "e209cc53-9717-49d6-a132-02cccdae8345",
@@ -2153,7 +2372,8 @@
   "price": 54.02,
   "chg": -5.1,
   "updated_at": "2026-11-08T21:42:25.909079+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q2410944"
  },
  {
   "id": "e29a899a-e0e4-43b1-9ea2-6ff4eaf70fb2",
@@ -2164,7 +2384,8 @@
   "price": 74.2,
   "chg": -0.4,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "e29b7820-22ef-4d5a-9e95-80c31971625d",
@@ -2175,7 +2396,8 @@
   "price": 160.32,
   "chg": -3.5,
   "updated_at": "2026-11-09T04:43:57.535881+00:00",
-  "league_order": 70
+  "league_order": 70,
+  "wikidata_id": "Q191843"
  },
  {
   "id": "e4761ba9-046a-48b0-ae8f-befdf729f15f",
@@ -2186,7 +2408,8 @@
   "price": 25.84,
   "chg": -2.8,
   "updated_at": "2026-11-08T04:31:00.845474+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q370712"
  },
  {
   "id": "e5d2fbdc-2c32-44c2-9064-1e621b9aa559",
@@ -2197,7 +2420,8 @@
   "price": 18.37,
   "chg": 5.5,
   "updated_at": "2026-11-07T21:28:27.929121+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19462"
  },
  {
   "id": "e7145a85-9843-4a31-b6ba-dc91c0bb4978",
@@ -2208,7 +2432,8 @@
   "price": 48.94,
   "chg": 4.5,
   "updated_at": "2026-11-03T22:55:03.756953+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "e7d48ea7-9dc5-46a7-a89e-a3d072600ae6",
@@ -2216,10 +2441,11 @@
   "league_label": "Série A",
   "name": "São Paulo",
   "tier": "BRA · TIER 1",
-  "price": 76.4,
-  "chg": -1.2,
-  "updated_at": "2026-11-05T05:11:33.232967+00:00",
-  "league_order": 80
+  "price": 74.49,
+  "chg": -2.5,
+  "updated_at": "2026-11-20T03:58:46.258201+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q38568"
  },
  {
   "id": "e8e86684-de20-459a-acc2-8799ddf620eb",
@@ -2230,7 +2456,8 @@
   "price": 83.1,
   "chg": 0.5,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "e9ae613a-6a8a-4e57-83a4-e8153accad0f",
@@ -2238,10 +2465,11 @@
   "league_label": "Série A",
   "name": "Corinthians",
   "tier": "BRA · TIER 1",
-  "price": 88.41,
-  "chg": 1,
-  "updated_at": "2026-11-05T05:11:33.232967+00:00",
-  "league_order": 80
+  "price": 95.31,
+  "chg": 7.8,
+  "updated_at": "2026-11-19T16:02:46.930806+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q35933"
  },
  {
   "id": "ea24b3a6-51ec-424d-984b-66893d44f193",
@@ -2252,7 +2480,8 @@
   "price": 35.9,
   "chg": 0.6,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "eb015e9f-f020-446c-850a-1bbfc996fc7f",
@@ -2263,7 +2492,8 @@
   "price": 87.32,
   "chg": -4.8,
   "updated_at": "2026-11-07T21:28:08.073656+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q97905916"
  },
  {
   "id": "ebba26e3-92cf-4991-a177-22c6798d2421",
@@ -2274,7 +2504,8 @@
   "price": 458.97,
   "chg": 2,
   "updated_at": "2026-11-08T04:30:37.839766+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q9617"
  },
  {
   "id": "ebcc537f-91a6-476f-b348-728dc8ef9ad7",
@@ -2285,7 +2516,8 @@
   "price": 51.07,
   "chg": 11.5,
   "updated_at": "2026-11-09T13:44:11.857615+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q200321"
  },
  {
   "id": "ed30ebeb-2224-448d-8868-999db9bd6f1b",
@@ -2296,7 +2528,8 @@
   "price": 70.44,
   "chg": 3,
   "updated_at": "2026-11-03T22:55:03.601579+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "ed4673ea-69d4-469d-82c9-92bdff2ce0c2",
@@ -2307,7 +2540,8 @@
   "price": 71.3,
   "chg": -3.5,
   "updated_at": "2026-11-19T15:32:26.855591+00:00",
-  "league_order": 80
+  "league_order": 80,
+  "wikidata_id": "Q478317"
  },
  {
   "id": "eef3a37a-2943-497d-bc73-c830b4a602bf",
@@ -2318,7 +2552,8 @@
   "price": 107.23,
   "chg": -4.2,
   "updated_at": "2026-11-08T04:30:41.424077+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q10333"
  },
  {
   "id": "efc0b89d-0226-45c8-9c32-2a8a63e237ec",
@@ -2329,7 +2564,8 @@
   "price": 38.58,
   "chg": -4,
   "updated_at": "2026-11-07T21:28:27.356606+00:00",
-  "league_order": 110
+  "league_order": 110,
+  "wikidata_id": "Q19458"
  },
  {
   "id": "efe62401-4bd6-4bbe-a4b8-c06ba87d1c08",
@@ -2340,7 +2576,8 @@
   "price": 29.8,
   "chg": -0.3,
   "updated_at": "2026-08-22T22:04:08.165456+00:00",
-  "league_order": 10
+  "league_order": 10,
+  "wikidata_id": null
  },
  {
   "id": "efeeacfa-3f3f-4bc0-842e-36decfc63398",
@@ -2351,7 +2588,8 @@
   "price": 69.17,
   "chg": 2.2,
   "updated_at": "2026-11-07T21:28:09.582697+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q160532"
  },
  {
   "id": "f0f0259f-f71f-445b-810d-3ffa244447ba",
@@ -2362,7 +2600,8 @@
   "price": 26,
   "chg": -4.5,
   "updated_at": "2026-09-24T15:45:20.800901+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q1071713"
  },
  {
   "id": "f1004c5b-b1b9-492b-a3a7-c4091e1e7967",
@@ -2373,7 +2612,8 @@
   "price": 81.2,
   "chg": -3.5,
   "updated_at": "2026-11-06T22:43:38.562302+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q2798"
  },
  {
   "id": "f10b6a4a-bece-463d-a149-b357e592134b",
@@ -2384,7 +2624,8 @@
   "price": 65.6,
   "chg": -3.5,
   "updated_at": "2026-11-08T21:41:32.709655+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q289482"
  },
  {
   "id": "f25ea423-fc79-4557-9802-5fd406e799f4",
@@ -2395,7 +2636,8 @@
   "price": 59.49,
   "chg": 5.2,
   "updated_at": "2026-11-08T21:42:25.704076+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q926438"
  },
  {
   "id": "f27934f6-8474-4bb4-b69f-b646e3d1a6ac",
@@ -2406,7 +2648,8 @@
   "price": 139,
   "chg": 4.5,
   "updated_at": "2026-11-08T21:41:10.520827+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19568"
  },
  {
   "id": "f2995c6e-2274-4976-a7b3-195d17ef9dd4",
@@ -2417,7 +2660,8 @@
   "price": 30.09,
   "chg": 1.5,
   "updated_at": "2026-11-09T04:44:48.04069+00:00",
-  "league_order": 100
+  "league_order": 100,
+  "wikidata_id": "Q838134"
  },
  {
   "id": "f4e6a17b-502f-4693-86ad-1b53202161dd",
@@ -2428,7 +2672,8 @@
   "price": 51.18,
   "chg": -2,
   "updated_at": "2026-11-04T23:12:56.263306+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "f5162b97-75ed-4729-8ef8-39b0055bd1bd",
@@ -2439,7 +2684,8 @@
   "price": 85.1,
   "chg": -4.5,
   "updated_at": "2026-11-08T21:41:26.554634+00:00",
-  "league_order": 40
+  "league_order": 40,
+  "wikidata_id": "Q10512"
  },
  {
   "id": "f6216655-d225-49f7-9a77-d702a0b0e75b",
@@ -2450,7 +2696,8 @@
   "price": 42.58,
   "chg": 5.5,
   "updated_at": "2026-11-08T21:42:44.522476+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q318348"
  },
  {
   "id": "f6413d11-5aeb-42e1-a82b-f8f8c2be2882",
@@ -2458,10 +2705,11 @@
   "league_label": "Série A",
   "name": "Vitória",
   "tier": "BRA · TIER 1",
-  "price": 61.26,
-  "chg": -6.5,
-  "updated_at": "2026-11-07T04:43:19.89489+00:00",
-  "league_order": 80
+  "price": 64.81,
+  "chg": 5.8,
+  "updated_at": "2026-11-20T03:58:45.970336+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q274465"
  },
  {
   "id": "f87b636c-074e-4599-9fe3-cbb9fa3774e1",
@@ -2472,7 +2720,8 @@
   "price": 241.63,
   "chg": -3.5,
   "updated_at": "2026-11-09T04:43:51.687183+00:00",
-  "league_order": 50
+  "league_order": 50,
+  "wikidata_id": "Q1422"
  },
  {
   "id": "f9c19fa8-69af-4b5d-9b25-35aae2ec006e",
@@ -2483,7 +2732,8 @@
   "price": 240.35,
   "chg": -5,
   "updated_at": "2026-11-08T04:30:37.610557+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q18741"
  },
  {
   "id": "fa30b07b-92a0-4f24-a9cd-044407ceb4af",
@@ -2494,7 +2744,8 @@
   "price": 70.65,
   "chg": -3,
   "updated_at": "2026-11-06T22:43:29.601562+00:00",
-  "league_order": 30
+  "league_order": 30,
+  "wikidata_id": "Q19580"
  },
  {
   "id": "fbb3a21e-df31-41b8-b6c2-5b9c3040ae34",
@@ -2502,10 +2753,11 @@
   "league_label": "Série A",
   "name": "Bragantino",
   "tier": "BRA · TIER 1",
-  "price": 91.89,
-  "chg": 2.5,
-  "updated_at": "2026-11-03T13:39:19.764193+00:00",
-  "league_order": 80
+  "price": 88.03,
+  "chg": -4.2,
+  "updated_at": "2026-11-20T03:58:45.970336+00:00",
+  "league_order": 80,
+  "wikidata_id": "Q541744"
  },
  {
   "id": "fbb48abb-dfd1-4166-838f-f9ed9b54f48a",
@@ -2516,7 +2768,8 @@
   "price": 15.39,
   "chg": -0.8,
   "updated_at": "2026-11-06T22:44:03.097209+00:00",
-  "league_order": 90
+  "league_order": 90,
+  "wikidata_id": "Q332664"
  },
  {
   "id": "fed82041-a3b7-442c-aa4f-3a37336cf5ab",
@@ -2527,7 +2780,8 @@
   "price": 62.24,
   "chg": -1,
   "updated_at": "2026-11-03T22:55:04.211379+00:00",
-  "league_order": 20
+  "league_order": 20,
+  "wikidata_id": null
  },
  {
   "id": "ff9ecbd3-2499-4607-8056-0e4a6e112b35",
@@ -2538,6 +2792,7 @@
   "price": 233.85,
   "chg": 5.5,
   "updated_at": "2026-11-07T21:28:08.073656+00:00",
-  "league_order": 60
+  "league_order": 60,
+  "wikidata_id": "Q702455"
  }
 ]

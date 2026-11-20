@@ -1,13 +1,13 @@
 # PitchMarket data backup
 
-Taken 2026-11-19T15:54:49Z by the nightly backup job (`.github/workflows/backup-data.yml` on `main`).
+Taken 2026-11-20T11:55:59Z by the nightly backup job (`.github/workflows/backup-data.yml` on `main`).
 Every earlier night is in this branch's history.
 
 | Table | Rows |
 |---|---|
-| `teams` | 231 |
+| `teams` | 233 |
 | `site_settings` | 9 |
-| `price_history` | 2205 |
+| `price_history` | 2223 |
 
 No player data is included: no emails, balances, holdings or trades.
 
