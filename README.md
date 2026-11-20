@@ -22,6 +22,7 @@ football-data.org ──► update-prices.js (GitHub Actions, every 6h)
 |---|---|
 | `index.html` | The public site: markets, explorer, trading, portfolio, watchlist, price alerts, leaderboard, Pro tiers. One self-contained page (inline CSS and JS, Chart.js and supabase-js from a CDN). |
 | `admin.html` | Admin dashboard: manage teams and leagues, edit site content (stored in `site_settings`), and approve or reject AI-proposed price moves. |
+| `sw.js` | Service worker. Repeat visits show the saved page and libraries straight away and refresh them in the background; Supabase data is never served from it. Bump `VERSION` in it to throw away old saved copies. |
 | `update-prices.js` | Node script that fetches finished matches, prices them with an AI and writes proposed moves to `match_events`. |
 | `.github/workflows/update-prices.yml` | Runs the updater every 6 hours (UTC) and on demand. |
 

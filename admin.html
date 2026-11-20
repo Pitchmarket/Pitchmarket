@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://ljpwxujlyqhlznasnhfk.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <title>PitchMarket Admin</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
@@ -216,6 +218,14 @@ tbody tr:last-child td{ border-bottom:none; }
 /* -- disclaimer -- */
 .disclaimer-prev{ background:#0D1712; border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
 .disclaimer-prev .editable{ font-size:11.5px; color:var(--steel-dim); line-height:1.6; display:block; }
+
+/* Cross-fade between this page and the main page (off for reduced motion). */
+@media (prefers-reduced-motion: no-preference){ @view-transition { navigation: auto; } }
+
+/* "PitchMarket has been updated" note from the service worker */
+.pm-updated{ position:fixed; z-index:200; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); display:flex; align-items:center; gap:12px; padding:10px 12px 10px 16px; border-radius:999px; background:var(--panel); border:1px solid var(--border); color:var(--chalk, #EEF3EE); box-shadow:0 10px 30px rgba(0,0,0,.35); font-size:13.5px; animation:pm-rise .25s ease-out; }
+.pm-updated button{ border:none; border-radius:999px; padding:6px 14px; background:var(--surge); color:#04241A; font-weight:700; cursor:pointer; }
+@keyframes pm-rise{ from{ transform:translate(-50%, 12px); opacity:0; } }
 </style>
 </head>
 <body>
@@ -227,7 +237,7 @@ tbody tr:last-child td{ border-bottom:none; }
 </script>
 <!-- =========================================================================== -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
 
 <div id="gate">
   <div class="gate-card">
@@ -1168,6 +1178,23 @@ document.getElementById('signOutBtn').addEventListener('click', async ()=>{
   const { data } = await sb.auth.getSession();
   if(data.session){ onAuthed(data.session.user); }
 })();
+</script>
+
+<script>
+  // Repeat visits load from the browser (sw.js). When a newer version of the
+  // page has been saved in the background, offer to reload it.
+  if('serviceWorker' in navigator && isSecureContext){
+    navigator.serviceWorker.addEventListener('message', (e)=>{
+      if(!e.data || e.data.type !== 'pm-updated' || document.getElementById('pmUpdated')) return;
+      const bar = document.createElement('div');
+      bar.id = 'pmUpdated';
+      bar.className = 'pm-updated';
+      bar.innerHTML = '<span>PitchMarket has been updated.</span> <button type="button">Refresh</button>';
+      bar.querySelector('button').onclick = ()=> location.reload();
+      document.body.appendChild(bar);
+    });
+    addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
 </script>
 </body>
 </html>
