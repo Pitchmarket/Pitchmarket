@@ -24451,5 +24451,137 @@
   "label": "Manual adjustment",
   "result": null,
   "changed_at": "2026-11-20T03:58:46.258201+00:00"
+ },
+ {
+  "id": "029ab651-169c-459d-9922-c9feef56c46d",
+  "team_id": "6403f947-7385-4e86-9322-8eccb5754fd1",
+  "price": 91.54,
+  "delta_pct": 6.8,
+  "source": "match",
+  "match_event_id": "a0709751-b73e-4431-92f3-5649fc13e9a0",
+  "label": "@ FC Bayern München 1-1",
+  "result": "D",
+  "changed_at": "2026-11-20T19:30:00+00:00"
+ },
+ {
+  "id": "c84f558f-0830-4361-abd5-9c8696e884aa",
+  "team_id": "b1a03e30-b082-4b14-bd72-6967525a4587",
+  "price": 457.49,
+  "delta_pct": -4.5,
+  "source": "match",
+  "match_event_id": "a0709751-b73e-4431-92f3-5649fc13e9a0",
+  "label": "v 1. FC Köln 1-1",
+  "result": "D",
+  "changed_at": "2026-11-20T19:30:00+00:00"
+ },
+ {
+  "id": "8bdd2249-87c2-4f81-8a3b-440d98cfdc4f",
+  "team_id": "7940329e-2020-4958-82f8-65f117b0033a",
+  "price": 50.14,
+  "delta_pct": -4.5,
+  "source": "match",
+  "match_event_id": "fc918cba-5e8d-4b30-97a4-b20cf2584024",
+  "label": "@ ES Troyes AC 1-3",
+  "result": "L",
+  "changed_at": "2026-11-20T19:45:00+00:00"
+ },
+ {
+  "id": "b3a3a87e-414d-4d23-807a-25e1fcd333dc",
+  "team_id": "a5e7927f-0ca4-45da-ae72-4a85d0b1a7a2",
+  "price": 54.76,
+  "delta_pct": 2.5,
+  "source": "match",
+  "match_event_id": "fc918cba-5e8d-4b30-97a4-b20cf2584024",
+  "label": "v Le Havre AC 3-1",
+  "result": "W",
+  "changed_at": "2026-11-20T19:45:00+00:00"
+ },
+ {
+  "id": "239e22cc-b3d4-4b6a-a8bb-5787dc75eb6d",
+  "team_id": "9b662444-2f4d-43a6-bdc3-5181761ae05e",
+  "price": 87.88,
+  "delta_pct": 5.2,
+  "source": "match",
+  "match_event_id": "5544c90f-b77c-4d3b-8285-5fe387f14a10",
+  "label": "@ Athletic Club 1-0",
+  "result": "W",
+  "changed_at": "2026-11-20T20:00:00+00:00"
+ },
+ {
+  "id": "7d5a09b1-20f3-4cf7-bca5-a1950c4ba960",
+  "team_id": "37a33aa0-d041-425d-b154-c18dad088e83",
+  "price": 126.32,
+  "delta_pct": -4.8,
+  "source": "match",
+  "match_event_id": "5544c90f-b77c-4d3b-8285-5fe387f14a10",
+  "label": "v RCD Espanyol de Barcelona 0-1",
+  "result": "L",
+  "changed_at": "2026-11-20T20:00:00+00:00"
+ },
+ {
+  "id": "ae51c66a-bf3e-499e-bad9-3b5b443d2e40",
+  "team_id": "37a33aa0-d041-425d-b154-c18dad088e83",
+  "price": 126.32,
+  "delta_pct": -4.8,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-21T02:08:11.73389+00:00"
+ },
+ {
+  "id": "e63d7727-1e09-4e63-ba27-9817e4cefa12",
+  "team_id": "9b662444-2f4d-43a6-bdc3-5181761ae05e",
+  "price": 87.88,
+  "delta_pct": 5.2,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-21T02:08:11.73389+00:00"
+ },
+ {
+  "id": "164b0e43-bbfe-4400-a990-27eeda4e03ba",
+  "team_id": "b1a03e30-b082-4b14-bd72-6967525a4587",
+  "price": 457.49,
+  "delta_pct": -4.5,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-21T02:08:16.675528+00:00"
+ },
+ {
+  "id": "5cabb349-f959-4880-ac10-9f5f078cf026",
+  "team_id": "6403f947-7385-4e86-9322-8eccb5754fd1",
+  "price": 91.54,
+  "delta_pct": 6.8,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-21T02:08:16.675528+00:00"
+ },
+ {
+  "id": "a55f22c5-b1a0-44c9-ba6c-0ca761447248",
+  "team_id": "7940329e-2020-4958-82f8-65f117b0033a",
+  "price": 50.14,
+  "delta_pct": -4.5,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-21T02:08:20.212142+00:00"
+ },
+ {
+  "id": "b00e2464-cbf0-424f-8289-c1cf1252420b",
+  "team_id": "a5e7927f-0ca4-45da-ae72-4a85d0b1a7a2",
+  "price": 54.76,
+  "delta_pct": 2.5,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-21T02:08:20.212142+00:00"
  }
 ]
