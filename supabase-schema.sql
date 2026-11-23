@@ -916,8 +916,11 @@ create or replace function public.link_reset(p_a text, p_b text)
  set search_path = public
 as $function$
 begin
-  create temp table if not exists pm_link (side text, id text, parent text, via text, depth integer, primary key (side, id)) on commit drop;
-  truncate pm_link;
+  if to_regclass('pg_temp.pm_link') is null then
+    create temp table pm_link (side text, id text, parent text, via text, depth integer, primary key (side, id)) on commit drop;
+  else
+    truncate pm_link;
+  end if;
   if p_a is not null then insert into pm_link values ('a', p_a, null, null, 0); end if;
   if p_b is not null then insert into pm_link values ('b', p_b, null, null, 0); end if;
 end;
