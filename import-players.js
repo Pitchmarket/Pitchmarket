@@ -12,12 +12,16 @@
 //   3. Matches each squad player to Wikidata (CC0, free to use) by birth
 //      date and name, for fame (how many Wikipedia languages have a page
 //      on them) and continent.
-//   4. Fetches club-by-club careers from Wikidata (years, appearances,
-//      goals, loans) for the better-known players, for Journeyman and
-//      Link-Up.
-//   5. Writes them to `players` and `player_careers`. Players no longer in
-//      a squad are marked inactive rather than deleted, so a puzzle already
-//      in progress keeps working.
+//   4. Fetches every matched player's club-by-club career from Wikidata
+//      (years, appearances, goals, loans) for Journeyman and Link-Up, and
+//      their senior national-team spells so Link-Up can link international
+//      teammates too.
+//   5. Writes them to `players`, `player_careers` and `player_intl`.
+//      Players no longer in a squad are marked inactive rather than deleted,
+//      so a puzzle already in progress keeps working.
+//
+// Every squad player in the nine leagues is kept, including players at
+// clubs that aren't listed for trading on the site.
 //
 // Needs FOOTBALL_DATA_API_KEY, SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
 // (the price updater's secrets). `node import-players.js --dry-run <folder>`
@@ -53,9 +57,9 @@ const CLUB_OVERRIDES = {
   'Académico de Viseu': 'Q2410944',
 };
 
-// Careers are only fetched for players at least this famous, which keeps
-// the run quick. Journeyman picks from the best-known of these anyway.
-const CAREER_MIN_FAME = 25;
+// Careers are fetched for every player matched to Wikidata, so anyone can
+// be used in Link-Up. Journeyman still picks from the best-known.
+const CAREER_MIN_FAME = 0;
 
 const SPARQL_URL = 'https://query.wikidata.org/sparql';
 const USER_AGENT = 'PitchMarket/1.0 (https://pitchmarket.github.io/Pitchmarket/; daily football games)';
@@ -170,6 +174,15 @@ export async function linkClubs(teams){
 // football team", "Manchester United F.C. Under-23s", "Real Madrid Castilla").
 const isNationalTeam = (label) => /national|under-?\s?\d\d|\bu-?\d\ds?\b|olympic|reserves|youth|academy|\bii\b|\bb team|castilla|primavera|jong /i.test(label || '');
 
+// A senior men's national team ("England national association football
+// team", "Brazil national football team"): its country, or null for any
+// other side (under-21s, Olympic, B teams, women's, futsal...).
+export function seniorNationalTeam(label){
+  const m = /^(.+?) (?:men's )?national (?:association )?football team$/i.exec(label || '');
+  if(!m || /under|\bu-?\d|olympic|\bb\b|women|youth|amateur|futsal|beach|universiade|military|student|\bA'/i.test(label)) return null;
+  return m[1];
+}
+
 // ---------- 2. Squads (football-data.org) ----------
 
 const FD_POSITIONS = { Goalkeeper: 'Goalkeeper', Defence: 'Defender', Midfield: 'Midfielder', Offence: 'Forward' };
@@ -191,23 +204,39 @@ async function fetchSquads(key){
   return out;
 }
 
-// One player per squad member, at the site club their team matches.
+// The site's label for each league, for clubs that aren't on the site.
+const LEAGUE_LABELS = {
+  epl: 'Premier League', laliga: 'La Liga', seriea: 'Serie A', bundesliga: 'Bundesliga', ligue1: 'Ligue 1',
+  championship: 'Championship', portugal: 'Primeira Liga', eredivisie: 'Eredivisie', brazil: 'Brasileirão',
+};
+// "Norwich City FC" -> "Norwich City"
+const cleanClub = (s) => (s || '').replace(/\s+(F\.?C\.?|A\.?F\.?C\.?|C\.?F\.?|S\.?C\.?)$/i, '').replace(/^(F\.?C\.?|A\.?C\.?)\s+/i, '').trim();
+
+// One player per squad member. Players at a club the site lists are tied
+// to it; players at any other club in the league are kept too, under the
+// club's own name, so every player in the nine leagues can be guessed.
 export function squadPlayers(squads, teams){
   const players = [], unmatched = [];
   for(const [code, fdTeams] of Object.entries(squads)){
     const league = COMPETITIONS[code];
     const siteTeams = teams.filter(t => t.league === league);
+    const leagueLabel = siteTeams[0]?.league_label || LEAGUE_LABELS[league] || league;
     for(const ft of fdTeams){
       const team = findTeamRow(siteTeams, ft.name, false) || (ft.shortName && findTeamRow(siteTeams, ft.shortName, false));
-      if(!team){ unmatched.push(`${ft.name} (${code})`); continue; }
+      if(!team) unmatched.push(`${ft.name} (${code})`);
       for(const p of ft.squad || []){
         if(!p.name || !p.dateOfBirth) continue;
         players.push({
           fd_id: p.id, name: p.name, birth_date: p.dateOfBirth.slice(0, 10),
           nationality: p.nationality || null,
           position_group: FD_POSITIONS[p.position] || null,
-          team_id: team.id, club_name: team.name, league: team.league, league_label: team.league_label,
-          club_wikidata_id: team.wikidata_id || null,
+          team_id: team ? team.id : null,
+          club_name: team ? team.name : cleanClub(ft.shortName || ft.name),
+          league: team ? team.league : league,
+          league_label: team ? team.league_label : leagueLabel,
+          // Who is in the same squad right now: Link-Up counts them as teammates.
+          club_key: team?.wikidata_id || 'fd:' + ft.id,
+          club_wikidata_id: team?.wikidata_id || null,
         });
       }
     }
@@ -317,7 +346,9 @@ async function matchWikidata(players){
 export async function fetchCareers(players, teams){
   const siteName = new Map(teams.filter(t => t.wikidata_id).map(t => [t.wikidata_id, t.name]));
   const wanted = players.filter(p => p.id.startsWith('Q') && p.fame >= CAREER_MIN_FAME).map(p => p.id);
+  const born = new Map(players.map(p => [p.id, p.birth_date ? Number(p.birth_date.slice(0, 4)) : null]));
   const careers = new Map();
+  const intl = new Map();   // "player|team" -> national-team spell
   let n = 0;
   for(const group of chunks(wanted, 40)){
     n++;
@@ -331,6 +362,23 @@ export async function fetchCareers(players, teams){
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
       }`, `careers ${n}`);
     for(const r of rows){
+      const country = seniorNationalTeam(r.clubLabel);
+      if(country){
+        // One spell per player and country, from their first call-up to
+        // their last (still going if any spell has no end). With no start
+        // year on file, count from when they turned 18.
+        const k = r.p + '|' + r.club;
+        const start = r.start ? Number(r.start.slice(0, 4)) : (born.get(r.p) ? born.get(r.p) + 18 : null);
+        const end = r.end ? Number(r.end.slice(0, 4)) : null;
+        const prev = intl.get(k);
+        if(!prev) intl.set(k, { player_id: r.p, team_id: r.club, team: country, start_year: start, end_year: end, open: !r.end });
+        else {
+          if(start != null && (prev.start_year == null || start < prev.start_year)) prev.start_year = start;
+          if(!r.end) prev.open = true;
+          else if(prev.end_year == null || end > prev.end_year) prev.end_year = end;
+        }
+        continue;
+      }
       if(isNationalTeam(r.clubLabel) || /^Q\d+$/.test(r.clubLabel || '')) continue;
       if(!careers.has(r.p)) careers.set(r.p, new Map());
       const key = r.club + '|' + (r.start || '');
@@ -356,7 +404,9 @@ export async function fetchCareers(players, teams){
       (a.start_year ?? 9999) - (b.start_year ?? 9999) || (a.end_year ?? 9999) - (b.end_year ?? 9999));
     rows.forEach((r, i) => out.push({ player_id, seq: i + 1, ...r }));
   }
-  return out;
+  const intlRows = [...intl.values()].filter(s => s.start_year != null)
+    .map(({ open, ...s }) => ({ ...s, end_year: open ? null : s.end_year }));
+  return { careers: out, intl: intlRows, checked: wanted };
 }
 
 // Wikidata careers lag behind for some players. A career counts as up to
@@ -422,7 +472,7 @@ async function main(){
     squads = await fetchSquads(process.env.FOOTBALL_DATA_API_KEY);
   }
   const { players: squad, unmatched: unmatchedTeams } = squadPlayers(squads, teams);
-  for(const t of unmatchedTeams) console.log(`  No site club for ${t}: add an alias in update-prices.js NAME_ALIASES.`);
+  for(const t of unmatchedTeams) console.log(`  ${t} isn't on the site: its players are kept for the games under the club's own name. If it should be on the site, add an alias in update-prices.js NAME_ALIASES.`);
   console.log(`  ${squad.length} squad players.`);
   // A short list means a failed fetch. Saving it would retire most
   // players, so stop instead.
@@ -432,8 +482,9 @@ async function main(){
   let players = await matchWikidata(squad);
 
   console.log('\n4. Fetching careers...');
-  const careers = await fetchCareers(players, teams);
+  const { careers, intl, checked } = await fetchCareers(players, teams);
   console.log(`  ${careers.length} career rows for ${new Set(careers.map(c => c.player_id)).size} players.`);
+  console.log(`  ${intl.length} senior international spells for ${new Set(intl.map(c => c.player_id)).size} players.`);
   markCareers(players, careers);
   console.log(`  ${players.filter(p => p.career_current).length} careers are up to date with the player's current club.`);
   // Only the columns the players table has.
@@ -442,6 +493,7 @@ async function main(){
   if(dry){
     writeFileSync(join(dir, 'players.json'), JSON.stringify(players, null, 1));
     writeFileSync(join(dir, 'careers.json'), JSON.stringify(careers, null, 1));
+    writeFileSync(join(dir, 'intl.json'), JSON.stringify(intl, null, 1));
     console.log(`\nDry run: wrote players.json and careers.json to ${dir}.`);
     return;
   }
@@ -449,6 +501,8 @@ async function main(){
   console.log('\n5. Saving...');
   for(const batch of chunks(players.map(p => ({ ...p, active: true, updated_at: runStart })), 500)){
     const { error } = await supabase.from('players').upsert(batch, { onConflict: 'id' });
+    if(error && /column/i.test(error.message)) throw new Error('Saving players failed: ' + error.message +
+      '. The database is missing a column this import needs: run supabase-linkup-2.sql in the Supabase SQL Editor, then run this workflow again.');
     if(error) throw new Error('Saving players failed: ' + error.message);
   }
   const { error: retireErr, count } = await supabase.from('players')
@@ -463,7 +517,15 @@ async function main(){
     const { error } = await supabase.from('player_careers').insert(batch);
     if(error) throw new Error('Saving careers failed: ' + error.message);
   }
-  console.log(`  Saved ${players.length} players and ${careers.length} career rows; ${count || 0} players no longer found were marked inactive.`);
+  for(const ids of chunks(checked, 300)){
+    const { error } = await supabase.from('player_intl').delete().in('player_id', ids);
+    if(error) throw new Error('Clearing international spells failed: ' + error.message);
+  }
+  for(const batch of chunks(intl, 1000)){
+    const { error } = await supabase.from('player_intl').insert(batch);
+    if(error) throw new Error('Saving international spells failed: ' + error.message);
+  }
+  console.log(`  Saved ${players.length} players, ${careers.length} career rows and ${intl.length} international spells; ${count || 0} players no longer found were marked inactive.`);
 }
 
 if(import.meta.url === `file://${process.argv[1]}`){

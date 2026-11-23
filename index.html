@@ -322,6 +322,9 @@ button.mc-item:focus-visible{ outline:2px solid var(--accent); outline-offset:-2
 .lu-link{ display:flex; align-items:center; gap:10px; padding:6px 0 6px 18px; border-left:2px solid var(--border); margin-left:20px; font-size:12.5px; color:var(--steel); }
 .lu-link.done{ border-left-color:var(--ka-match); color:var(--chalk); }
 .lu-link.pending{ border-left-style:dashed; color:var(--steel-dim); }
+.lu-best{ margin-top:8px; font-size:13px; color:var(--steel); line-height:1.7; }
+.lu-best b{ color:var(--chalk); font-weight:600; }
+.lu-best .lu-via{ font-size:11.5px; color:var(--steel); white-space:nowrap; }
 .bk-list{ display:flex; flex-direction:column; gap:14px; max-width:640px; }
 .bk-q{ border:1px solid var(--border-soft); border-radius:var(--r-md); padding:14px 16px; background:var(--panel2); }
 .bk-head{ display:flex; justify-content:space-between; gap:10px; margin-bottom:6px; }
@@ -1400,7 +1403,7 @@ html{ scroll-padding-top:56px; }
       <section class="help-item"><h3>Trade clubs</h3><p>Everyone starts with <b>2,000 Fan Coins</b>. Buy shares in clubs from the Market Explorer and sell whenever you like. Fan Coins are free and have no cash value.</p></section>
       <section class="help-item"><h3>Prices follow real results</h3><p>After every real match, each club's price moves on the result and how big an upset it was. Trading on a club <b>pauses from kickoff</b> until its new price is set, and you can make one trade every few seconds.</p></section>
       <section class="help-item"><h3>Climb the leaderboard</h3><p>Your score is your coins plus everything you hold at today's prices. Pick a display name by tapping your coin balance at the top.</p></section>
-      <section class="help-item"><h3>Daily Kickabout</h3><p>Four new football games every day at midnight UK time: <b>Scouted</b> (guess the player from clues), <b>Journeyman</b> (guess them from their career), <b>Link-Up</b> (connect two players through teammates) and <b>Ball Knowledge</b> (a four-question quiz). Each win pays <b>25 Fan Coins</b>.</p></section>
+      <section class="help-item"><h3>Daily Kickabout</h3><p>Four new football games every day at midnight UK time: <b>Scouted</b> (guess the player from clues), <b>Journeyman</b> (guess them from their career), <b>Link-Up</b> (connect two players through club or international teammates) and <b>Ball Knowledge</b> (a four-question quiz). Each win pays <b>25 Fan Coins</b>.</p></section>
       <section class="help-item"><h3>Spotlight and charts</h3><p>The Spotlight shows the week's biggest price movers; click any of them to see its chart. Every chart is drawn from real price history.</p></section>
       <section class="help-item"><h3>Watchlist and alerts</h3><p>Star a club to follow it, see its last five results and set a price you want to hear about.</p></section>
       <section class="help-item"><h3>Make it yours</h3><p>The palette button at the top switches between 13 looks, from Normal and Dark to Retro and Chalk tactics. Your choice is remembered.</p></section>
@@ -3085,7 +3088,7 @@ let kaActive = -1;              // highlighted suggestion
 const KA_INTRO = {
   scouted: '<b>Scouted:</b> guess today\'s mystery player in 10 tries. Each guess shows their league, team, nationality, age and position. <b>Green</b> is a match. <b>Yellow</b> means close: nationality from the same continent, or age within 2 years. Arrows point towards the answer\'s age.',
   journeyman: '<b>Journeyman:</b> name the player from their career. You start with their first club. Each wrong guess shows the next one, and once the whole career is showing you get one last guess.',
-  linkup: '<b>Link-Up:</b> connect the two players through teammates: players who were at the same club at the same time. Each player you name must have played with the last one in your chain. You win when your chain reaches the target, using 6 players at most.',
+  linkup: '<b>Link-Up:</b> connect the two players through teammates: players at the same club at the same time, or capped by the same country at the same time. Each player you name must have played with the last one in your chain. You win when your chain reaches the target, using 6 players at most.',
   ballknowledge: '<b>Ball Knowledge:</b> four questions, one go at each. Get 3 or more right to win.',
 };
 const foldName = (s)=> s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ø/gi,'o').replace(/æ/gi,'ae').replace(/ß/g,'ss').toLowerCase();
@@ -3096,7 +3099,7 @@ const foldName = (s)=> s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replac
 async function loadKaPlayers(){
   if(kaPlayers || !sb) return kaPlayers;
   if(!kaPlayersLoading) kaPlayersLoading = (async ()=>{
-    let list = cacheGet('players', 864e5);
+    let list = cacheGet('players-v2', 864e5);
     if(!list){
       const page = (from, count) => sb.from('players').select('id,name,club_name,has_career', count ? { count:'exact' } : undefined)
         .eq('active', true).order('fame', { ascending:false }).order('id').range(from, from + 999);
@@ -3104,7 +3107,7 @@ async function loadKaPlayers(){
       if(first.error || !first.data){ kaPlayersLoading = null; return null; }
       const rest = await Promise.all(Array.from({ length: Math.max(0, Math.ceil((first.count || 0) / 1000) - 1) }, (_, i) => page((i + 1) * 1000)));
       list = first.data.concat(...rest.map(r => r.data || [])).map(p => [p.id, p.name, p.club_name || '', p.has_career !== false]);
-      cacheSet('players', list);
+      cacheSet('players-v2', list);
     }
     kaPlayers = list.map(([id, name, club, career]) => ({ id, name, club, key: foldName(name), career }));
     return kaPlayers;
@@ -3178,9 +3181,15 @@ function renderKickabout(){
   if(kaGame === 'linkup'){
     const between = st.chain.filter(c=>!c.target).length;
     const plural = (n)=> n + ' player' + (n == 1 ? '' : 's');
-    const best = st.par == null ? '' : ' The shortest possible link had ' + plural(st.par) + ' in between.';
+    const best = st.par == null ? '' : st.par == 0 ? ' The two were teammates themselves, so the shortest link needed nobody in between.'
+      : ' The shortest possible link had ' + plural(st.par) + ' in between.';
     text = st.won ? '<b>Linked them with ' + plural(between) + ' in between, using ' + used + ' of your 6 goes!</b> +25 Fan Coins.' + best
                   : '<b>Out of goes.</b>' + best + ' A new one starts at midnight UK time.';
+    // The shortest link itself: start → each player (and how) → target.
+    if(st.best && st.best.length){
+      const steps = st.best.map(p=> ' → <span class="lu-via">(' + luVia(p.via) + ')</span> <b>' + escapeHtml(p.name) + '</b>').join('');
+      text += '<div class="lu-best">Shortest link: <b>' + escapeHtml(st.start.name) + '</b>' + steps + '</div>';
+    }
   } else if(quiz){
     text = st.won ? '<b>' + st.correct + ' out of 4!</b> +25 Fan Coins.'
                   : '<b>' + st.correct + ' out of 4.</b> You needed 3. A new quiz starts at midnight UK time.';
@@ -3193,12 +3202,19 @@ function renderKickabout(){
   document.getElementById('kaShare').onclick = copyKaResult;
 }
 
+// How two players in a chain were teammates: "teammates at Arsenal", or
+// for a national team (sent as "England (international)") "teammates for England".
+function luVia(via){
+  const m = /^(.*) \(international\)$/.exec(via || '');
+  return m ? 'international teammates for ' + escapeHtml(m[1]) : 'teammates at ' + escapeHtml(via || '');
+}
+
 // Link-Up: start player, the chain so far, then the target.
 function renderLinkup(st){
   const card = (p, label, cls)=> '<div class="lu-card '+cls+'"><div class="lu-label">'+label+'</div>'+
     '<div class="lu-name">'+escapeHtml(p.name)+'</div>'+
     (p.trail && p.trail.length ? '<div class="lu-trail">'+p.trail.map(escapeHtml).join(' → ')+'</div>' : '')+'</div>';
-  const link = (club, cls)=> '<div class="lu-link '+(cls || '')+'"><span>'+(club ? 'teammates at ' + escapeHtml(club) : '?')+'</span></div>';
+  const link = (club, cls)=> '<div class="lu-link '+(cls || '')+'"><span>'+(club ? luVia(club) : '?')+'</span></div>';
   let html = '<div class="lu-path">' + card(st.start, 'Start', 'start');
   st.chain.forEach(c=>{
     if(c.target) return;
@@ -3299,10 +3315,8 @@ function kaSuggest(){
   const guessed = new Set(used.map(g=>g.id));
   // Names starting with what was typed come first, then any word that does.
   const starts = [], words = [];
-  // Link-Up can only check teammates for players with a career on file.
-  const needCareer = kaGame === 'linkup';
   for(const p of kaPlayers){
-    if(guessed.has(p.id) || (needCareer && !p.career)) continue;
+    if(guessed.has(p.id)) continue;
     if(p.key.startsWith(q)) starts.push(p);
     else if(p.key.includes(' ' + q) || p.key.includes('-' + q)) words.push(p);
     if(starts.length >= 8) break;
