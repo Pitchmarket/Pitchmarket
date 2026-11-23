@@ -771,26 +771,66 @@ create index if not exists player_careers_club on public.player_careers (club_id
 -- (Link-Up's best score, Ball Knowledge's questions and answers).
 alter table public.daily_puzzles add column if not exists player2_id text references public.players(id);
 alter table public.daily_puzzles add column if not exists data jsonb;
+-- The club the player is at now: its Wikidata ID, or "fd:<id>" for a club
+-- that isn't listed on the site. Players with the same key are teammates.
+alter table public.players add column if not exists club_key text;
+create index if not exists players_club_key on public.players (club_key) where active;
+-- Senior national-team spells, for international teammates. Hidden from
+-- players (no policies), like careers.
+create table if not exists public.player_intl (
+  player_id   text not null references public.players(id) on delete cascade,
+  team_id     text not null,      -- Wikidata ID of the national team
+  team        text not null,      -- the country, e.g. "England"
+  start_year  integer not null,
+  end_year    integer             -- null: still being picked
+);
+create index if not exists player_intl_player on public.player_intl (player_id);
+create index if not exists player_intl_team on public.player_intl (team_id);
+alter table public.player_intl enable row level security;
 
 -- ---------- Teammates ----------
 
--- The club where two players were teammates (same club, overlapping
--- years), or null if they never were. Spell years are whole years, so a
--- player who left in January and one who joined that August both count.
+-- Every teammate of the given players, with how they were teammates:
+-- kind 1, at the same club at the same time (from careers); kind 2, in the
+-- same squad right now; kind 3, capped by the same country at the same time.
+-- Spell years are whole years, so a player who left in January and one who
+-- joined that August both count.
+create or replace function public.teammate_edges(p_ids text[])
+ returns table(src text, dst text, via text, kind integer)
+ language sql
+ stable
+ set search_path = public
+as $function$
+  select a.player_id, b.player_id, a.club, 1
+  from player_careers a
+  join player_careers b on b.club_id = a.club_id and b.player_id <> a.player_id
+  where a.player_id = any(p_ids) and a.club_id is not null
+    and a.start_year <= coalesce(b.end_year, extract(year from now())::int)
+    and b.start_year <= coalesce(a.end_year, extract(year from now())::int)
+  union all
+  select a.id, b.id, a.club_name, 2
+  from players a
+  join players b on b.club_key = a.club_key and b.id <> a.id and b.active
+  where a.id = any(p_ids) and a.active and a.club_key is not null
+  union all
+  select a.player_id, b.player_id, a.team || ' (international)', 3
+  from player_intl a
+  join player_intl b on b.team_id = a.team_id and b.player_id <> a.player_id
+  where a.player_id = any(p_ids)
+    and a.start_year <= coalesce(b.end_year, extract(year from now())::int)
+    and b.start_year <= coalesce(a.end_year, extract(year from now())::int);
+$function$;
+revoke execute on function public.teammate_edges(text[]) from public, anon, authenticated;
+
+-- How two players were teammates ("Arsenal", "England (international)"),
+-- or null if they never were. A club is named before a country.
 create or replace function public.teammate_club(p1 text, p2 text)
  returns text
  language sql
  stable
  set search_path = public
 as $function$
-  select a.club
-  from player_careers a
-  join player_careers b on b.club_id = a.club_id
-  where a.player_id = p1 and b.player_id = p2 and p1 <> p2 and a.club_id is not null
-    and a.start_year <= coalesce(b.end_year, extract(year from now())::int)
-    and b.start_year <= coalesce(a.end_year, extract(year from now())::int)
-  order by a.start_year desc
-  limit 1;
+  select via from teammate_edges(array[p1]) where dst = p2 order by kind limit 1;
 $function$;
 revoke execute on function public.teammate_club(text, text) from public, anon, authenticated;
 
@@ -801,14 +841,112 @@ create or replace function public.teammates_of(p_ids text[])
  stable
  set search_path = public
 as $function$
-  select distinct b.player_id
-  from player_careers a
-  join player_careers b on b.club_id = a.club_id and b.player_id <> a.player_id
-  where a.player_id = any(p_ids) and a.club_id is not null
-    and a.start_year <= coalesce(b.end_year, extract(year from now())::int)
-    and b.start_year <= coalesce(a.end_year, extract(year from now())::int);
+  select distinct dst from teammate_edges(p_ids);
 $function$;
 revoke execute on function public.teammates_of(text[]) from public, anon, authenticated;
+
+-- ---------- Shortest link ----------
+--
+-- A search outwards from both players at once, through active players
+-- only (the ones you can pick). Side 'a' grows from the start player, side
+-- 'b' from the target; where they meet is the shortest link.
+
+-- Adds the next ring of teammates on one side.
+create or replace function public.link_expand(p_side text, p_depth integer)
+ returns integer
+ language plpgsql
+ set search_path = public
+as $function$
+declare
+  n integer;
+begin
+  insert into pm_link (side, id, parent, via, depth)
+  select distinct on (e.dst) p_side, e.dst, e.src, e.via, p_depth
+  from teammate_edges(array(select id from pm_link where side = p_side and depth = p_depth - 1)) e
+  join players p on p.id = e.dst and p.active
+  order by e.dst, e.kind
+  on conflict (side, id) do nothing;
+  get diagnostics n = row_count;
+  return n;
+end;
+$function$;
+revoke execute on function public.link_expand(text, integer) from public, anon, authenticated;
+
+-- The path where the two sides meet, as [{id, name, via}] from the first
+-- player after the start up to the target, or null if they haven't met.
+create or replace function public.link_path()
+ returns jsonb
+ language plpgsql
+ set search_path = public
+as $function$
+declare
+  v_meet text;
+  v_cur text;
+  v_out jsonb := '[]'::jsonb;
+  r record;
+begin
+  select x.id into v_meet from pm_link x join pm_link y on y.id = x.id and y.side = 'b'
+  where x.side = 'a' order by x.depth + y.depth, x.depth limit 1;
+  if v_meet is null then return null; end if;
+  -- Start side: from the meeting player back to the start, added in front.
+  v_cur := v_meet;
+  loop
+    select * into r from pm_link where side = 'a' and id = v_cur;
+    exit when r.parent is null;
+    v_out := jsonb_build_array(jsonb_build_object('id', r.id, 'name', (select name from players where id = r.id), 'via', r.via)) || v_out;
+    v_cur := r.parent;
+  end loop;
+  -- Target side: from the meeting player on to the target.
+  v_cur := v_meet;
+  loop
+    select * into r from pm_link where side = 'b' and id = v_cur;
+    exit when r.parent is null;
+    v_out := v_out || jsonb_build_array(jsonb_build_object('id', r.parent, 'name', (select name from players where id = r.parent), 'via', r.via));
+    v_cur := r.parent;
+  end loop;
+  return v_out;
+end;
+$function$;
+revoke execute on function public.link_path() from public, anon, authenticated;
+
+-- Starts a fresh search from one or both players.
+create or replace function public.link_reset(p_a text, p_b text)
+ returns void
+ language plpgsql
+ set search_path = public
+as $function$
+begin
+  if to_regclass('pg_temp.pm_link') is null then
+    create temp table pm_link (side text, id text, parent text, via text, depth integer, primary key (side, id)) on commit drop;
+  else
+    truncate pm_link;
+  end if;
+  if p_a is not null then insert into pm_link values ('a', p_a, null, null, 0); end if;
+  if p_b is not null then insert into pm_link values ('b', p_b, null, null, 0); end if;
+end;
+$function$;
+revoke execute on function public.link_reset(text, text) from public, anon, authenticated;
+
+-- The shortest link between two players with at most 3 players in
+-- between, as link_path() gives it, or null if there's none that short.
+create or replace function public.shortest_link(p_a text, p_b text)
+ returns jsonb
+ language plpgsql
+ set search_path = public
+as $function$
+declare
+  v_path jsonb;
+begin
+  perform link_reset(p_a, p_b);
+  v_path := link_path();
+  if v_path is not null then return v_path; end if;
+  perform link_expand('a', 1);  v_path := link_path(); if v_path is not null then return v_path; end if;
+  perform link_expand('b', 1);  v_path := link_path(); if v_path is not null then return v_path; end if;
+  perform link_expand('a', 2);  v_path := link_path(); if v_path is not null then return v_path; end if;
+  perform link_expand('b', 2);  return link_path();
+end;
+$function$;
+revoke execute on function public.shortest_link(text, text) from public, anon, authenticated;
 
 -- ---------- Ball Knowledge questions ----------
 
@@ -946,8 +1084,8 @@ declare
   v_a text;
   v_b text;
   v_data jsonb;
-  v_n1 text[];
-  v_n2 text[];
+  v_cand text;
+  v_path jsonb;
   v_kinds text[];
   v_qs jsonb := '[]'::jsonb;
   v_question jsonb;
@@ -983,9 +1121,10 @@ begin
     order by random() limit 1;
 
   elsif p_game = 'linkup' then
-    -- Two well-known players who were never teammates, but can be linked
-    -- through one or two other players. Two-step links are preferred.
-    for attempt in 1..20 loop
+    -- Two well-known players who were never teammates. Prefer a pair with
+    -- two players in between at best, else one. The shortest link is kept
+    -- to show at the end.
+    for attempt in 1..15 loop
       select id into v_a from (
         select p.id from players p
         where p.active and exists (select 1 from player_careers c where c.player_id = p.id and c.club_id is not null)
@@ -994,24 +1133,41 @@ begin
         order by p.fame desc limit 300) pool
       order by random() limit 1;
       exit when v_a is null;
-      select array_agg(id) into v_n1 from teammates_of(array[v_a]);
-      select array_agg(id) into v_n2 from teammates_of(coalesce(v_n1, '{}'))
-        where id <> v_a and id <> all(coalesce(v_n1, '{}'));
-      -- Prefer a player three steps away (two in between), else two steps.
-      select p.id into v_b from players p
-      where p.active and p.fame >= 30
-        and p.id <> v_a and p.id <> all(coalesce(v_n1, '{}')) and p.id <> all(coalesce(v_n2, '{}'))
-        and exists (select 1 from teammates_of(array[p.id]) t where t.id = any(coalesce(v_n2, '{}')))
-      order by random() limit 1;
-      if v_b is not null then
-        v_data := jsonb_build_object('par', 2);
-      else
-        select p.id into v_b from players p
-        where p.active and p.fame >= 30 and p.id = any(coalesce(v_n2, '{}'))
+      -- Everyone within two steps of the start player.
+      perform link_reset(v_a, null);
+      perform link_expand('a', 1);
+      perform link_expand('a', 2);
+      -- A well-known player further away whose teammates reach that ring:
+      -- three steps, two players in between.
+      for v_cand in
+        select p.id from players p
+        where p.active and p.fame >= 30 and exists (select 1 from player_careers c where c.player_id = p.id)
+          and not exists (select 1 from pm_link l where l.side = 'a' and l.id = p.id)
+        order by random() limit 40
+      loop
+        delete from pm_link where side = 'b';
+        insert into pm_link values ('b', v_cand, null, null, 0);
+        perform link_expand('b', 1);
+        v_path := link_path();
+        if v_path is not null then v_b := v_cand; exit; end if;
+      end loop;
+      if v_b is null then
+        -- Else someone two steps away: one player in between.
+        delete from pm_link where side = 'b';
+        select l.id into v_b from pm_link l join players p on p.id = l.id
+        where l.side = 'a' and l.depth = 2 and p.fame >= 30
+          and exists (select 1 from player_careers c where c.player_id = p.id)
         order by random() limit 1;
-        if v_b is not null then v_data := jsonb_build_object('par', 1); end if;
+        if v_b is not null then
+          insert into pm_link values ('b', v_b, null, null, 0);
+          v_path := link_path();
+        end if;
       end if;
-      exit when v_b is not null;
+      if v_b is not null and v_path is not null then
+        v_data := jsonb_build_object('par', jsonb_array_length(v_path) - 1, 'best', v_path);
+        exit;
+      end if;
+      v_b := null;
     end loop;
     if v_b is null then v_a := null; end if;
 
@@ -1066,6 +1222,8 @@ as $function$
 declare
   g_age integer := extract(year from age(p_day, g.birth_date));
   a_age integer := extract(year from age(p_day, a.birth_date));
+  g_club text := coalesce(g.club_key, g.team_id::text);
+  a_club text := coalesce(a.club_key, a.team_id::text);
 begin
   return jsonb_build_object(
     'id', g.id,
@@ -1073,7 +1231,7 @@ begin
     'league', jsonb_build_object('value', g.league_label,
       'result', case when g.league is null then 'unknown' when g.league = a.league then 'match' else 'miss' end),
     'team', jsonb_build_object('value', g.club_name,
-      'result', case when g.team_id is null then 'unknown' when g.team_id = a.team_id then 'match' else 'miss' end),
+      'result', case when g_club is null then 'unknown' when g_club = a_club then 'match' else 'miss' end),
     'nationality', jsonb_build_object('value', g.nationality,
       'result', case when g.nationality is null then 'unknown'
                      when lower(g.nationality) = lower(a.nationality) then 'match'
@@ -1126,6 +1284,7 @@ declare
   v_result jsonb;
   v_end text;
   v_club text;
+  v_best jsonb;
   v_chain jsonb := '[]'::jsonb;
   v_strikes jsonb := '[]'::jsonb;
   v_qs jsonb;
@@ -1174,6 +1333,17 @@ begin
     -- Replay the guesses: a teammate of the chain's last player joins the
     -- chain, anyone else is a miss. Guessing the target checks the final link.
     select * into v_target from players where id = v_puzzle.player2_id;
+    -- The shortest link, worked out once (puzzles made before this update
+    -- don't have it yet) and shown when you finish.
+    if v_finished and v_puzzle.data->'best' is null then
+      v_best := shortest_link(v_answer.id, v_target.id);
+      if v_best is not null then
+        update daily_puzzles set data = coalesce(data, '{}'::jsonb)
+          || jsonb_build_object('best', v_best, 'par', jsonb_array_length(v_best) - 1)
+        where day = v_puzzle.day and game = p_game
+        returning * into v_puzzle;
+      end if;
+    end if;
     v_end := v_answer.id;
     foreach g in array v_guesses loop
       v_club := teammate_club(v_end, g);
@@ -1188,7 +1358,7 @@ begin
         v_end := g;
       else
         v_strikes := v_strikes || jsonb_build_array(jsonb_build_object('id', g, 'name', (select name from players where id = g),
-          'reason', case when exists (select 1 from player_careers where player_id = g) then 'not_teammates' else 'no_data' end,
+          'reason', 'not_teammates',
           'after', (select name from players where id = v_end)));
       end if;
     end loop;
@@ -1197,6 +1367,7 @@ begin
       'start', jsonb_build_object('id', v_answer.id, 'name', v_answer.name, 'club', v_answer.club_name, 'trail', club_trail(v_answer.id)),
       'target', jsonb_build_object('id', v_target.id, 'name', v_target.name, 'club', v_target.club_name, 'trail', club_trail(v_target.id)),
       'chain', v_chain, 'strikes', v_strikes, 'used', coalesce(array_length(v_guesses, 1), 0),
+      'best', case when v_finished then v_puzzle.data->'best' end,
       -- How the chain's last player links to the target, once they do.
       'closing', case when not exists (select 1 from jsonb_array_elements(v_chain) e where e->>'target' = 'true')
                  then teammate_club(v_end, v_target.id) end);
@@ -1251,10 +1422,11 @@ begin
   if v_play.finished then raise exception 'You''ve finished today''s game. A new one starts at midnight UK time.'; end if;
   if p_game <> 'ballknowledge' and p_player_id = any(v_play.guesses) then raise exception 'You''ve already guessed that player.'; end if;
   if p_game = 'linkup' and p_player_id = v_puzzle.player_id then raise exception 'That''s the player you start from.'; end if;
-  -- Refused without using a go: we can't check this player's teammates.
+  -- Refused without using a go: someone no longer in any squad, whose
+  -- teammates we can't check.
   if p_game = 'linkup' and p_player_id <> v_puzzle.player2_id
-     and not exists (select 1 from player_careers where player_id = p_player_id) then
-    raise exception 'We don''t have this player''s career on file yet, so Link-Up can''t check their teammates. Try someone else.';
+     and not exists (select 1 from players where id = p_player_id and active) then
+    raise exception 'That player isn''t in a squad in our leagues any more, so Link-Up can''t check their teammates. Try someone else.';
   end if;
 
   update game_plays set guesses = guesses || p_player_id, updated_at = now()

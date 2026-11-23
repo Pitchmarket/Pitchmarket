@@ -1,6 +1,6 @@
 # PitchMarket status
 
-_Last updated: 20 Nov 2026_
+_Last updated: 23 Nov 2026_
 
 Where the project stands before public launch. Update this file in the same pull request as the work it describes. Keep it under 10 KB: when something is done, delete it here instead of marking it done.
 
@@ -10,7 +10,7 @@ Launch blockers, roughly in the order to tackle them.
 
 ### Running the competition
 
-- **Switch on all four Daily Kickabout games.** Run `supabase-daily-kickabout.sql`, `supabase-kickabout-2.sql` and `supabase-squads.sql` in the Supabase SQL Editor (each once, in that order), then run the **Import players for Daily Kickabout** workflow from the Actions tab (15–30 minutes). The import then runs every Monday.
+- **Load every player into the Daily Kickabout games.** Run `supabase-linkup-2.sql` in the Supabase SQL Editor (it includes `supabase-squads.sql`, which was never run, so the 23 Nov import failed at the save step), then run the **Import players for Daily Kickabout** workflow from the Actions tab (30–45 minutes now that it fetches every player's career). The import then runs every Monday. If the games were never switched on, run `supabase-daily-kickabout.sql` and `supabase-kickabout-2.sql` first.
 - **Championship clubs missing from the site:** Norwich City, West Bromwich Albion and Sheffield United are in the Championship feed but not on the site, so their results and players are skipped. Add them in admin if wanted.
 - **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql`: it clears `holdings` and `trades` and sets every balance to 2,000. Prices and price history stay, so the charts keep their data.
 - **Run `supabase-names-and-leaderboard.sql`** in the Supabase SQL Editor. It makes display names unique and hides the organiser's accounts (admin and 27hufferdinea) from the leaderboard. Its last line lists the hidden accounts; check they're the right ones.

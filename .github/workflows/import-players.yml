@@ -13,7 +13,7 @@ concurrency:
 jobs:
   import-players:
     runs-on: ubuntu-latest
-    # Wikidata is free but rate-limited; a normal run takes 15–30 minutes.
+    # Wikidata is free but rate-limited; a normal run takes 30–45 minutes.
     timeout-minutes: 90
     steps:
       - name: Check out repo
