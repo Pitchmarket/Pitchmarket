@@ -779,7 +779,7 @@ create index if not exists players_club_key on public.players (club_key) where a
 -- players (no policies), like careers.
 create table if not exists public.player_intl (
   player_id   text not null references public.players(id) on delete cascade,
-  team_id     text not null,      -- Wikidata ID of the national team
+  team_id     text not null,      -- the national team, matched on this (its country name)
   team        text not null,      -- the country, e.g. "England"
   start_year  integer not null,
   end_year    integer             -- null: still being picked

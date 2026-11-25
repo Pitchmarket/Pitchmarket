@@ -262,7 +262,7 @@ export function nameScore(squadName, wdName){
 // Finds each squad player's Wikidata entry: men's footballers born on the
 // same day, picked by name. Adds id (the Wikidata ID), fame, continent and
 // the Wikidata name (usually the name fans know, with accents).
-async function matchWikidata(players){
+export async function matchWikidata(players){
   const dobs = [...new Set(players.map(p => p.birth_date))];
   const byDob = new Map();   // birth date -> Map(id -> { names:Set, en, mul, fame })
   let n = 0;
@@ -308,7 +308,41 @@ async function matchWikidata(players){
       p.fame = 0;
     }
   }
-  console.log(`  ${matched} of ${players.length} squad players matched to Wikidata.`);
+  console.log(`  ${matched} of ${players.length} squad players matched to Wikidata by birth date.`);
+
+  // Second pass for the rest, by name and birth year. Some squad birth
+  // dates are placeholders (Aaron Hickey is down as 1 January 2002, but
+  // was born on 10 June), so the exact date can't find them.
+  const missed = players.filter(p => p.id.startsWith('FD'));
+  let byName = 0;
+  n = 0;
+  for(const group of chunks(missed, 80)){
+    n++;
+    const names = [...new Set(group.map(p => p.name))];
+    const rows = await sparql(`
+      SELECT ?p ?name ?dob ?en ?links WHERE {
+        VALUES ?name { ${names.map(nm => JSON.stringify(nm) + '@en').join(' ')} }
+        { ?p rdfs:label ?name } UNION { ?p skos:altLabel ?name }
+        ?p wdt:P106 wd:Q937857 ; wdt:P21 wd:Q6581097 ; wikibase:sitelinks ?links .
+        OPTIONAL { ?p wdt:P569 ?dob }
+        OPTIONAL { ?p rdfs:label ?en FILTER(LANG(?en) = "en") }
+      }`, `names ${n}`);
+    for(const p of group){
+      const year = p.birth_date.slice(0, 4);
+      const hit = rows.filter(r => r.name === p.name && r.dob && r.dob.slice(0, 4) === year && !used.has(r.p))
+        .sort((a, b) => Number(b.links) - Number(a.links))[0];
+      if(!hit) continue;
+      used.add(hit.p);
+      p.id = hit.p;
+      p.fame = Number(hit.links) || 0;
+      if(hit.en && !/^Q\d+$/.test(hit.en)) p.name = hit.en;
+      // Keep Wikidata's real birthday over a 1 January placeholder.
+      if(p.birth_date.endsWith('-01-01')) p.birth_date = hit.dob.slice(0, 10);
+      byName++;
+    }
+  }
+  matched += byName;
+  console.log(`  ${byName} more matched by name and birth year: ${matched} of ${players.length} in all.`);
 
   // Continent of each nationality, from the matched players' countries.
   const qids = players.filter(p => p.id.startsWith('Q')).map(p => p.id);
@@ -364,19 +398,9 @@ export async function fetchCareers(players, teams){
     for(const r of rows){
       const country = seniorNationalTeam(r.clubLabel);
       if(country){
-        // One spell per player and country, from their first call-up to
-        // their last (still going if any spell has no end). With no start
-        // year on file, count from when they turned 18.
-        const k = r.p + '|' + r.club;
-        const start = r.start ? Number(r.start.slice(0, 4)) : (born.get(r.p) ? born.get(r.p) + 18 : null);
-        const end = r.end ? Number(r.end.slice(0, 4)) : null;
-        const prev = intl.get(k);
-        if(!prev) intl.set(k, { player_id: r.p, team_id: r.club, team: country, start_year: start, end_year: end, open: !r.end });
-        else {
-          if(start != null && (prev.start_year == null || start < prev.start_year)) prev.start_year = start;
-          if(!r.end) prev.open = true;
-          else if(prev.end_year == null || end > prev.end_year) prev.end_year = end;
-        }
+        // With no start year on file, count from when they turned 18.
+        addIntl(intl, r.p, country, r.start ? Number(r.start.slice(0, 4)) : (born.get(r.p) ? born.get(r.p) + 18 : null),
+          r.end ? Number(r.end.slice(0, 4)) : null);
         continue;
       }
       if(isNationalTeam(r.clubLabel) || /^Q\d+$/.test(r.clubLabel || '')) continue;
@@ -404,9 +428,106 @@ export async function fetchCareers(players, teams){
       (a.start_year ?? 9999) - (b.start_year ?? 9999) || (a.end_year ?? 9999) - (b.end_year ?? 9999));
     rows.forEach((r, i) => out.push({ player_id, seq: i + 1, ...r }));
   }
-  const intlRows = [...intl.values()].filter(s => s.start_year != null)
-    .map(({ open, ...s }) => ({ ...s, end_year: open ? null : s.end_year }));
-  return { careers: out, intl: intlRows, checked: wanted };
+  return { careers: out, intl, checked: wanted };
+}
+
+// One spell per player and country, from their first call-up to their last
+// (still going if any spell has no end). Countries are keyed by name, so
+// Wikidata and Wikipedia spells for the same team line up.
+function addIntl(intl, playerId, country, start, end){
+  const k = playerId + '|' + country;
+  const prev = intl.get(k);
+  if(!prev){ intl.set(k, { player_id: playerId, team_id: country, team: country, start_year: start, end_year: end, open: end == null }); return; }
+  if(start != null && (prev.start_year == null || start < prev.start_year)) prev.start_year = start;
+  if(end == null) prev.open = true;
+  else if(prev.end_year == null || end > prev.end_year) prev.end_year = end;
+}
+export const intlRows = (intl) => [...intl.values()].filter(s => s.start_year != null)
+  .map(({ open, ...s }) => ({ ...s, end_year: open ? null : s.end_year }));
+
+// ---------- 4b. International caps from Wikipedia ----------
+//
+// Wikidata only lists national teams for some players, so each player's
+// English Wikipedia infobox is read too: its "nationalteam" and
+// "nationalyears" lines list every side they've played for. Only senior
+// teams count. If Wikipedia can't be reached, the Wikidata spells are kept.
+
+// "| national_team2 = [[Scotland national football team|Scotland]]" and
+// "| national_years2 = 2021–" → { country, start, end }.
+export function parseNationalTeams(wikitext){
+  const field = (name) => new Map([...wikitext.matchAll(new RegExp(`\\|\\s*${name}(\\d+)\\s*=\\s*([^\\n]*)`, 'g'))].map(m => [m[1], m[2]]));
+  // Written "national_team1" in most articles, "nationalteam1" in older ones.
+  const teams = field('national_?team'), years = field('national_?years');
+  const out = [];
+  for(const [n, raw] of teams){
+    const link = /\[\[([^\]|]+)/.exec(raw);
+    const country = seniorNationalTeam(link ? link[1].trim() : raw.replace(/<[^>]*>|\{\{[^}]*\}\}/g, '').trim());
+    const y = /(\d{4})\s*(?:(?:–|-|&ndash;|{{ndash}})\s*(\d{4})?)?/.exec(years.get(n) || '');
+    if(!country || !y) continue;
+    const ranged = /(\d{4})\s*(–|-|&ndash;|{{ndash}})/.test(years.get(n));
+    out.push({ country, start: Number(y[1]), end: y[2] ? Number(y[2]) : (ranged ? null : Number(y[1])) });
+  }
+  return out;
+}
+
+async function wikiFetch(url){
+  for(let attempt = 0; attempt < 6; attempt++){
+    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT, 'Api-User-Agent': USER_AGENT } });
+    if(res.ok){ await sleep(1000); return res.json(); }
+    if([429, 500, 502, 503, 504].includes(res.status)){
+      const wait = (Number(res.headers.get('retry-after')) || 15 * (attempt + 1)) * 1000;
+      console.log(`  Wikipedia busy (HTTP ${res.status}), waiting ${wait / 1000}s.`);
+      await sleep(wait);
+      continue;
+    }
+    throw new Error(`Wikipedia answered HTTP ${res.status}`);
+  }
+  throw new Error('Wikipedia stayed busy');
+}
+
+export async function fetchWikipediaCaps(players, intl){
+  const qids = players.filter(p => p.id.startsWith('Q')).map(p => p.id);
+  // Each player's English Wikipedia article, from Wikidata.
+  const titleOf = new Map();   // article title -> player id
+  let n = 0;
+  for(const group of chunks(qids, 300)){
+    n++;
+    const rows = await sparql(`
+      SELECT ?p ?title WHERE {
+        VALUES ?p { ${group.map(q => 'wd:' + q).join(' ')} }
+        ?a schema:about ?p ; schema:isPartOf <https://en.wikipedia.org/> ; schema:name ?title .
+      }`, `Wikipedia articles ${n}`);
+    for(const r of rows) if(r.title) titleOf.set(r.title, r.p);
+  }
+  console.log(`  ${titleOf.size} players have an English Wikipedia article.`);
+  let read = 0, found = 0;
+  try {
+    for(const group of chunks([...titleOf.keys()], 50)){
+      // Only the top of each article (where the infobox is); the whole
+      // article if Wikipedia won't give just the top for several at once.
+      const url = 'https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&maxlag=5'
+        + '&prop=revisions&rvprop=content&rvslots=main&titles=' + encodeURIComponent(group.join('|'));
+      let data = await wikiFetch(url + '&rvsection=0');
+      if(data.error) data = await wikiFetch(url);
+      if(data.error) throw new Error(data.error.info || data.error.code);
+      // Follow renamed and redirected titles back to the title we asked for.
+      const back = new Map();
+      for(const m of [...(data.query?.normalized || []), ...(data.query?.redirects || [])]) back.set(m.to, back.get(m.from) || m.from);
+      for(const page of data.query?.pages || []){
+        const text = page.revisions?.[0]?.slots?.main?.content;
+        const pid = titleOf.get(back.get(page.title) || page.title);
+        if(!text || !pid) continue;
+        read++;
+        const spells = parseNationalTeams(text);
+        if(spells.length) found++;
+        for(const s of spells) addIntl(intl, pid, s.country, s.start, s.end);
+      }
+      if(read % 1000 < 50) console.log(`  Wikipedia articles read: ${read}.`);
+    }
+  } catch(err){
+    console.log(`  Stopped reading Wikipedia (${err.message}); keeping the international caps found so far.`);
+  }
+  console.log(`  ${found} of ${read} articles list a senior national team.`);
 }
 
 // Wikidata careers lag behind for some players. A career counts as up to
@@ -482,8 +603,13 @@ async function main(){
   let players = await matchWikidata(squad);
 
   console.log('\n4. Fetching careers...');
-  const { careers, intl, checked } = await fetchCareers(players, teams);
+  const { careers, intl: intlMap, checked } = await fetchCareers(players, teams);
   console.log(`  ${careers.length} career rows for ${new Set(careers.map(c => c.player_id)).size} players.`);
+  console.log(`  ${intlMap.size} senior international spells from Wikidata.`);
+
+  console.log('\n4b. Reading international caps from Wikipedia...');
+  await fetchWikipediaCaps(players, intlMap);
+  const intl = intlRows(intlMap);
   console.log(`  ${intl.length} senior international spells for ${new Set(intl.map(c => c.player_id)).size} players.`);
   markCareers(players, careers);
   console.log(`  ${players.filter(p => p.career_current).length} careers are up to date with the player's current club.`);
