@@ -62,7 +62,7 @@ const CLUB_OVERRIDES = {
 const CAREER_MIN_FAME = 0;
 
 const SPARQL_URL = 'https://query.wikidata.org/sparql';
-const USER_AGENT = 'PitchMarket/1.0 (https://pitchmarket.github.io/Pitchmarket/; daily football games)';
+const USER_AGENT = 'PitchMarket/1.0 (https://pitchmarketgame.com/; daily football games)';
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // ---------- Wikidata ----------
