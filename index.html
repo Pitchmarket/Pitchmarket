@@ -477,6 +477,16 @@ td.spark-cell{ width:100px; }
 .pro-btn.ghost{ border:1px solid var(--border); color:var(--chalk); }
 .pro-btn.filled{ background:var(--gilt-fill); color:var(--on-gilt); }
 .badge-pop{ position:absolute; top:-11px; right:20px; background:var(--gilt); color:var(--on-gilt); font-family:var(--font-mono); font-size:10px; font-weight:700; padding:3px 9px; border-radius:var(--r-sm); letter-spacing:.04em; }
+button.pro-btn{ width:100%; font:inherit; font-weight:700; font-size:13.5px; cursor:pointer; background:none; }
+button.pro-btn.filled{ background:var(--gilt-fill); }
+.pro-btn.is-idle{ cursor:default; opacity:0.7; }
+.soon-tag{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--steel-dim); border:1px solid var(--border); border-radius:999px; padding:1px 7px; margin-left:4px; vertical-align:1px; white-space:nowrap; }
+.plan-test-note{ margin-top:18px; font-size:12px; color:var(--steel-dim); text-align:center; overflow-wrap:anywhere; }
+.manage-sub{ font-size:12px; color:var(--steel); text-decoration:underline; white-space:nowrap; }
+.lb-tier{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:.04em; padding:1px 6px; border-radius:var(--r-sm); margin-left:6px; vertical-align:1px; background:var(--gilt); color:var(--on-gilt); }
+.lb-tier.ultimate{ background:linear-gradient(90deg,#E7B54B,#F5D687); }
+/* Five plans fit one row on wide screens. */
+@media(min-width:1100px){ .pro-grid{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; } .pro-grid .pro-card{ padding:22px 18px; } }
 @media(max-width:860px){ .pro-grid{ grid-template-columns:1fr; } }
 
 /* ===== Disclaimer bar ===== */
@@ -1228,6 +1238,7 @@ html{ scroll-padding-top:56px; }
       </div>
       <span id="proBadge" style="display:none; font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--on-gilt); background:var(--gilt); padding:3px 7px; border-radius:var(--r-sm); margin-left:8px;">PRO</span>
     </div>
+    <a class="manage-sub" id="manageSubLink" href="#" target="_blank" rel="noopener" style="display:none;">Manage subscription</a>
     <button class="nav-cta" id="authBtn" style="border:none; cursor:pointer;">Sign in to trade</button>
   </div>
   <button type="button" class="help-btn" id="helpBtn" aria-label="How PitchMarket works" title="How PitchMarket works">?</button>
@@ -1458,6 +1469,7 @@ html{ scroll-padding-top:56px; }
     <div class="sec-desc" id="proDesc">Pro never touches your buying power or your leaderboard standing — it's ad-free browsing and sharper data, nothing else.</div>
   </div>
   <div class="pro-grid" id="proGrid"></div>
+  <p class="plan-test-note mono" id="planTestNote" style="display:none;"></p>
 </section>
 
 <section id="explorer">
@@ -1888,24 +1900,19 @@ let siteContent = {
   pro: {
     eyebrow:'MEMBERSHIP', title:'Play free. Go deeper if you want.',
     desc:"Every tier competes on identical terms. Pro and Ultimate add tools, data, customization and comfort — never an edge in trading or the leaderboard.",
+    // Admin sets the displayed price and period of each card; what each
+    // plan includes is fixed in PLAN_CARDS so the cards stay honest.
     plans:[
-      { tier:'Free', tagline:'Play PitchMarket', price:'$0', period:'/mo', featured:false, badge:'',
-        feats:['Ads','Basic rankings','Basic watchlist','Standard data','Basic portfolio history','No paid feature affects competitive outcomes'],
-        cta:'Current plan', checkout_url:'' },
-      { tier:'Pro', tagline:'Enhance Your Experience', price:'$1.99', period:'/mo', featured:false, badge:'',
-        feats:['No ads','Private rankings/leagues','More watchlist slots','Market simulations','Advanced portfolio analytics','Custom price/event alerts','Expanded personal history','Better profile customization'],
-        cta:'Upgrade to Pro', checkout_url:'PASTE_YOUR_STRIPE_PRO_MONTHLY_LINK_HERE' },
-      { tier:'Pro Annual', tagline:'Enhance Your Experience', price:'$20', period:'/yr', featured:false, badge:'',
-        feats:['Everything in Pro','Save vs. paying monthly'],
-        cta:'Upgrade to Pro Annual', checkout_url:'PASTE_YOUR_STRIPE_PRO_ANNUAL_LINK_HERE' },
-      { tier:'Ultimate', tagline:'Analyze Everything', price:'$4.99', period:'/mo', featured:true, badge:'Most popular',
-        feats:['Everything in Pro','Unlimited watchlists','Unlimited market simulations','Full historical market data','Deeper portfolio analytics','Advanced charts & visualizations','Custom dashboards','Unlimited private rankings/leagues','Custom private league branding','AI-written portfolio recaps','Weekly/monthly personalized reports','Early access to new non-competitive features','Ultimate profile badge & cosmetics'],
-        cta:'Upgrade to Ultimate', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_MONTHLY_LINK_HERE' },
-      { tier:'Ultimate Annual', tagline:'Analyze Everything', price:'$50', period:'/yr', featured:false, badge:'',
-        feats:['Everything in Ultimate','Save vs. paying monthly'],
-        cta:'Upgrade to Ultimate Annual', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_ANNUAL_LINK_HERE' },
+      { tier:'Free', price:'$0', period:'/mo' },
+      { tier:'Pro', price:'$1.99', period:'/mo' },
+      { tier:'Pro Annual', price:'$20', period:'/yr' },
+      { tier:'Ultimate', price:'$4.99', period:'/mo' },
+      { tier:'Ultimate Annual', price:'$50', period:'/yr' },
     ],
   },
+  // Stripe settings, edited in admin: mode off / test / live, the customer
+  // portal link and a Payment Link per price.
+  payments: { mode:'test', portal_url:'', links:{} },
   classes:[
     { icon:'EQ', title:'Club equities', desc:'Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.', stat1_n:'±4.8%', stat1_l:'Avg. matchday move', stat2_n:'2,140', stat2_l:'Clubs listed' },
     { icon:'NT', title:'National team bonds', desc:'Fixed-tenor instruments that mature at the end of each major tournament. Low volatility, steady coupon-like appreciation as a squad advances through the knockout rounds.', stat1_n:'±0.6%', stat1_l:'Avg. daily move', stat2_n:'86', stat2_l:'Federations listed' },
@@ -1938,6 +1945,117 @@ let siteContent = {
   ad_rails:{ left:'', right:'' },
   disclaimer:{ text:'PitchMarket is a free-to-play simulation for entertainment purposes. Club and team prices are fabricated and move based on publicly available results — they do not represent real equity, shares, or any ownership interest in any club, team, league, or federation, and no club or federation endorses or is affiliated with this product. Fan Coins have no cash value and cannot be purchased, sold, redeemed, exchanged, or withdrawn under any circumstance — every account starts with the same balance regardless of subscription tier. Pro is a paid subscription for ads-free browsing and additional data only; it confers no trading advantage and no benefit toward ranked competition standing. Ranked competition prizes, eligibility, and official rules will be published separately before any prize period begins.' },
 };
+
+// ============================================================
+// PLANS
+// ============================================================
+// What each plan includes. Fixed here (not in admin) so the cards only
+// list things that exist; soon:true marks a feature from a later release.
+const PRO_FEATS = [
+  {t:'No ads'}, {t:'5 watchlist slots'}, {t:'Price alerts'},
+  {t:'Private leagues: create one and invite your mates', soon:true},
+  {t:'Portfolio history', soon:true}, {t:'Pro skins'}, {t:'Pro badge'},
+];
+const ULTIMATE_FEATS = [
+  {t:'Everything in Pro'}, {t:'15 watchlist slots'}, {t:'Kickabout archive', soon:true},
+  {t:'Weekly AI recap', soon:true}, {t:'Compare charts', soon:true},
+  {t:'League branding', soon:true}, {t:'Ultimate badge'},
+];
+const PLAN_CARDS = [
+  { key:'free', tier:'free', name:'Free', admin:['free'], price:'$0', period:'/mo',
+    feats:[{t:'Trading, leaderboard, Daily Kickabout and every chart'}, {t:'Season Wrapped', soon:true}, {t:'2 watchlist slots'}, {t:'Ads'}] },
+  { key:'pro_monthly', tier:'pro', name:'Pro', admin:['pro','pro monthly'], price:'$1.99', period:'/mo', feats:PRO_FEATS },
+  { key:'pro_yearly', tier:'pro', name:'Pro yearly', admin:['pro annual','pro yearly'], price:'$20', period:'/yr', feats:PRO_FEATS },
+  { key:'ultimate_monthly', tier:'ultimate', name:'Ultimate', admin:['ultimate','ultimate monthly'], price:'$4.99', period:'/mo', feats:ULTIMATE_FEATS, featured:true, badge:'Most popular' },
+  { key:'ultimate_yearly', tier:'ultimate', name:'Ultimate yearly', admin:['ultimate annual','ultimate yearly'], price:'$50', period:'/yr', feats:ULTIMATE_FEATS },
+];
+const PLAN_TEST_NOTE = 'Test mode: pay with card 4242 4242 4242 4242, any future date, any CVC';
+
+// The signed-in player's plan, from my_plan(). Signed out: free.
+let currentPlan = { tier:'free', source:'free' };
+let plansReady = false;   // set once currentSession exists (cards depend on it)
+function planTier(){ return ['pro','ultimate'].includes(currentPlan.tier) ? currentPlan.tier : 'free'; }
+function hasPaidPerks(){ return planTier() !== 'free'; }
+function paymentsSettings(){
+  const p = siteContent.payments || {};
+  return { mode: ['off','test','live'].includes(p.mode) ? p.mode : 'off',
+           portal_url: p.portal_url || '', links: (p.links && typeof p.links === 'object') ? p.links : {} };
+}
+// Stripe links must be web addresses; anything else counts as missing.
+function httpUrl(u){ const v = safeUrl(u); return /^https?:\/\//i.test(v) ? v : ''; }
+function checkoutUrl(link){
+  const base = httpUrl(link);
+  if(!base || !currentSession) return '';
+  try {
+    const u = new URL(base);
+    u.searchParams.set('client_reference_id', currentSession.user.id);
+    if(currentSession.user.email) u.searchParams.set('prefilled_email', currentSession.user.email);
+    return u.toString();
+  } catch(e){ return ''; }
+}
+function planButton(card){
+  const pay = paymentsSettings();
+  const tier = planTier();
+  const cls = 'pro-btn ' + (card.featured ? 'filled' : 'ghost');
+  const idle = (label)=>'<div class="'+cls+' is-idle" aria-disabled="true">'+escapeHtml(label)+'</div>';
+  const link = (href, label)=>'<a href="'+escapeHtml(href)+'" target="_blank" rel="noopener" class="'+cls+'">'+escapeHtml(label)+'</a>';
+  if(card.tier === 'free') return idle(currentSession && tier === 'free' ? 'Your plan' : 'Free to play');
+  if(pay.mode === 'off') return idle('Coming soon');
+  if(currentSession && card.tier === tier) return idle('Your plan');
+  if(currentSession && currentPlan.has_subscription){
+    const portal = httpUrl(pay.portal_url);
+    return portal ? link(portal, 'Change plan') : idle('Change plan');
+  }
+  if(!currentSession) return '<button type="button" class="'+cls+' plan-signin">Sign in to upgrade</button>';
+  const href = checkoutUrl(pay.links[card.key]);
+  return href ? link(href, 'Upgrade to '+card.name) : idle('Coming soon');
+}
+function renderPlans(){
+  const grid = document.getElementById('proGrid');
+  if(!grid) return;
+  const adminPlans = Array.isArray(siteContent.pro.plans) ? siteContent.pro.plans : [];
+  grid.innerHTML = PLAN_CARDS.map((card, i)=>{
+    // Admin sets the price: match its plan by name, else by position.
+    const a = adminPlans.find(p=>card.admin.includes(String(p.tier||'').trim().toLowerCase())) || adminPlans[i] || {};
+    const price = a.price || card.price, period = a.period || card.period;
+    return '<div class="pro-card'+(card.featured?' featured':'')+'" data-plan="'+card.key+'">'+
+      (card.badge?'<div class="badge-pop">'+escapeHtml(card.badge)+'</div>':'')+
+      '<div class="pro-tier">'+escapeHtml(card.name)+'</div>'+
+      '<div class="pro-price mono">'+safeHtml(price)+'<span>'+safeHtml(period)+'</span></div>'+
+      '<ul class="pro-feats">'+card.feats.map(f=>'<li>'+escapeHtml(f.t)+(f.soon?' <span class="soon-tag">Coming soon</span>':'')+'</li>').join('')+'</ul>'+
+      planButton(card)+
+    '</div>';
+  }).join('');
+  const note = document.getElementById('planTestNote');
+  note.textContent = PLAN_TEST_NOTE;
+  note.style.display = paymentsSettings().mode === 'test' ? '' : 'none';
+  // Account area: manage a subscription in Stripe's customer portal.
+  const manage = document.getElementById('manageSubLink');
+  const portal = httpUrl(paymentsSettings().portal_url);
+  if(currentSession && currentPlan.has_subscription && portal){
+    manage.href = portal;
+    manage.style.display = '';
+  } else manage.style.display = 'none';
+}
+document.getElementById('proGrid').addEventListener('click', (e)=>{
+  if(e.target.closest('.plan-signin')) openAuth();
+});
+// Plan state everywhere on the page: badge, ads, account link, cards.
+function applyPlan(plan){
+  currentPlan = plan && typeof plan === 'object' ? plan : { tier:'free', source:'free' };
+  currentIsUltimate = planTier() === 'ultimate';
+  currentIsPro = hasPaidPerks();
+  applyProStatus(currentIsPro);
+  document.getElementById('proBadge').textContent = currentIsUltimate ? 'ULTIMATE' : 'PRO';
+  renderPlans();
+}
+async function loadPlan(){
+  if(!sb || !currentSession) return applyPlan(null);
+  const uid = currentSession.user.id;
+  const { data, error } = await sb.rpc('my_plan');
+  if(!currentSession || currentSession.user.id !== uid) return;   // signed out meanwhile
+  applyPlan(!error && data ? data : null);
+}
 
 function renderSiteContent(){
   const c = siteContent;
@@ -1976,20 +2094,7 @@ function renderSiteContent(){
   document.getElementById('proEyebrow').textContent = c.pro.eyebrow || 'MEMBERSHIP';
   document.getElementById('proTitle').textContent = c.pro.title || '';
   document.getElementById('proDesc').textContent = c.pro.desc;
-  document.getElementById('proGrid').innerHTML = c.pro.plans.map(p=>{
-    const hasCheckout = p.checkout_url && !p.checkout_url.includes('PASTE_');
-    const btn = hasCheckout
-      ? '<a href="'+escapeHtml(safeUrl(p.checkout_url))+'" target="_blank" rel="noopener" class="pro-btn '+(p.featured?'filled':'ghost')+'">'+safeHtml(p.cta)+'</a>'
-      : '<div class="pro-btn ghost" style="cursor:default; opacity:0.7;">'+safeHtml(p.cta)+'</div>';
-    return '<div class="pro-card'+(p.featured?' featured':'')+'">'+
-      (p.badge?'<div class="badge-pop">'+safeHtml(p.badge)+'</div>':'')+
-      '<div class="pro-tier">'+safeHtml(p.tier)+'</div>'+
-      (p.tagline?'<div style="font-size:11.5px; color:var(--gilt); margin-bottom:10px; margin-top:-6px;">'+safeHtml(p.tagline)+'</div>':'')+
-      '<div class="pro-price mono">'+safeHtml(p.price)+'<span>'+safeHtml(p.period)+'</span></div>'+
-      '<ul class="pro-feats">'+p.feats.map(f=>'<li>'+safeHtml(f)+'</li>').join('')+'</ul>'+
-      btn+
-    '</div>';
-  }).join('');
+  if(plansReady) renderPlans();
   // asset classes
   document.getElementById('classesGrid').innerHTML = c.classes.map(cl=>
     '<div class="class-card">'+
@@ -2163,6 +2268,8 @@ buildTabs();
 // ============================================================
 let sb = null;
 let currentSession = null;
+plansReady = true;
+renderPlans();
 let authMode = 'signin'; // or 'signup'
 let tradeSide = 'buy';
 let tradeTeam = null; // { id, name, price }
@@ -2211,7 +2318,9 @@ function updateAuthUI(){
   if(currentSession){
     walletChip.style.display = 'flex';
     authBtn.textContent = 'Sign out';
+    renderPlans();
   } else {
+    applyPlan(null);
     walletChip.style.display = 'none';
     authBtn.textContent = 'Sign in to trade';
     document.getElementById('portfolio').style.display = 'none';
@@ -2231,17 +2340,15 @@ let currentIsPro = false, currentIsUltimate = false;
 
 async function refreshWallet(){
   if(!sb || !currentSession) return;
-  const { data, error } = await sb.from('profiles').select('coin_balance, is_pro, is_ultimate, pro_expires_at, display_name').eq('id', currentSession.user.id).single();
+  const { data, error } = await sb.from('profiles').select('coin_balance, display_name').eq('id', currentSession.user.id).single();
   if(!error && data){
     currentCash = Number(data.coin_balance) || 0;
     currentName = data.display_name || '';
     document.getElementById('walletName').textContent = (currentName || 'Fan Coins') + ' ✎';
     maybeAskForName();
     document.getElementById('walletAmt').textContent = Math.round(data.coin_balance).toLocaleString();
-    const notExpired = !data.pro_expires_at || new Date(data.pro_expires_at) > new Date();
-    currentIsUltimate = !!data.is_ultimate && notExpired;
-    currentIsPro = (!!data.is_pro || currentIsUltimate) && notExpired;
-    applyProStatus(currentIsPro);
+    // The plan comes from my_plan() (subscriptions and grants), never profiles.
+    await loadPlan();
     loadPortfolio();
     loadWatchlist();
     loadNotifications();
@@ -2347,10 +2454,11 @@ document.getElementById('portfolioBody').addEventListener('click', async (e)=>{
 // ============================================================
 const wlCharts = {};   // team_id -> Chart instance, so we can destroy on re-render
 
+// Mirrors the database caps (watchlist_slot_limit), which are what count.
 function wlSlotLimit(){
-  if(currentIsUltimate) return Infinity;
-  if(currentIsPro) return 25;
-  return 5;
+  if(currentIsUltimate) return 15;
+  if(currentIsPro) return 5;
+  return 2;
 }
 
 function populateTeamSelect(){
@@ -2956,6 +3064,12 @@ async function loadLeaderboard(){
   cacheSet('leaderboard', data || []);
   renderLeaderboard(data || []);
 }
+// PRO / ULTIMATE pill next to a paid player's name.
+function tierBadge(tier){
+  if(tier === 'ultimate') return '<span class="lb-tier ultimate">ULTIMATE</span>';
+  if(tier === 'pro') return '<span class="lb-tier">PRO</span>';
+  return '';
+}
 function renderLeaderboard(data){
   const body = document.getElementById('leaderboardBody');
   if(!data.length){
@@ -2963,7 +3077,7 @@ function renderLeaderboard(data){
     return;
   }
   body.innerHTML = data.map((row,i)=>
-    '<tr><td class="mono">#'+(i+1)+'</td><td>'+escapeHtml(row.display_name||'Trader')+'</td>'+
+    '<tr><td class="mono">#'+(i+1)+'</td><td>'+escapeHtml(row.display_name||'Trader')+tierBadge(row.tier)+'</td>'+
     '<td class="num mono"><span class="coin-ic"></span>'+Math.round(row.portfolio_value).toLocaleString()+'</td></tr>'
   ).join('');
 }
