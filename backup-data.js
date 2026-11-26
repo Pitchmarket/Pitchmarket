@@ -24,6 +24,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Restore order matters: price_history points at teams.
+// site_settings rows restore.sql never overwrites: payments (switching to
+// live mode, or back, is done on purpose in admin) and season (it decides
+// which portfolio snapshots count). A database without them still gets them.
+const KEEP_SETTINGS = ['payments', 'season'];
 const TABLES = [
   { name: 'teams',         key: 'id',  order: ['id'] },
   { name: 'site_settings', key: 'key', order: ['key'] },
@@ -53,6 +57,7 @@ export function buildRestoreSql(data, takenAt){
   out.push(`-- PitchMarket data restore, from the backup taken ${takenAt}.`);
   out.push('-- Paste all of this into the Supabase SQL Editor and click Run.');
   out.push('-- It adds missing rows and overwrites changed ones; it never deletes.');
+  out.push('-- The payments and season settings already in the database are kept.');
   out.push('-- The database tables must exist first (supabase-schema.sql).');
   out.push('');
   out.push('begin;');
@@ -82,7 +87,12 @@ export function buildRestoreSql(data, takenAt){
       out.push(`from jsonb_populate_recordset(null::public.${t.name}, ${json}::jsonb)`);
     }
     const updates = cols.filter(c => c !== t.key).map(c => `${c} = excluded.${c}`).join(', ');
-    out.push(`on conflict (${t.key}) do update set ${updates};`);
+    if(t.name === 'site_settings'){
+      out.push(`on conflict (${t.key}) do update set ${updates}`);
+      out.push(`  where public.site_settings.key not in (${KEEP_SETTINGS.map(lit).join(', ')});`);
+    } else {
+      out.push(`on conflict (${t.key}) do update set ${updates};`);
+    }
   }
   out.push('');
   out.push('alter table public.teams enable trigger user;');
@@ -92,7 +102,7 @@ export function buildRestoreSql(data, takenAt){
   return out.join('\n');
 }
 
-function buildReadme(data, takenAt){
+export function buildReadme(data, takenAt){
   const counts = TABLES.map(t => `| \`${t.name}\` | ${data[t.name].length} |`).join('\n');
   return `# PitchMarket data backup
 
@@ -111,6 +121,7 @@ No player data is included: no emails, balances, holdings or trades.
 2. Open \`restore.sql\` in this branch, copy all of it, paste it into a new query in the SQL Editor and click **Run**.
 
 \`restore.sql\` adds missing rows and overwrites changed ones. It never deletes anything.
+It never changes the \`payments\` or \`season\` rows of \`site_settings\` already in the database (it only adds them if missing): payments mode is switched to live, or back, on purpose in admin, and the season start decides which portfolio snapshots count.
 
 To restore an older night, open this branch's commit history, pick the date, and use that commit's \`restore.sql\`.
 `;
@@ -164,7 +175,7 @@ async function main(){
   console.log(`Backup written to ${outDir}.`);
 }
 
-// Only run when called directly, so tests can import buildRestoreSql.
+// Only run when called directly, so tests can import buildRestoreSql and buildReadme.
 if(import.meta.url === `file://${process.argv[1]}`){
   main().catch(err => { console.error('Backup failed:', err.message); process.exit(1); });
 }

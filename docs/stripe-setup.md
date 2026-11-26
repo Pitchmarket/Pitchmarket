@@ -11,7 +11,7 @@ Set aside about an hour. Do the parts in order: later parts need things you copy
 - **Supabase**: the database behind the site. You already use it for the SQL Editor.
 - **Edge Function**: a small program that runs on Supabase. Ours is called `stripe-webhook`.
 - **Webhook**: a message Stripe sends to that program each time something happens, such as "someone paid" or "someone cancelled". That's how the site finds out who has Pro.
-- **Secret**: a password-like value that lets two systems trust each other. Secrets go into Supabase only (Part 7). Never paste one into a chat, an email, the site, admin or GitHub.
+- **Secret**: a password-like value that lets two systems trust each other. Secrets go into Supabase only (Part 8). Never paste one into a chat, an email, the site, admin or GitHub.
 
 **Keep a notepad open.** You'll collect these as you go:
 
@@ -33,7 +33,7 @@ The price IDs and links aren't secret. The two keys are: copy each one straight 
 2. In the left sidebar click **SQL Editor**, then **New query**.
 3. In GitHub, open `supabase-pro-1.sql`, copy all of it, and paste it into the query box.
 4. Click **Run**.
-5. **You should see** one row at the bottom, with a `payments` column showing `"mode": "test"` and counts of 0 for subscriptions and grants. Running it a second time does no harm.
+5. **You should see** one row at the bottom, with a `payments` column showing `"mode": "test"`, 0 subscriptions, and 0 grants (or one for each player who already had Pro or Ultimate given by hand: they keep it). Running it a second time does no harm.
 
 ## Part 2: Create a Stripe account
 
@@ -84,7 +84,7 @@ Make one link for each of the four prices:
 
 **Check:** you have four links, each labelled, each starting `https://buy.stripe.com/test_`.
 
-## Part 5: Set up the customer portal
+## Part 5: Set up the customer portal and failed payments
 
 The **customer portal** is a Stripe page where players manage their own subscription: cancel, change card, or switch between Pro and Ultimate. The site's "Manage subscription" link opens it.
 
@@ -96,6 +96,14 @@ The **customer portal** is a Stripe page where players manage their own subscrip
 4. Click **Save** (or **Save changes**) at the top or bottom of the page.
 5. Find the **Login link** section near the top of the same page. If there's an **Activate link** button, click it.
 6. Copy the login link into your notepad. It starts `https://billing.stripe.com/p/login/test_`.
+
+Now tell Stripe what to do when a renewal can't be paid (an expired card, say). Stripe keeps the subscription "past due" while it retries the card; the site gives a past-due player Pro or Ultimate for 3 days only, then treats them as Free until a payment goes through.
+
+7. Click the **gear icon** (Settings), then under **Billing** click **Subscriptions and emails**. (Or search "Manage failed payments".)
+8. Under **Manage failed payments**, set the retries to the shortest window offered (for example a custom schedule that retries within about 3 days, or the shortest Smart Retries period).
+9. Under **If all retries for a payment fail**, choose **Cancel the subscription**.
+10. Click **Save**.
+11. **You should see** "Cancel the subscription" selected. A player whose card keeps failing then loses the plan for good once the retries run out, instead of staying "past due" forever. If they pay during the retries, the plan comes straight back.
 
 ## Part 6: Put the function on Supabase
 
@@ -194,9 +202,10 @@ Don't do this until the first two items are done. Test purchases stop counting a
 
 1. **Legal pages on the site:** terms of service, privacy policy, and a refund policy.
 2. **Activate your Stripe account:** turn test mode off and follow Stripe's **Activate payments** steps (business details, bank account for payouts).
-3. **In live mode, recreate** everything from Parts 3 to 5 and 7: the two products and four prices, the four Payment Links, the customer portal settings and its login link, and the webhook endpoint (same URL, same four events). Live items start `price_...`, `https://buy.stripe.com/...` (no `test_`), `https://billing.stripe.com/p/login/...` and `whsec_...`.
+3. **In live mode, recreate** everything from Parts 3 to 5 and 7: the two products and four prices, the four Payment Links, the customer portal settings and its login link, the failed-payments settings (Part 5, steps 7 to 10: **Settings → Billing → Subscriptions and emails → Manage failed payments**, a short retry window, and **If all retries for a payment fail**: **Cancel the subscription**), and the webhook endpoint (same URL, same four events). Live items start `price_...`, `https://buy.stripe.com/...` (no `test_`), `https://billing.stripe.com/p/login/...` and `whsec_...`.
 4. **Replace all six secrets** in Supabase (Part 8) with the live values: the live secret key `sk_live_...`, the live webhook's signing secret, and the four live price IDs. To replace one, edit it or delete it and add it again with the same name.
-5. **In admin**, paste the four live Payment Links and the live portal link over the test ones, choose **Live**, and click **Save**.
-6. **Check:** buy Pro monthly with a real card, see it switch on, then cancel and refund yourself from Stripe (**Payments**, click the payment, **Refund**).
+5. **Delete or disable the test-mode webhook endpoint.** Switch Stripe back to test mode, open **Developers → Webhooks**, click the endpoint, and choose **Delete** (or **Disable**). It points at the same function, which now only has the live signing secret, so its messages would all fail.
+6. **In admin**, paste the four live Payment Links and the live portal link over the test ones, choose **Live**, and click **Save**.
+7. **Check:** buy Pro monthly with a real card, see it switch on, then cancel and refund yourself from Stripe (**Payments**, click the payment, **Refund**).
 
 The function itself doesn't change: there's nothing to redeploy for live.

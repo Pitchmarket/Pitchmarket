@@ -144,10 +144,10 @@ python3 -m http.server 8765 --bind 127.0.0.1 &
 node tests/browser/smoke.mjs
 ```
 
-The Stripe webhook's plan logic has Node tests:
+The Stripe webhook's plan logic and the backup's restore script have Node tests:
 
 ```
-node --test tests/stripe-plan.test.mjs
+node --test tests/stripe-plan.test.mjs tests/backup-restore.test.mjs
 ```
 
 ## Contributing
