@@ -4,10 +4,11 @@
 -- supabase-security-fixes.sql, supabase-price-lag-lock.sql,
 -- supabase-trade-cooldown.sql, supabase-names-and-leaderboard.sql,
 -- supabase-daily-kickabout.sql, supabase-kickabout-2.sql and
--- supabase-squads.sql applied.
+-- supabase-squads.sql applied, and later changes (supabase-error-log.sql,
+-- supabase-pro-1.sql) folded in.
 -- Running this on an empty Supabase project rebuilds the backend:
 -- tables, access rules (RLS), functions and triggers. It creates no
--- data: no teams, settings or players.
+-- data (no teams or players) except the starting payments settings.
 --
 -- Keep this file in step with the live database. When you change
 -- something in the Supabase dashboard, change it here in the same pull
@@ -352,25 +353,7 @@ begin
 end;
 $function$;
 
--- Top players by coins plus holdings at current prices. Hidden accounts
--- (the organiser's) are left out.
-create or replace function public.get_leaderboard(p_limit integer default 20)
- returns table(display_name text, portfolio_value numeric)
- language sql
- security definer
- set search_path = public
-as $function$
-  select
-    coalesce(p.display_name, 'Trader') as display_name,
-    p.coin_balance + coalesce(sum(h.shares * t.price), 0) as portfolio_value
-  from profiles p
-  left join holdings h on h.user_id = p.id
-  left join teams t on t.id = h.team_id
-  where not p.hidden_from_leaderboard
-  group by p.id, p.display_name, p.coin_balance
-  order by portfolio_value desc
-  limit p_limit;
-$function$;
+-- get_leaderboard is in the Plans section at the end (it needs user_tier).
 
 create or replace function public.set_display_name(p_name text)
  returns void
@@ -564,7 +547,8 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Watchlist size: 5 free, 25 Pro, unlimited Ultimate.
+-- Watchlist size: 2 Free, 5 Pro, 15 Ultimate. Players already over keep
+-- their clubs but can't add more.
 create or replace function public.watchlist_slot_limit()
  returns trigger
  language plpgsql
@@ -574,23 +558,11 @@ as $function$
 declare
   v_count int;
   v_limit int;
-  v_pro boolean;
-  v_ultimate boolean;
 begin
-  select is_pro, is_ultimate into v_pro, v_ultimate
-  from profiles where id = new.user_id;
-
-  if coalesce(v_ultimate, false) then
-    return new;                     -- unlimited
-  elsif coalesce(v_pro, false) then
-    v_limit := 25;
-  else
-    v_limit := 5;
-  end if;
-
+  v_limit := case user_tier(new.user_id) when 'ultimate' then 15 when 'pro' then 5 else 2 end;
   select count(*) into v_count from watchlist where user_id = new.user_id;
   if v_count >= v_limit then
-    raise exception 'Watchlist full: your plan allows % teams. Upgrade for more slots.', v_limit;
+    raise exception 'Watchlist full: your plan allows % clubs.', v_limit;
   end if;
   return new;
 end;
@@ -643,23 +615,21 @@ begin
   insert into notifications (user_id, team_id, kind, threshold, price, team_name)
   select w.user_id, new.id, 'below', w.alert_below, new.price, new.name
   from watchlist w
-  join profiles p on p.id = w.user_id
   where w.team_id = new.id
     and w.alert_below is not null
     and old.price >= w.alert_below
     and new.price <  w.alert_below
-    and (coalesce(p.is_pro, false) or coalesce(p.is_ultimate, false));
+    and user_tier(w.user_id) <> 'free';
 
   -- Upward crossings
   insert into notifications (user_id, team_id, kind, threshold, price, team_name)
   select w.user_id, new.id, 'above', w.alert_above, new.price, new.name
   from watchlist w
-  join profiles p on p.id = w.user_id
   where w.team_id = new.id
     and w.alert_above is not null
     and old.price <= w.alert_above
     and new.price >  w.alert_above
-    and (coalesce(p.is_pro, false) or coalesce(p.is_ultimate, false));
+    and user_tier(w.user_id) <> 'free';
 
   return new;
 end;
@@ -1524,3 +1494,346 @@ end;
 $function$;
 revoke execute on function public.log_client_error(text, text, text, text) from public;
 grant execute on function public.log_client_error(text, text, text, text) to anon, authenticated;
+
+-- ===================================================================
+-- Plans (supabase-pro-1.sql): Stripe subscriptions, manual grants,
+-- user_tier, the leaderboard with tiers, admin plan tools and portfolio
+-- snapshots. The watchlist cap and price alerts above use user_tier.
+-- ===================================================================
+
+-- ---------- Tables ----------
+
+-- One row per Stripe subscription (the id is Stripe's subscription id).
+create table if not exists public.subscriptions (
+  id                    text primary key,
+  user_id               uuid not null references auth.users(id) on delete cascade,
+  stripe_customer_id    text,
+  tier                  text check (tier in ('pro', 'ultimate')),
+  status                text not null,
+  current_period_end    timestamptz,
+  cancel_at_period_end  boolean not null default false,
+  livemode              boolean not null,
+  updated_at            timestamptz not null default now()
+);
+create index if not exists subscriptions_user on public.subscriptions (user_id);
+alter table public.subscriptions enable row level security;
+drop policy if exists "players read own subscriptions" on public.subscriptions;
+create policy "players read own subscriptions" on public.subscriptions
+  for select using (auth.uid() = user_id);
+
+-- Plans given by hand from admin. No policies: only the admin functions
+-- below read or write it.
+create table if not exists public.grants (
+  user_id     uuid primary key references auth.users(id) on delete cascade,
+  tier        text check (tier in ('pro', 'ultimate')),
+  until       timestamptz,          -- null: no end date
+  note        text,
+  granted_at  timestamptz not null default now()
+);
+alter table public.grants enable row level security;
+
+-- Each player's portfolio value at the end of each day (UK date).
+create table if not exists public.portfolio_snapshots (
+  user_id  uuid references auth.users(id) on delete cascade,
+  day      date,
+  value    numeric not null,
+  primary key (user_id, day)
+);
+alter table public.portfolio_snapshots enable row level security;
+drop policy if exists "players read own snapshots" on public.portfolio_snapshots;
+create policy "players read own snapshots" on public.portfolio_snapshots
+  for select using (auth.uid() = user_id);
+
+-- Payments settings, edited in admin. Starts in test mode.
+insert into public.site_settings (key, value)
+values ('payments', '{"mode":"test","portal_url":"","links":{}}'::jsonb)
+on conflict (key) do nothing;
+
+-- ---------- Settings ----------
+
+-- Whether the caller is the admin account.
+create or replace function public.is_admin()
+ returns boolean
+ language sql
+ stable
+ set search_path = public
+as $function$
+  select coalesce((auth.jwt() ->> 'email') = 'pitchmarketadmin@gmail.com', false);
+$function$;
+
+-- Payments mode (off, test or live), portal link and buy links.
+create or replace function public.payments_settings()
+ returns jsonb
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select coalesce(
+    (select value from site_settings where key = 'payments'),
+    '{"mode":"test","portal_url":"","links":{}}'::jsonb);
+$function$;
+
+-- When the current season started, or null before the first reset.
+create or replace function public.season_start()
+ returns timestamptz
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select nullif(value ->> 'start', '')::timestamptz from site_settings where key = 'season';
+$function$;
+
+-- ---------- Plans ----------
+
+-- free 0, pro 1, ultimate 2.
+create or replace function public.tier_rank(p_tier text)
+ returns integer
+ language sql
+ immutable
+ set search_path = public
+as $function$
+  select case p_tier when 'ultimate' then 2 when 'pro' then 1 else 0 end;
+$function$;
+
+-- Whether a subscription gives its tier now: active, trialing or past_due,
+-- its period ended less than 3 days ago, and a test purchase doesn't count
+-- once payments mode is live.
+create or replace function public.subscription_counts(p_status text, p_period_end timestamptz, p_livemode boolean)
+ returns boolean
+ language sql
+ stable
+ set search_path = public
+as $function$
+  select coalesce(
+    p_status in ('active', 'trialing', 'past_due')
+    and p_period_end > now() - interval '3 days'
+    and (p_livemode or coalesce(payments_settings() ->> 'mode', 'test') <> 'live'),
+    false);
+$function$;
+
+-- A player's plan: {tier, source, period_end, cancel_at_period_end, test,
+-- has_subscription}. The highest tier of a counting subscription and an
+-- unexpired grant wins; on a tie the subscription is the source.
+create or replace function public.plan_of(p_user uuid)
+ returns jsonb
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+declare
+  s subscriptions%rowtype;
+  g grants%rowtype;
+  v_sub int := 0;
+  v_grant int := 0;
+begin
+  select * into s from subscriptions
+  where user_id = p_user and tier is not null
+    and subscription_counts(status, current_period_end, livemode)
+  order by tier_rank(tier) desc, current_period_end desc
+  limit 1;
+  if found then v_sub := tier_rank(s.tier); end if;
+
+  select * into g from grants
+  where user_id = p_user and tier is not null and (until is null or until > now());
+  if found then v_grant := tier_rank(g.tier); end if;
+
+  if v_sub > 0 and v_sub >= v_grant then
+    return jsonb_build_object('tier', s.tier, 'source', 'stripe',
+      'period_end', s.current_period_end, 'cancel_at_period_end', s.cancel_at_period_end,
+      'test', not s.livemode, 'has_subscription', true);
+  elsif v_grant > 0 then
+    return jsonb_build_object('tier', g.tier, 'source', 'grant',
+      'period_end', g.until, 'cancel_at_period_end', false,
+      'test', coalesce(not s.livemode, false), 'has_subscription', s.id is not null);
+  else
+    return jsonb_build_object('tier', 'free', 'source', 'free',
+      'period_end', null, 'cancel_at_period_end', false,
+      'test', false, 'has_subscription', false);
+  end if;
+end;
+$function$;
+
+-- 'free', 'pro' or 'ultimate'. Every limit checks this.
+create or replace function public.user_tier(p_user uuid)
+ returns text
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select plan_of(p_user) ->> 'tier';
+$function$;
+
+-- Called by the page: the signed-in player's plan.
+create or replace function public.my_plan()
+ returns jsonb
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select case when auth.uid() is null
+    then jsonb_build_object('tier', 'free', 'source', 'free')
+    else plan_of(auth.uid()) end;
+$function$;
+
+-- ---------- Leaderboard ----------
+
+-- Top players by coins plus holdings at current prices, with their tier
+-- for badges. Hidden accounts (the organiser's) are left out.
+create function public.get_leaderboard(p_limit integer default 20)
+ returns table(display_name text, portfolio_value numeric, tier text)
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select top.display_name, top.portfolio_value, user_tier(top.id) as tier
+  from (
+    select
+      p.id,
+      coalesce(p.display_name, 'Trader') as display_name,
+      p.coin_balance + coalesce(sum(h.shares * t.price), 0) as portfolio_value
+    from profiles p
+    left join holdings h on h.user_id = p.id
+    left join teams t on t.id = h.team_id
+    where not p.hidden_from_leaderboard
+    group by p.id, p.display_name, p.coin_balance
+    order by portfolio_value desc
+    limit p_limit
+  ) top
+  order by top.portfolio_value desc;
+$function$;
+
+-- ---------- Admin ----------
+
+-- Everyone on Pro or Ultimate, plus every grant (even one that has ended).
+create or replace function public.admin_list_plans()
+ returns table(user_id uuid, email text, display_name text, tier text, source text, until timestamptz, note text)
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+#variable_conflict use_column
+begin
+  if not is_admin() then
+    raise exception 'Admins only.';
+  end if;
+  return query
+  select x.user_id, u.email::text, p.display_name,
+    pl.plan ->> 'tier', pl.plan ->> 'source',
+    case when g.user_id is not null then g.until else (pl.plan ->> 'period_end')::timestamptz end,
+    g.note
+  from (select s.user_id from subscriptions s union select gr.user_id from grants gr) x
+  join auth.users u on u.id = x.user_id
+  left join profiles p on p.id = x.user_id
+  left join grants g on g.user_id = x.user_id
+  cross join lateral (select plan_of(x.user_id) as plan) pl
+  where pl.plan ->> 'tier' <> 'free' or g.user_id is not null
+  order by lower(u.email);
+end;
+$function$;
+
+-- Give a player Pro or Ultimate by email, until a date (null: no end).
+-- Replaces any grant they already have.
+create or replace function public.admin_grant_plan(p_email text, p_tier text, p_until timestamptz, p_note text)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_user uuid;
+begin
+  if not is_admin() then
+    raise exception 'Admins only.';
+  end if;
+  if p_tier is null or p_tier not in ('pro', 'ultimate') then
+    raise exception 'Plan must be pro or ultimate.';
+  end if;
+  select id into v_user from auth.users
+  where lower(email) = lower(btrim(coalesce(p_email, '')))
+  order by created_at
+  limit 1;
+  if v_user is null then
+    raise exception 'No player with that email.';
+  end if;
+  insert into grants (user_id, tier, until, note, granted_at)
+  values (v_user, p_tier, p_until, nullif(btrim(coalesce(p_note, '')), ''), now())
+  on conflict (user_id) do update
+    set tier = excluded.tier, until = excluded.until, note = excluded.note, granted_at = now();
+end;
+$function$;
+
+-- Take away a player's grant. A paid subscription is not affected.
+create or replace function public.admin_revoke_grant(p_user uuid)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+begin
+  if not is_admin() then
+    raise exception 'Admins only.';
+  end if;
+  delete from grants where user_id = p_user;
+end;
+$function$;
+
+-- ---------- Portfolio snapshots ----------
+
+-- Records today's (UK date) portfolio value for every player: coins plus
+-- holdings at current prices. Does nothing until a season start is
+-- recorded. Run again on the same day, it updates the day's values.
+-- Returns the number of rows written.
+create or replace function public.take_portfolio_snapshots()
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_rows integer;
+begin
+  if season_start() is null then
+    return 0;
+  end if;
+  insert into portfolio_snapshots (user_id, day, value)
+  select p.id, (now() at time zone 'Europe/London')::date,
+         p.coin_balance + coalesce(sum(h.shares * t.price), 0)
+  from profiles p
+  left join holdings h on h.user_id = p.id
+  left join teams t on t.id = h.team_id
+  group by p.id, p.coin_balance
+  on conflict (user_id, day) do update set value = excluded.value;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$function$;
+
+-- ---------- Who can call what ----------
+
+grant execute on function public.is_admin() to anon, authenticated;
+grant execute on function public.payments_settings() to anon, authenticated;
+grant execute on function public.season_start() to anon, authenticated;
+grant execute on function public.my_plan() to anon, authenticated;
+grant execute on function public.get_leaderboard(integer) to anon, authenticated;
+
+revoke execute on function public.plan_of(uuid) from public, anon, authenticated;
+revoke execute on function public.user_tier(uuid) from public, anon, authenticated;
+grant execute on function public.plan_of(uuid) to service_role;
+grant execute on function public.user_tier(uuid) to service_role;
+
+revoke execute on function public.admin_list_plans() from public, anon;
+revoke execute on function public.admin_grant_plan(text, text, timestamptz, text) from public, anon;
+revoke execute on function public.admin_revoke_grant(uuid) from public, anon;
+grant execute on function public.admin_list_plans() to authenticated;
+grant execute on function public.admin_grant_plan(text, text, timestamptz, text) to authenticated;
+grant execute on function public.admin_revoke_grant(uuid) to authenticated;
+
+revoke execute on function public.take_portfolio_snapshots() from public, anon, authenticated;
+grant execute on function public.take_portfolio_snapshots() to service_role;
