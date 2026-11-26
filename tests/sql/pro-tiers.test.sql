@@ -217,17 +217,22 @@ end $$;
 reset role;
 
 -- A player can't give themselves a plan or change payments settings.
+-- Rows exist for each update, so "0 rows updated" means blocked.
+create temp table before_state as
+  select public.user_tier((select pro_u from ids)) as tier;
+do $$ declare u uuid := (select pro_u from ids); begin
+  insert into public.grants (user_id, tier, note) values (u, 'pro', 'update target');
+  assert exists (select 1 from public.grants where user_id = u and tier = 'pro'), 'grant row to update exists';
+  assert exists (select 1 from public.subscriptions where user_id = u and tier = 'pro' and not livemode), 'subscription row to update exists';
+  assert exists (select 1 from public.site_settings where key = 'payments'), 'payments row to update exists';
+end $$;
+
 set role authenticated;
 do $$ declare
   u uuid := (select pro_u from ids);
-  v_before text;
   v_blocked boolean;
   n bigint;
 begin
-  reset role;
-  v_before := public.user_tier(u);
-  set local role authenticated;
-
   v_blocked := false;
   begin
     insert into public.subscriptions (id, user_id, tier, status, current_period_end, livemode)
@@ -254,12 +259,18 @@ begin
   update public.site_settings set value = '{"mode":"off","portal_url":"","links":{}}' where key = 'payments';
   get diagnostics n = row_count;
   assert n = 0, 'player cannot change payments settings, updated ' || n;
-
-  reset role;
-  assert public.user_tier(u) = v_before, 'tier unchanged: was ' || v_before || ', now ' || public.user_tier(u);
-  assert public.payments_settings() ->> 'mode' = 'test', 'payments mode unchanged';
 end $$;
 reset role;
+
+do $$ declare u uuid := (select pro_u from ids); v_before text := (select tier from before_state); begin
+  assert public.user_tier(u) = v_before, 'tier unchanged: was ' || v_before || ', now ' || public.user_tier(u);
+  assert (select tier from public.grants where user_id = u) = 'pro', 'grant tier unchanged';
+  assert (select tier from public.subscriptions where id = 'sub_pro') = 'pro'
+     and not (select livemode from public.subscriptions where id = 'sub_pro'), 'subscription unchanged';
+  assert not exists (select 1 from public.subscriptions where id = 'sub_fake'), 'no fake subscription';
+  assert public.payments_settings() ->> 'mode' = 'test', 'payments mode unchanged';
+  delete from public.grants where user_id = u;
+end $$;
 
 -- Function privileges, with Supabase's default EXECUTE grants in place.
 do $$ declare r text; f text; begin
