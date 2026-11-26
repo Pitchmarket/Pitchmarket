@@ -22,7 +22,6 @@ Launch blockers, roughly in the order to tackle them.
 1. **Fix team-name matching.** Run the workflow by hand with `lookback_days: 14` and clear every name in the run summary's "unmatched" list.
 2. **Going live with payments:** terms, privacy, refund pages, then the go-live checklist at the end of [docs/stripe-setup.md](docs/stripe-setup.md).
 3. **Contest rules.** Check gambling and contest law for the cash prize (see open decisions).
-4. **At public launch, set the Site URL** (and redirect URLs) in Supabase Auth to the live address, so sign-up and password emails link to the site. The site is already hosted with HTTPS on GitHub Pages; a custom domain is optional.
 
 ## Planned work
 
@@ -49,5 +48,4 @@ Not blocking launch, but wanted soon after.
 - **AI provider.** Stay on Gemini's free tier, or move to Claude (paid) for better pricing judgment and fewer quota failures?
 - **Paid data and AI tiers.** Whether to pay for football-data.org and the AI provider to avoid rate limits on busy matchdays. Also confirm football-data.org's terms allow use on a site that takes payments.
 - **Season reset.** When and how the leaderboard and coin balances reset between seasons.
-- **Hosting.** Where to host the static pages (any static host works; there's no build step).
 - **Branding.** Use club names only, or seek permission for crests? The default should be names only.

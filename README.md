@@ -2,6 +2,8 @@
 
 **Trade the table.** PitchMarket is a free-to-play simulated stock exchange for football clubs. Every player starts with 2,000 Fan Coins, buys and sells shares in clubs and national teams, and competes on a season-long leaderboard. Prices move after real match results.
 
+Live at **https://pitchmarketgame.com** (GitHub Pages with a custom domain; the old `pitchmarket.github.io/Pitchmarket` address redirects there).
+
 > PitchMarket is a simulation for entertainment. Prices are not real quotes and Fan Coins have no cash value.
 
 ## How it works

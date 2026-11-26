@@ -77,7 +77,7 @@ Make one link for each of the four prices:
 2. Under **Product**, choose **Pro**, then pick its **monthly** price ($1.99 / month). Leave the quantity at 1, and leave "Let customers adjust quantity" off.
 3. Click the **After payment** tab (or section).
 4. Choose **Don't show confirmation page** (sometimes worded "Redirect customers to your website") and enter:
-   `https://pitchmarket.github.io/Pitchmarket/`
+   `https://pitchmarketgame.com/`
 5. Click **Create link** (top right).
 6. **You should see** the new link, starting `https://buy.stripe.com/test_`. Copy it into your notepad as "Pro monthly link".
 7. Repeat steps 1 to 6 for Pro yearly ($20 / year), Ultimate monthly ($4.99 / month) and Ultimate yearly ($50 / year).
@@ -162,7 +162,7 @@ Use the price IDs (`price_...`) here, not the product IDs (`prod_...`) and not t
 
 ## Part 9: Paste the links into admin
 
-1. Open the admin page, `https://pitchmarket.github.io/Pitchmarket/admin.html`, and sign in as admin.
+1. Open the admin page, `https://pitchmarketgame.com/admin.html`, and sign in as admin.
 2. Click the **Plans & Payments** tab.
 3. Under **Payments**, choose **Test**.
 4. Paste each Payment Link into its box: **Pro monthly link**, **Pro yearly link**, **Ultimate monthly link**, **Ultimate yearly link**.
@@ -174,7 +174,7 @@ Use the price IDs (`price_...`) here, not the product IDs (`prod_...`) and not t
 
 Use a test player account, not the admin account.
 
-1. Open the site, `https://pitchmarket.github.io/Pitchmarket/`, and sign in as your test player.
+1. Open the site, `https://pitchmarketgame.com/`, and sign in as your test player.
 2. Click **Go Pro** in the top menu.
 3. **You should see** the plan cards with **Upgrade to ...** buttons, and a note giving the test card number.
 4. Click **Upgrade to Pro** on the $1.99 / month card. Stripe's checkout opens in a new tab with your email already filled in.
