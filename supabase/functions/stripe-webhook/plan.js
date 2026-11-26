@@ -17,13 +17,11 @@ export function tierForPrice(priceId, env) {
   return null;
 }
 
-// Builds a subscriptions row (without user_id / updated_at) from a Stripe
-// subscription object. Returns null when the price maps to no tier.
-export function rowFromSubscription(sub, env) {
+// Reads the subscriptions fields (without user_id / updated_at) from a Stripe
+// subscription object. `tier` is null when the price maps to no tier.
+export function subscriptionFields(sub, env) {
   const item = sub.items && sub.items.data && sub.items.data[0];
   const priceId = item && item.price ? item.price.id : null;
-  const tier = tierForPrice(priceId, env);
-  if (!tier) return null;
 
   // Newer Stripe API versions moved current_period_end onto subscription items.
   const periodEnd = sub.current_period_end ?? (item ? item.current_period_end : undefined);
@@ -32,12 +30,27 @@ export function rowFromSubscription(sub, env) {
   return {
     id: sub.id,
     stripe_customer_id: customer ?? null,
-    tier,
+    tier: tierForPrice(priceId, env),
     status: sub.status,
     current_period_end: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
     cancel_at_period_end: Boolean(sub.cancel_at_period_end),
     livemode: Boolean(sub.livemode),
   };
+}
+
+// Like subscriptionFields, but null when the price maps to no tier.
+export function rowFromSubscription(sub, env) {
+  const fields = subscriptionFields(sub, env);
+  return fields.tier ? fields : null;
+}
+
+// Decides what to write given the stored row (or null) and fresh fields from
+// subscriptionFields. A price that maps to no tier keeps the stored tier;
+// returns null when there is no tier at all (tier may not be null in a row).
+export function nextRow(existingRow, fresh) {
+  if (fresh.tier) return fresh;
+  if (existingRow && existingRow.tier) return { ...fresh, tier: existingRow.tier };
+  return null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

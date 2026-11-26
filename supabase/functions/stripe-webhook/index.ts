@@ -3,7 +3,7 @@
 // `subscriptions` table in sync. Pure logic lives in ./plan.js.
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
-import { isUuid, rowFromSubscription } from './plan.js';
+import { isUuid, nextRow, subscriptionFields } from './plan.js';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   httpClient: Stripe.createFetchHttpClient(),
@@ -31,6 +31,62 @@ function reply(status: number, text: string): Response {
   return new Response(text, { status, headers: { 'Content-Type': 'text/plain' } });
 }
 
+// Writes Stripe's current state of a subscription. `userId` is the player from
+// a checkout; without it the row must already exist or the player is found
+// from another row of the same Stripe customer.
+async function syncSubscription(sub: Stripe.Subscription, userId: string | null, forceCanceled = false): Promise<Response> {
+  const fresh = subscriptionFields(sub, priceEnv);
+  if (forceCanceled) fresh.status = 'canceled';
+
+  const existing = await supabase.from('subscriptions').select('id, tier').eq('id', fresh.id).maybeSingle();
+  if (existing.error) throw existing.error;
+
+  const row = nextRow(existing.data, fresh);
+  if (!row) {
+    console.log('subscription has a price that maps to no tier and no stored tier; not written', fresh.id);
+    return reply(200, 'ignored: unknown price');
+  }
+  if (!fresh.tier) {
+    console.log('subscription moved to a price that maps to no tier; keeping stored tier', fresh.id, row.tier);
+  }
+  const updatedAt = new Date().toISOString();
+
+  if (!userId && existing.data) {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ ...row, updated_at: updatedAt })
+      .eq('id', row.id);
+    if (error) throw error;
+    return reply(200, 'ok');
+  }
+
+  if (!userId) {
+    // No row yet: find the player from another subscription of the same customer.
+    if (!row.stripe_customer_id) {
+      console.log('subscription event for an unknown subscription with no customer', row.id);
+      return reply(200, 'ignored: unknown subscription');
+    }
+    const owner = await supabase
+      .from('subscriptions')
+      .select('user_id')
+      .eq('stripe_customer_id', row.stripe_customer_id)
+      .limit(1)
+      .maybeSingle();
+    if (owner.error) throw owner.error;
+    if (!owner.data) {
+      console.log('subscription event for a customer with no known player', row.id, row.stripe_customer_id);
+      return reply(200, 'ignored: unknown customer');
+    }
+    userId = owner.data.user_id;
+  }
+
+  const { error } = await supabase
+    .from('subscriptions')
+    .upsert({ ...row, user_id: userId, updated_at: updatedAt }, { onConflict: 'id' });
+  if (error) throw error;
+  return reply(200, 'ok');
+}
+
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<Response> {
   if (session.mode !== 'subscription') return reply(200, 'ignored: not a subscription checkout');
 
@@ -46,62 +102,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   }
 
   const sub = await stripe.subscriptions.retrieve(subId);
-  const row = rowFromSubscription(sub, priceEnv);
-  if (!row) {
-    console.log('subscription has a price that maps to no tier', sub.id);
-    return reply(200, 'ignored: unknown price');
-  }
-
-  const { error } = await supabase
-    .from('subscriptions')
-    .upsert({ ...row, user_id: userId, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-  if (error) throw error;
-  return reply(200, 'ok');
+  return await syncSubscription(sub, userId);
 }
 
-async function handleSubscriptionEvent(sub: Stripe.Subscription, deleted: boolean): Promise<Response> {
-  const row = rowFromSubscription(sub, priceEnv);
-  if (!row) {
-    console.log('subscription has a price that maps to no tier', sub.id);
-    return reply(200, 'ignored: unknown price');
-  }
-  if (deleted) row.status = 'canceled';
-  const updatedAt = new Date().toISOString();
-
-  const existing = await supabase.from('subscriptions').select('id').eq('id', row.id).maybeSingle();
-  if (existing.error) throw existing.error;
-
-  if (existing.data) {
+// Stripe doesn't guarantee event order, so never trust the event's embedded
+// object: retrieve the subscription's current state and write that.
+async function handleSubscriptionEvent(subId: string, deleted: boolean): Promise<Response> {
+  let sub: Stripe.Subscription;
+  try {
+    sub = await stripe.subscriptions.retrieve(subId);
+  } catch (err) {
+    if ((err as { code?: string })?.code !== 'resource_missing') throw err;
+    console.log('subscription no longer exists in Stripe; marking canceled', subId);
     const { error } = await supabase
       .from('subscriptions')
-      .update({ ...row, updated_at: updatedAt })
-      .eq('id', row.id);
+      .update({ status: 'canceled', updated_at: new Date().toISOString() })
+      .eq('id', subId);
     if (error) throw error;
-    return reply(200, 'ok');
+    return reply(200, 'ok: missing subscription marked canceled');
   }
-
-  // No row yet: find the player from another subscription of the same customer.
-  if (!row.stripe_customer_id) {
-    console.log('subscription event for an unknown subscription with no customer', row.id);
-    return reply(200, 'ignored: unknown subscription');
-  }
-  const owner = await supabase
-    .from('subscriptions')
-    .select('user_id')
-    .eq('stripe_customer_id', row.stripe_customer_id)
-    .limit(1)
-    .maybeSingle();
-  if (owner.error) throw owner.error;
-  if (!owner.data) {
-    console.log('subscription event for a customer with no known player', row.id, row.stripe_customer_id);
-    return reply(200, 'ignored: unknown customer');
-  }
-
-  const { error } = await supabase
-    .from('subscriptions')
-    .upsert({ ...row, user_id: owner.data.user_id, updated_at: updatedAt }, { onConflict: 'id' });
-  if (error) throw error;
-  return reply(200, 'ok');
+  return await syncSubscription(sub, null, deleted);
 }
 
 Deno.serve(async (req: Request) => {
@@ -125,9 +145,9 @@ Deno.serve(async (req: Request) => {
         return await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-        return await handleSubscriptionEvent(event.data.object as Stripe.Subscription, false);
+        return await handleSubscriptionEvent((event.data.object as Stripe.Subscription).id, false);
       case 'customer.subscription.deleted':
-        return await handleSubscriptionEvent(event.data.object as Stripe.Subscription, true);
+        return await handleSubscriptionEvent((event.data.object as Stripe.Subscription).id, true);
       default:
         return reply(200, 'ignored');
     }
