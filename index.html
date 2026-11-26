@@ -57,7 +57,11 @@
     stickers: { label:'Sticker album',      sw:['#FFE873','#E4002B','#0057B8'], fonts:'Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800' },
     chalk:    { label:'Chalk tactics',      sw:['#25332B','#F2F2EC','#F7E27A'], fonts:'Permanent+Marker&family=Patrick+Hand' },
     newspaper:{ label:'Back page',          sw:['#F2F0EB','#D7141A','#111111'], fonts:'Anton&family=Merriweather:wght@400;700&family=Roboto+Condensed:wght@400;700' },
-    retro:    { label:'Retro',              sw:['#1D4FB3','#E0262E','#FFB21E'], fonts:'Press+Start+2P&family=VT323' }
+    retro:    { label:'Retro',              sw:['#1D4FB3','#E0262E','#FFB21E'], fonts:'Press+Start+2P&family=VT323' },
+    // Pro skins (pro:true): for Pro and Ultimate players only.
+    floodlights:{ label:'Floodlights',      sw:['#0A1230','#EAF1FF','#7CF0A8'], fonts:'Saira:wght@400;500;600;700&family=Saira+Extra+Condensed:wght@700;800&family=Saira+Semi+Condensed:wght@400;500;600;700', pro:true },
+    trophy:   { label:'Trophy Cabinet',     sw:['#E4E7EC','#7B1733','#B4BAC5'], fonts:'Cinzel:wght@600;700;800&family=Libre+Franklin:wght@400;500;600;700', pro:true },
+    terrace:  { label:'Terrace',            sw:['#33363A','#C8202C','#F4B73F'], fonts:'Bebas+Neue&family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@400;500;600;700', pro:true }
   };
   window.applyTheme = function(name){
     if(!THEMES[name]) name = 'normal';
@@ -732,12 +736,21 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 .theme-wrap{ position:relative; }
 .theme-btn{ display:flex; align-items:center; gap:7px; background:none; border:1px solid var(--border); color:var(--steel); border-radius:var(--r-md); padding:7px 10px; cursor:pointer; font-family:var(--font-body); font-size:12.5px; font-weight:600; }
 .theme-btn:hover{ color:var(--chalk); border-color:var(--steel-dim); }
-.theme-menu{ display:none; position:absolute; top:calc(100% + 8px); right:0; width:230px; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:6px; z-index:130; box-shadow:0 12px 32px rgba(0,0,0,0.35); }
+.theme-menu{ display:none; position:absolute; top:calc(100% + 8px); right:0; width:230px; max-height:min(640px, calc(100dvh - 140px)); overflow-y:auto; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:6px; z-index:130; box-shadow:0 12px 32px rgba(0,0,0,0.35); }
 .theme-menu.open{ display:block; }
 .theme-opt{ display:flex; align-items:center; gap:10px; width:100%; background:none; border:none; color:var(--chalk); font-family:var(--font-body); font-size:13px; text-align:left; padding:8px 10px; border-radius:var(--r-sm); cursor:pointer; }
 .theme-opt:hover{ background:var(--panel2); }
 .theme-opt[aria-checked="true"]{ background:var(--panel2); font-weight:600; }
 .theme-opt[aria-checked="true"]::after{ content:"✓"; margin-left:auto; color:var(--accent); }
+.theme-group{ font-family:var(--eyebrow-font); font-size:10.5px; font-weight:700; letter-spacing:var(--eyebrow-tracking); text-transform:uppercase; color:var(--steel); padding:12px 10px 6px; margin-top:6px; border-top:1px solid var(--border-soft); }
+.theme-lock{ margin-left:auto; flex-shrink:0; color:var(--steel); }
+.theme-opt.is-locked{ color:var(--steel); }
+.theme-opt.is-locked:hover{ color:var(--chalk); }
+/* "Pro skins come with Pro and Ultimate." after choosing a locked skin */
+.skin-notice{ position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:140; max-width:calc(100vw - 32px); width:max-content;
+  background:var(--panel); color:var(--chalk); border:1px solid var(--border); border-left:3px solid var(--gilt); border-radius:var(--r-md); padding:10px 16px; font-size:13.5px; font-weight:600; box-shadow:0 12px 32px rgba(0,0,0,0.35); visibility:hidden; opacity:0; }
+.skin-notice.show{ visibility:visible; opacity:1; }
+@media (prefers-reduced-motion: no-preference){ .skin-notice{ transition:opacity .2s, visibility .2s; } }
 .theme-sw{ width:26px; height:18px; border-radius:3px; flex-shrink:0; box-shadow:inset 0 0 0 1px rgba(128,128,128,0.35); }
 @media(max-width:860px){ .theme-btn .theme-label{ display:none; } }
 
@@ -1160,6 +1173,167 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 [data-theme="retro"] .disclaimer-bar{ background:var(--bg-deep); border-top:3px solid var(--border); }
 [data-theme="retro"] .disclaimer-bar p{ font-size:16px; }
 
+/* ============================================================
+   PRO SKINS — for Pro and Ultimate players (THEMES entries with pro:true).
+   ============================================================ */
+
+/* ----- Floodlights: a night match under the lights ----- */
+[data-theme="floodlights"]{
+  --bg:#0A1230; --bg-deep:#060B22;
+  --page-bg:
+    radial-gradient(60% 42% at 4% -6%, rgba(234,241,255,0.16), transparent 70%),
+    radial-gradient(60% 42% at 96% -6%, rgba(234,241,255,0.16), transparent 70%),
+    radial-gradient(80% 30% at 50% 108%, rgba(63,217,138,0.10), transparent 70%),
+    #0A1230;
+  --panel:#111C42; --panel2:#18265A; --border:#2A3A78; --border-soft:#1B2756;
+  --gilt:#7CF0A8; --on-gilt:#062012;
+  --surge:#4BE08E; --drop:#FF7A7A;
+  --accent:#EAF1FF; --on-accent:#0A1230;
+  --chalk:#F2F5FF; --steel:#AEB9DA; --steel-dim:#8390BA;
+  --overlay:rgba(3,6,20,0.78);
+  --shadow:0 0 0 1px rgba(234,241,255,0.04), 0 14px 40px rgba(0,0,0,0.45);
+  --font-body:'Saira',sans-serif; --font-display:'Saira Extra Condensed',sans-serif; --font-mono:'Saira Semi Condensed',sans-serif;
+  --display-weight:800; --display-case:uppercase; --display-tracking:0.02em;
+  --eyebrow-tracking:0.14em;
+  --r-sm:4px; --r-md:8px; --r-lg:12px;
+  --ka-match:#3FD98A; --ka-close:#F5CB4E; --ka-on:#071A10;
+}
+[data-theme="floodlights"] body{ background-attachment:fixed; }
+[data-theme="floodlights"] .ticker-wrap{ background:rgba(6,11,34,0.92); border-bottom:1px solid #2A3A78; box-shadow:0 1px 0 rgba(124,240,168,0.25); }
+[data-theme="floodlights"] .tick .sym{ color:#8FA3E0; }
+[data-theme="floodlights"] .brand-mark{ background:#EAF1FF; color:#0A1230; border:none; border-radius:50%; box-shadow:0 0 18px rgba(234,241,255,0.55); }
+[data-theme="floodlights"] .brand-name span{ color:var(--gilt); }
+[data-theme="floodlights"] .nav-links a:hover{ color:#fff; text-shadow:0 0 12px rgba(234,241,255,0.6); }
+[data-theme="floodlights"] .hero{ overflow:hidden; }
+/* Two floodlight beams sweep down over the hero */
+[data-theme="floodlights"] .hero::before{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:
+    conic-gradient(from 150deg at 0% 0%, transparent 0deg, rgba(234,241,255,0.07) 12deg, transparent 28deg),
+    conic-gradient(from 182deg at 100% 0%, transparent 0deg, rgba(234,241,255,0.07) 16deg, transparent 32deg);
+}
+[data-theme="floodlights"] .hero h1{ text-shadow:0 0 28px rgba(234,241,255,0.18); }
+[data-theme="floodlights"] .hero h1 .line2{ text-shadow:0 0 26px rgba(124,240,168,0.35); }
+[data-theme="floodlights"] .btn-primary, [data-theme="floodlights"] .nav-cta{ box-shadow:0 0 22px rgba(234,241,255,0.28); }
+[data-theme="floodlights"] .sec-title{ font-size:34px; line-height:1.05; }
+[data-theme="floodlights"] .hero-chart, [data-theme="floodlights"] .class-card, [data-theme="floodlights"] .pro-card, [data-theme="floodlights"] .cupwatch, [data-theme="floodlights"] .wl-card{
+  background:linear-gradient(180deg,#16224F 0%,#111C42 60%); border-color:#2A3A78; }
+[data-theme="floodlights"] .index-card{ background:linear-gradient(180deg,#14204A,#111C42); }
+/* A thin floodlit-pitch edge along the top of each panel */
+[data-theme="floodlights"] .index-card, [data-theme="floodlights"] .class-card, [data-theme="floodlights"] .hero-chart{ border-top:2px solid rgba(124,240,168,0.55); }
+[data-theme="floodlights"] .pro-card.featured{ border-color:var(--gilt); box-shadow:0 0 0 1px rgba(124,240,168,0.3), 0 0 40px rgba(124,240,168,0.12); }
+[data-theme="floodlights"] thead th{ color:#AEB9DA; letter-spacing:.1em; }
+[data-theme="floodlights"] tbody tr:hover{ background:#14204A; }
+[data-theme="floodlights"] .tab-btn.active{ color:#fff; border-bottom-color:var(--gilt); text-shadow:0 0 10px rgba(234,241,255,0.5); }
+[data-theme="floodlights"] .chip.up{ background:rgba(75,224,142,0.14); }
+[data-theme="floodlights"] .chip.down{ background:rgba(255,122,122,0.14); }
+[data-theme="floodlights"] .disclaimer-bar{ background:#060B22; border-top-color:#1B2756; }
+
+/* ----- Trophy Cabinet: polished silverware and claret ribbon ----- */
+[data-theme="trophy"]{
+  --bg:#E4E7EC; --bg-deep:#5A1028;
+  --page-bg:
+    linear-gradient(115deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.55) 32%, rgba(255,255,255,0) 44%) fixed,
+    linear-gradient(180deg,#EEF0F3 0%,#E2E5EA 55%,#D8DCE2 100%) fixed;
+  --panel:#F7F8FA; --panel2:#ECEEF2; --border:#B4BAC5; --border-soft:#D3D7DE;
+  --gilt:#7B1733; --gilt-fill:linear-gradient(180deg,#962244 0%,#7B1733 55%,#63112A 100%); --on-gilt:#FFFFFF;
+  --surge:#1C6E40; --drop:#A8202A;
+  --accent:#7B1733; --accent-fill:var(--gilt-fill); --on-accent:#FFFFFF;
+  --chalk:#1C1F26; --steel:#4A505C; --steel-dim:#5E6470;
+  --overlay:rgba(28,31,38,0.5);
+  --shadow:inset 0 1px 0 #FFFFFF, 0 1px 0 rgba(28,31,38,0.06), 0 8px 22px rgba(28,31,38,0.08);
+  --font-body:'Libre Franklin',sans-serif; --font-display:'Cinzel',serif; --font-mono:'Libre Franklin',sans-serif;
+  --display-weight:700; --display-case:none; --display-tracking:0.03em;
+  --eyebrow-tracking:0.18em;
+  --r-sm:3px; --r-md:6px; --r-lg:10px;
+  --ka-match:#2E9E5B; --ka-close:#E3B341; --ka-on:#14161B;
+}
+[data-theme="trophy"] .ticker-wrap{ background:linear-gradient(180deg,#6E1530,#5A1028); border-bottom:2px solid #C3C8D1; }
+[data-theme="trophy"] .tick, [data-theme="trophy"] .tick .px{ color:#FFFFFF; }
+[data-theme="trophy"] .tick .sym{ color:#E8C9D2; }
+[data-theme="trophy"] .tick .up{ color:#8FE0AE; }
+[data-theme="trophy"] .tick .down{ color:#FFB3B8; }
+[data-theme="trophy"] .tick{ border-right-color:rgba(255,255,255,0.15); }
+[data-theme="trophy"] nav{ background:linear-gradient(180deg,#FAFBFC,#E9ECF0); border-bottom:1px solid #B4BAC5; box-shadow:inset 0 -3px 0 #FFFFFF, 0 1px 0 #B4BAC5; }
+[data-theme="trophy"] .brand-mark{ background:var(--gilt-fill); color:#fff; border:none; border-radius:4px 4px 50% 50%; font-family:var(--font-display); box-shadow:inset 0 0 0 2px rgba(255,255,255,0.35); }
+[data-theme="trophy"] .brand-name{ font-family:var(--font-display); text-transform:none; letter-spacing:0.04em; }
+[data-theme="trophy"] .brand-name span{ color:var(--gilt); }
+[data-theme="trophy"] .hero h1{ font-size:clamp(36px,4.8vw,60px); line-height:1.06; }
+[data-theme="trophy"] .hero h1 .line2{ color:var(--gilt); }
+[data-theme="trophy"] .eyebrow, [data-theme="trophy"] .sec-eyebrow{ color:var(--gilt); }
+[data-theme="trophy"] .eyebrow::before{ background:var(--gilt); border-radius:0; transform:rotate(45deg); }
+/* Section titles get an engraved plaque rule underneath */
+[data-theme="trophy"] .sec-title{ font-size:32px; line-height:1.2; padding-bottom:10px; background:linear-gradient(90deg,var(--gilt) 0 56px, #B4BAC5 56px 100%) left bottom/100% 2px no-repeat; }
+/* Panels: brushed silver plates with an engraved inner line */
+[data-theme="trophy"] .hero-chart, [data-theme="trophy"] .class-card, [data-theme="trophy"] .pro-card, [data-theme="trophy"] .cupwatch, [data-theme="trophy"] .wl-card, [data-theme="trophy"] .lb-rule{
+  background:linear-gradient(180deg,#FBFCFD 0%,#F1F3F6 100%); border:1px solid #B4BAC5; box-shadow:var(--shadow), inset 0 0 0 3px #FFFFFF, inset 0 0 0 4px #DDE1E7; }
+[data-theme="trophy"] .index-card{ background:linear-gradient(180deg,#FBFCFD,#F0F2F5); }
+[data-theme="trophy"] .pro-card.featured{ border:2px solid var(--gilt); }
+[data-theme="trophy"] .pro-tier{ font-family:var(--font-display); font-size:13px; color:var(--gilt); letter-spacing:.08em; }
+[data-theme="trophy"] thead th{ color:var(--gilt); font-weight:700; border-bottom:2px solid #B4BAC5; }
+[data-theme="trophy"] tbody tr:nth-child(even){ background:rgba(255,255,255,0.45); }
+[data-theme="trophy"] tbody tr:hover{ background:#FFFFFF; }
+[data-theme="trophy"] .tab-btn.active{ color:var(--gilt); border-bottom-color:var(--gilt); }
+[data-theme="trophy"] .chip.up{ background:#DDEFE3; color:var(--surge); }
+[data-theme="trophy"] .chip.down{ background:#F5DEE0; color:var(--drop); }
+[data-theme="trophy"] .btn-primary, [data-theme="trophy"] .nav-cta, [data-theme="trophy"] .pro-btn.filled{ box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(91,16,40,0.25); }
+[data-theme="trophy"] .disclaimer-bar{ background:#5A1028; border-top:2px solid #C3C8D1; }
+[data-theme="trophy"] .disclaimer-bar p{ color:#E8D3D9; }
+
+/* ----- Terrace: stand concrete, crush barriers and bar scarves ----- */
+[data-theme="terrace"]{
+  --bg:#33363A; --bg-deep:#26282B;
+  --page-bg:
+    repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 86px, rgba(0,0,0,0.16) 86px 88px, rgba(255,255,255,0.035) 88px 90px),
+    radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1.2px) 0 0/7px 7px,
+    #33363A;
+  --panel:#2A2C30; --panel2:#3E4146; --border:#55595F; --border-soft:#44474C;
+  --gilt:#F4B73F; --on-gilt:#1E1708;
+  --surge:#6FD68F; --drop:#FF8A80;
+  --accent:#C8202C; --on-accent:#FFFFFF;
+  --chalk:#F3F1EC; --steel:#C9C6BF; --steel-dim:#A4A19A;
+  --overlay:rgba(16,17,19,0.78);
+  --shadow:0 4px 0 #1C1E21;
+  --font-body:'Archivo',sans-serif; --font-display:'Bebas Neue',sans-serif; --font-mono:'Archivo Narrow',sans-serif;
+  --display-weight:400; --display-case:uppercase; --display-tracking:0.03em;
+  --eyebrow-tracking:0.12em;
+  --r-sm:2px; --r-md:2px; --r-lg:4px;
+  --scarf:repeating-linear-gradient(90deg,#C8202C 0 28px,#F3F1EC 28px 36px,#F4B73F 36px 64px,#F3F1EC 64px 72px);
+  --ka-match:#47B86A; --ka-close:#F4C542; --ka-on:#14161A;
+}
+[data-theme="terrace"] .ticker-wrap{ background:#1F2124; border-bottom:none; }
+[data-theme="terrace"] .ticker-wrap::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:4px; background:var(--scarf); }
+[data-theme="terrace"] .tick .sym{ color:var(--gilt); }
+[data-theme="terrace"] nav{ background:#2A2C30; border-bottom:none; box-shadow:0 4px 0 #1C1E21; }
+[data-theme="terrace"] .brand-mark{ background:var(--accent); color:#fff; border:2px solid var(--gilt); border-radius:2px; font-family:var(--font-display); font-weight:400; font-size:19px; }
+[data-theme="terrace"] .brand-name{ font-family:var(--font-display); font-weight:400; font-size:26px; letter-spacing:0.05em; }
+[data-theme="terrace"] .brand-name span{ color:var(--gilt); }
+[data-theme="terrace"] .hero h1{ font-size:clamp(50px,6.4vw,88px); line-height:0.92; }
+[data-theme="terrace"] .hero h1 .line2{ color:var(--gilt); }
+[data-theme="terrace"] .eyebrow{ color:var(--gilt); }
+[data-theme="terrace"] .eyebrow::before{ width:22px; height:6px; border-radius:0; background:linear-gradient(90deg,#C8202C 0 45%,#F3F1EC 45% 55%,#F4B73F 55%); }
+[data-theme="terrace"] .hero, [data-theme="terrace"] section{ border-bottom:none; }
+/* Section titles hang like a scarf banner over the barrier */
+[data-theme="terrace"] .sec-head{ position:relative; padding-bottom:14px; }
+[data-theme="terrace"] .sec-head::after{ content:""; position:absolute; left:0; bottom:0; width:min(320px,100%); height:6px; background:var(--scarf); }
+[data-theme="terrace"] .sec-title{ font-size:40px; line-height:1; }
+/* Panels sit like terrace steps: a lighter lip on top, a dark drop below */
+[data-theme="terrace"] .hero-chart, [data-theme="terrace"] .class-card, [data-theme="terrace"] .pro-card, [data-theme="terrace"] .cupwatch, [data-theme="terrace"] .wl-card, [data-theme="terrace"] .lb-rule{
+  background:#2A2C30; border:1px solid #44474C; border-top:3px solid #5C6066; box-shadow:var(--shadow); }
+[data-theme="terrace"] .index-grid, [data-theme="terrace"] .pf-summary, [data-theme="terrace"] .mini-caps{ gap:12px; background:none; border:none; overflow:visible; box-shadow:none; }
+[data-theme="terrace"] .index-card, [data-theme="terrace"] .pf-stat, [data-theme="terrace"] .mc-item{ border:1px solid #44474C; border-top:3px solid #5C6066; box-shadow:var(--shadow); }
+[data-theme="terrace"] .pro-card.featured{ border-color:var(--gilt); border-top:6px solid transparent; border-image:var(--scarf) 6 0 0 0 / 6px 0 0 0; }
+[data-theme="terrace"] .badge-pop{ background:var(--accent); color:#fff; }
+[data-theme="terrace"] thead th{ color:var(--gilt); font-weight:600; letter-spacing:.1em; }
+[data-theme="terrace"] tbody tr:nth-child(even){ background:rgba(0,0,0,0.12); }
+[data-theme="terrace"] tbody tr:hover{ background:#3E4146; }
+[data-theme="terrace"] .tab-btn.active{ color:var(--gilt); border-bottom-color:var(--accent); }
+[data-theme="terrace"] .chip.up{ background:rgba(111,214,143,0.14); }
+[data-theme="terrace"] .chip.down{ background:rgba(255,138,128,0.14); }
+[data-theme="terrace"] .btn-primary, [data-theme="terrace"] .nav-cta{ box-shadow:0 3px 0 #7A1219; }
+[data-theme="terrace"] .disclaimer-bar{ background:#1F2124; border-top:none; position:relative; }
+[data-theme="terrace"] .disclaimer-bar::before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--scarf); }
+
 /* Motion: smooth section links, eased-in sections and popups, and a
    cross-fade between this page and admin. Off for reduced motion. */
 html{ scroll-padding-top:56px; }
@@ -1249,6 +1423,7 @@ html{ scroll-padding-top:56px; }
       <span class="theme-label" id="themeLabel">Theme</span>
     </button>
     <div class="theme-menu" id="themeMenu" role="menu"></div>
+    <div class="skin-notice" id="skinNotice" role="status" aria-live="polite"></div>
   </div>
 </nav>
 
@@ -1683,26 +1858,73 @@ function themeChart(chart){
   chart.update();   // a full update: 'none' keeps the cached point colours
   return chart;
 }
+// Pro skins (THEMES entries with pro:true) open once the plan is confirmed
+// as Pro or Ultimate; checkProSkin() keeps this up to date.
+let proSkinsOpen = false;
+const LOCK_SVG = '<svg class="theme-lock" width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><rect x="1" y="6" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="M3.3 6V4.3a2.7 2.7 0 0 1 5.4 0V6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+function setTheme(name){
+  name = applyTheme(name);
+  try { localStorage.setItem('pm-theme', name); } catch(e){}
+  buildThemeMenu();
+  // Fonts may still be loading; restyle charts now and again once they arrive.
+  const restyle = ()=> Object.values((window.Chart && Chart.instances) || {}).forEach(themeChart);
+  restyle();
+  if(document.fonts) document.fonts.ready.then(restyle);
+  return name;
+}
 function buildThemeMenu(){
   const menu = document.getElementById('themeMenu');
   const btn = document.getElementById('themeBtn');
   const current = document.documentElement.getAttribute('data-theme');
   document.getElementById('themeLabel').textContent = THEMES[current].label;
-  menu.innerHTML = Object.entries(THEMES).map(([key, th])=>
-    '<button class="theme-opt" role="menuitemradio" aria-checked="'+(key===current)+'" data-theme-key="'+key+'">'+
+  const opt = ([key, th])=>{
+    const locked = th.pro && !proSkinsOpen;
+    return '<button class="theme-opt'+(locked?' is-locked':'')+'" role="menuitemradio" aria-checked="'+(key===current)+'" data-theme-key="'+key+'"'+
+      (locked?' aria-label="'+th.label+', locked: Pro and Ultimate only"':'')+'>'+
       '<span class="theme-sw" style="background:linear-gradient(135deg,'+th.sw[0]+' 0 50%,'+th.sw[1]+' 50% 75%,'+th.sw[2]+' 75%)"></span>'+
-      th.label+'</button>'
-  ).join('');
-  menu.querySelectorAll('.theme-opt').forEach(opt=> opt.onclick = ()=> withTransition(()=>{
-    const name = applyTheme(opt.dataset.themeKey);
-    try { localStorage.setItem('pm-theme', name); } catch(e){}
+      th.label+(locked?LOCK_SVG:'')+'</button>';
+  };
+  const all = Object.entries(THEMES);
+  menu.innerHTML = all.filter(([, th])=>!th.pro).map(opt).join('')+
+    '<div role="group" aria-labelledby="themeProHead"><div class="theme-group" id="themeProHead">Pro skins</div>'+
+    all.filter(([, th])=>th.pro).map(opt).join('')+'</div>';
+  menu.querySelectorAll('.theme-opt').forEach(opt=> opt.onclick = ()=>{
+    const key = opt.dataset.themeKey;
     menu.classList.remove('open'); btn.setAttribute('aria-expanded','false');
-    buildThemeMenu();
-    // Fonts may still be loading; restyle charts now and again once they arrive.
-    const restyle = ()=> Object.values(Chart.instances).forEach(themeChart);
-    restyle();
-    if(document.fonts) document.fonts.ready.then(restyle);
-  }));
+    if(THEMES[key].pro && !proSkinsOpen) return showSkinLocked();
+    withTransition(()=>{
+      try { localStorage.removeItem('pm-theme-pro'); } catch(e){}   // a choice of its own replaces any remembered skin
+      setTheme(key);
+    });
+  });
+}
+// A locked skin: point the player at the plans instead of applying it.
+let skinNoticeTimer;
+function showSkinLocked(){
+  document.getElementById('pro').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block:'start' });
+  const note = document.getElementById('skinNotice');
+  note.classList.add('show');
+  note.textContent = 'Pro skins come with Pro and Ultimate.';
+  clearTimeout(skinNoticeTimer);
+  skinNoticeTimer = setTimeout(()=>{ note.classList.remove('show'); note.textContent = ''; }, 5000);
+}
+// Called whenever the plan changes. A saved Pro skin is only taken away once
+// the plan is confirmed as free, or the player is signed out: never while
+// it is still loading or after a failed check. The skin is remembered, so
+// it comes back when a Pro or Ultimate player signs in again.
+function checkProSkin(){
+  const confirmed = !currentSession || planStatus === 'ok';
+  proSkinsOpen = !!currentSession && planStatus === 'ok' && planTier() !== 'free';
+  const current = document.documentElement.getAttribute('data-theme');
+  let remembered = null;
+  try { remembered = localStorage.getItem('pm-theme-pro'); } catch(e){}
+  if(THEMES[current].pro && confirmed && !proSkinsOpen){
+    try { localStorage.setItem('pm-theme-pro', current); } catch(e){}
+    setTheme('normal');
+  } else if(proSkinsOpen && current === 'normal' && THEMES[remembered] && THEMES[remembered].pro){
+    try { localStorage.removeItem('pm-theme-pro'); } catch(e){}
+    setTheme(remembered);
+  } else buildThemeMenu();
 }
 document.getElementById('themeBtn').onclick = (e)=>{
   e.stopPropagation();
@@ -2062,6 +2284,7 @@ function applyPlan(plan, status = 'pending'){
   applyProStatus(currentIsPro);
   document.getElementById('proBadge').textContent = currentIsUltimate ? 'ULTIMATE' : 'PRO';
   renderPlans();
+  checkProSkin();
 }
 async function loadPlan(){
   if(!sb || !currentSession) return applyPlan(null);

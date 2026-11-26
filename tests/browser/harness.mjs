@@ -1,5 +1,6 @@
 // Browser test harness: opens a page in headless Chromium with CDN scripts and
-// Supabase calls stubbed. Usage: const { page, errors, calls, browser } = await openPage(url, { routes, session, viewport })
+// Supabase calls stubbed. Usage: const { page, errors, calls, browser } = await openPage(url, { routes, session, viewport, storage })
+// storage: localStorage items set before the page's own scripts run.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
@@ -32,7 +33,7 @@ export function makeSession(s) {
   };
 }
 
-export async function openPage(url, { routes = {}, session = null, viewport = { width: 1280, height: 900 } } = {}) {
+export async function openPage(url, { routes = {}, session = null, viewport = { width: 1280, height: 900 }, storage = {} } = {}) {
   const { chromium } = await loadPlaywright();
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport });
@@ -43,12 +44,13 @@ export async function openPage(url, { routes = {}, session = null, viewport = { 
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
 
   const sess = session ? makeSession(session) : null;
-  await page.addInitScript(({ sess, ref }) => {
+  await page.addInitScript(({ sess, ref, storage }) => {
     try {
       localStorage.setItem('pm-help', 'off');
+      for (const [k, v] of Object.entries(storage)) localStorage.setItem(k, v);
       if (sess) localStorage.setItem('sb-' + ref + '-auth-token', JSON.stringify(sess));
     } catch (e) {}
-  }, { sess, ref: PROJECT_REF });
+  }, { sess, ref: PROJECT_REF, storage });
 
   const handlers = { 'rpc/kickabout_state': () => ({ game: 'scouted', day: '2026-11-26', signed_in: false, finished: false, won: false, coins: 0, max_guesses: 10, guesses: [] }), ...routes };
   const json = (route, body, status = 200) => route.fulfill({ status, headers: CORS, contentType: 'application/json', body: JSON.stringify(body) });
