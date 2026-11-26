@@ -132,6 +132,58 @@ tbody tr:last-child td{ border-bottom:none; }
 .foot-link-row input:focus{ outline:none; border-color:var(--surge); }
 .foot-link-row .fl-label{ width:190px; }
 .foot-link-row .fl-href{ flex:1; font-family:'JetBrains Mono'; font-size:11.5px; }
+/* ===== Plans & Payments ===== */
+.pay-card{ padding:20px; margin-bottom:20px; }
+.pay-h{ font-size:15px; margin-bottom:12px; }
+.pay-modes{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.pay-mode{ flex:1; min-width:180px; display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:6px; padding:10px 12px; cursor:pointer; background:var(--bg); }
+.pay-mode:has(input:checked){ border-color:var(--surge); }
+.pay-mode:has(input[value="live"]:checked){ border-color:var(--gilt); }
+.pay-mode input{ margin-top:3px; accent-color:var(--surge); }
+.pay-mode b{ display:block; font-size:13.5px; }
+.pay-mode small{ display:block; font-size:12px; color:var(--steel); margin-top:2px; }
+.pay-grid, .grant-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grant-grid{ grid-template-columns:2fr 1fr 1fr 2fr; margin-bottom:14px; }
+.pay-grid .pay-wide{ grid-column:1 / -1; }
+.pay-grid input{ font-family:'JetBrains Mono'; font-size:12px; }
+.ck-field select{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--chalk); font-size:13px; }
+.ck-field input[type="date"]{ color-scheme:dark; }
+.ck-field input.bad{ border-color:var(--drop); }
+.pay-err{ font-size:12px; color:var(--drop); margin-top:4px; }
+.pay-err:empty{ display:none; }
+.pay-note{ font-size:12.5px; color:var(--steel); margin:12px 0 14px; }
+.plans-wrap{ overflow-x:auto; }
+#plansTable td{ vertical-align:top; }
+#plansTable .t-league{ word-break:break-all; }
+.revoke-btn{ font-size:11.5px; border:1px solid var(--drop); color:var(--drop); background:none; border-radius:3px; padding:6px 11px; cursor:pointer; white-space:nowrap; }
+.revoke-btn:disabled{ opacity:.5; cursor:default; }
+.plan-tag{ font-family:'JetBrains Mono'; font-size:10.5px; font-weight:700; letter-spacing:.06em; padding:2px 7px; border-radius:3px; background:var(--panel2); color:var(--steel); }
+.plan-tag.pro{ color:var(--surge); background:rgba(23,217,163,0.12); }
+.plan-tag.ultimate{ color:var(--gilt); background:rgba(231,181,75,0.12); }
+.pro-locked-note{ font-size:12.5px; color:var(--steel); border-left:2px solid var(--gilt); padding:4px 0 4px 10px; margin-bottom:18px; }
+.pro-locked-note button{ background:none; border:none; color:var(--surge); font:inherit; cursor:pointer; text-decoration:underline; padding:0; }
+@media(max-width:700px){ .pay-grid, .grant-grid{ grid-template-columns:1fr; } }
+@media(max-width:600px){
+  #plansTable, #plansTable tbody, #plansTable tr, #plansTable td{ display:block; }
+  #plansTable thead{ display:none; }
+  #plansTable tr{ padding:12px 14px; border-bottom:1px solid var(--border-soft); }
+  #plansTable tr:last-child{ border-bottom:none; }
+  #plansTable td{ padding:3px 0; border:none; font-size:13px; }
+  #plansTable td[data-l]{ display:flex; gap:10px; }
+  #plansTable td[data-l]::before{ content:attr(data-l); width:56px; flex-shrink:0; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; padding-top:2px; }
+  #plansTable td.no-note{ display:none; }
+  #plansTable .revoke-btn{ margin-top:8px; }
+}
+/* Phones: the tab row scrolls sideways on its own, the nav wraps. */
+.section-tabs{ overflow-x:auto; scrollbar-width:thin; }
+.section-tab{ white-space:nowrap; flex-shrink:0; }
+@media(max-width:600px){
+  nav{ padding:12px 16px; flex-wrap:wrap; gap:8px; }
+  .who{ gap:10px; min-width:0; }
+  .who span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  main{ padding:20px 16px 60px; }
+  .section-tab{ padding:12px 12px; }
+}
 @media(max-width:900px){ .add-grid{ grid-template-columns:repeat(2,1fr); } .add-btn{ grid-column:span 2; } }
 
 /* ===== Live-preview editor components (copied from the live site's own CSS) ===== */
@@ -266,6 +318,7 @@ tbody tr:last-child td{ border-bottom:none; }
       <button class="section-tab active" data-pane="teamsPane">Teams & Leagues</button>
       <button class="section-tab" data-pane="contentPane">Site Content</button>
       <button class="section-tab" data-pane="approvalsPane">Price Approvals<span id="pendingCountBadge" style="display:none;"></span></button>
+      <button class="section-tab" data-pane="plansPane">Plans &amp; Payments</button>
       <button class="section-tab" data-pane="errorsPane">Errors<span id="errorCountBadge" style="display:none;"></span></button>
     </div>
 
@@ -411,6 +464,54 @@ tbody tr:last-child td{ border-bottom:none; }
       </div>
     </div>
 
+    <!-- ============ PLANS & PAYMENTS ============ -->
+    <div class="section-pane" id="plansPane">
+      <div class="bar">
+        <div>
+          <h1 class="display">Plans &amp; payments</h1>
+          <div class="desc">How the site takes payment for Pro and Ultimate, and who has either plan. Give a plan for free with a grant below.</div>
+        </div>
+        <button class="refresh" id="refreshPlansBtn">↻ Refresh</button>
+      </div>
+
+      <div class="event-card pay-card">
+        <h3 class="pay-h">Payments</h3>
+        <div class="pay-modes" role="radiogroup" aria-label="Payments mode">
+          <label class="pay-mode"><input type="radio" name="payMode" value="off"> <span><b>Off</b><small>Plan buttons say Coming soon.</small></span></label>
+          <label class="pay-mode"><input type="radio" name="payMode" value="test"> <span><b>Test</b><small>Stripe test links: no real money. Players see the test card number.</small></span></label>
+          <label class="pay-mode"><input type="radio" name="payMode" value="live"> <span><b>Live</b><small>Real payments.</small></span></label>
+        </div>
+        <div class="pay-grid" id="payLinks">
+          <div class="ck-field"><label for="payProMonthly">Pro monthly link</label><input id="payProMonthly" data-link="pro_monthly" inputmode="url" placeholder="https://buy.stripe.com/..."><div class="pay-err"></div></div>
+          <div class="ck-field"><label for="payProYearly">Pro yearly link</label><input id="payProYearly" data-link="pro_yearly" inputmode="url" placeholder="https://buy.stripe.com/..."><div class="pay-err"></div></div>
+          <div class="ck-field"><label for="payUltMonthly">Ultimate monthly link</label><input id="payUltMonthly" data-link="ultimate_monthly" inputmode="url" placeholder="https://buy.stripe.com/..."><div class="pay-err"></div></div>
+          <div class="ck-field"><label for="payUltYearly">Ultimate yearly link</label><input id="payUltYearly" data-link="ultimate_yearly" inputmode="url" placeholder="https://buy.stripe.com/..."><div class="pay-err"></div></div>
+          <div class="ck-field pay-wide"><label for="payPortal">Customer portal link (players manage or cancel here)</label><input id="payPortal" inputmode="url" placeholder="https://billing.stripe.com/p/login/..."><div class="pay-err"></div></div>
+        </div>
+        <div class="pay-note">Paste the Stripe Payment Links for the mode you're in: test links in Test, live links in Live. A plan with no link shows Coming soon.</div>
+        <div><button class="editor-save" id="savePaymentsBtn">Save</button><span class="editor-status" id="payStatus"></span></div>
+      </div>
+
+      <div class="event-card pay-card">
+        <h3 class="pay-h">Give a plan</h3>
+        <div class="pay-note" style="margin-top:0;">For prize winners, testers and friends. It replaces any grant the player already has. A paid subscription isn't touched.</div>
+        <div class="grant-grid">
+          <div class="ck-field"><label for="grantEmail">Player's email</label><input id="grantEmail" type="email" placeholder="player@example.com"></div>
+          <div class="ck-field"><label for="grantTier">Plan</label><select id="grantTier"><option value="pro">Pro</option><option value="ultimate">Ultimate</option></select></div>
+          <div class="ck-field"><label for="grantUntil">Until (blank = no end)</label><input id="grantUntil" type="date"></div>
+          <div class="ck-field"><label for="grantNote">Note (optional)</label><input id="grantNote" placeholder="e.g. Season 1 prize"></div>
+        </div>
+        <div><button class="editor-save" id="grantBtn">Give plan</button><span class="editor-status" id="grantStatus"></span></div>
+      </div>
+
+      <div class="history-label">Players on Pro or Ultimate</div>
+      <div class="plans-wrap"><table id="plansTable">
+        <thead><tr><th>Player</th><th>Plan</th><th>From</th><th>Until</th><th>Note</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div id="plansEmpty" class="pay-note"></div>
+    </div>
+
     <!-- ============ ERRORS ============ -->
     <div class="section-pane" id="errorsPane">
       <div class="bar">
@@ -536,6 +637,7 @@ async function onAuthed(user){
   loadPendingEvents();
   loadHistoryEvents();
   loadErrors();
+  loadPlans();
 }
 
 document.querySelectorAll('.section-tab').forEach(tab=>{
@@ -714,6 +816,7 @@ async function loadContentSettings(){
   renderFooterEditor();
   renderAdRailsEditor();
   renderLeagueOrderSettingEditor();
+  renderPaymentsForm();
   bindEnterAsBlur();
 }
 
@@ -801,87 +904,48 @@ function readLeaderboard(){
 }
 
 // ---------- PRO PLANS ----------
-function proCardHTML(p){
-  return '<div class="pro-card-prev'+(p.featured?' featured':'')+'">'+
-    '<button class="remove-x" type="button">×</button>'+
-    (p.featured?'<div class="badge-pop editable" contenteditable data-f="badge" data-single="1">'+esc(p.badge||'Featured')+'</div>':'')+
-    '<label class="pro-featured-toggle"><input type="checkbox" class="featured-check" '+(p.featured?'checked':'')+'> Featured plan</label>'+
-    '<div class="pro-tier">'+editable(p.tier,'tier',true)+'</div>'+
-    '<div style="font-size:11px; color:var(--gilt); margin-bottom:8px;">'+editable(p.tagline||'','tagline',true)+'</div>'+
-    '<div class="pro-price">'+editable(p.price,'price',true)+'<span class="per">'+editable(p.period,'period',true)+'</span></div>'+
-    '<ul class="pro-feats">'+
-      p.feats.map(f=>'<li><span class="editable" contenteditable data-single="1">'+esc(f)+'</span><button class="remove-x feat-remove" type="button">×</button></li>').join('')+
-    '</ul>'+
-    '<button class="add-item-btn add-feat-btn" type="button" style="margin-bottom:14px;">+ Add feature</button>'+
-    '<div class="pro-btn-prev editable" contenteditable data-f="cta" data-single="1">'+esc(p.cta)+'</div>'+
-    '<div style="margin-top:10px;"><label style="display:block; font-size:10px; color:var(--steel-dim); text-transform:uppercase; margin-bottom:4px;">Checkout URL (blank = no payment button, e.g. the Free plan)</label>'+
-      '<input class="num-input" data-f="checkout_url" value="'+esc(p.checkout_url||'')+'" style="width:100%; font-size:11px; padding:5px 6px; border:1px solid var(--border); border-radius:3px;" placeholder="https://buy.stripe.com/..."></div>'+
+// The site's plan cards take their names and features from its own code;
+// here the organiser sets the section text and each plan's shown price.
+// Payment links live in the Plans & Payments tab. Saving keeps every other
+// key in the stored value (features, CTA, links) so older readers still work.
+function proPlans(){
+  const p = currentSettings.pro || {};
+  return Array.isArray(p.plans) ? p.plans : settingsDefaults.pro.plans;
+}
+function proCardHTML(p, i){
+  return '<div class="pro-card-prev" data-i="'+i+'">'+
+    '<div class="pro-tier">'+esc(p.tier)+'</div>'+
+    '<div class="pro-price"><input class="num-input" data-f="price" aria-label="'+escAttr(p.tier)+' price" value="'+escAttr(p.price||'')+'" style="width:6ch;">'+
+      '<span class="per"><input class="num-input" data-f="period" aria-label="'+escAttr(p.tier)+' period" value="'+escAttr(p.period||'')+'" style="width:5ch;"></span></div>'+
   '</div>';
 }
 function renderProEditor(){
-  const p = currentSettings.pro;
+  const p = currentSettings.pro || {};
   document.getElementById('proEditor').innerHTML =
+    '<div class="pro-locked-note">Plan names and features are fixed on the site. Set payment links and the billing portal in <button type="button" class="go-plans-tab">Plans &amp; Payments</button>.</div>'+
     '<div class="ck-grid">'+
-      '<div class="ck-field"><label>Section eyebrow</label><input data-f="pro-eyebrow" value="'+esc(p.eyebrow||'')+'"></div>'+
-      '<div class="ck-field"><label>Section title</label><input data-f="pro-title" value="'+esc(p.title||'')+'"></div>'+
+      '<div class="ck-field"><label>Section eyebrow</label><input data-f="pro-eyebrow" value="'+escAttr(p.eyebrow||'')+'"></div>'+
+      '<div class="ck-field"><label>Section title</label><input data-f="pro-title" value="'+escAttr(p.title||'')+'"></div>'+
     '</div>'+
     '<div style="color:var(--steel); font-size:14px; margin-bottom:18px;">'+editable(p.desc,'desc',false)+'</div>'+
-    '<div class="pro-grid-prev" id="plansList">'+p.plans.map(proCardHTML).join('')+'</div>'+
-    '<button class="add-item-btn" type="button" id="addPlanBtn">+ Add plan</button>';
-  document.getElementById('addPlanBtn').onclick = ()=>{
-    const div = document.createElement('div');
-    div.innerHTML = proCardHTML({tier:'New Plan', tagline:'', price:'$0', period:'/mo', featured:false, badge:'', feats:['Feature one'], cta:'Choose plan', checkout_url:''});
-    document.getElementById('plansList').appendChild(div.firstChild);
-    bindEnterAsBlur();
-  };
-  document.getElementById('proEditor').addEventListener('click', (e)=>{
-    if(e.target.classList.contains('feat-remove')) e.target.closest('li').remove();
-    else if(e.target.classList.contains('remove-x')) e.target.closest('.pro-card-prev').remove();
-    else if(e.target.classList.contains('add-feat-btn')){
-      const li = document.createElement('li');
-      li.innerHTML = '<span class="editable" contenteditable data-single="1">New feature</span><button class="remove-x feat-remove" type="button">×</button>';
-      e.target.closest('.pro-card-prev').querySelector('.pro-feats').appendChild(li);
-      bindEnterAsBlur();
-    }
-  });
-  document.getElementById('proEditor').addEventListener('change', (e)=>{
-    if(e.target.classList.contains('featured-check')){
-      const card = e.target.closest('.pro-card-prev');
-      card.classList.toggle('featured', e.target.checked);
-      let badge = card.querySelector('.badge-pop');
-      if(e.target.checked && !badge){
-        badge = document.createElement('div');
-        badge.className = 'badge-pop editable'; badge.contentEditable = true; badge.dataset.f='badge'; badge.dataset.single='1';
-        badge.textContent = 'Featured';
-        card.insertBefore(badge, card.querySelector('.pro-featured-toggle'));
-        bindEnterAsBlur();
-      } else if(!e.target.checked && badge){ badge.remove(); }
-    }
-  });
+    '<div class="pro-grid-prev" id="plansList">'+proPlans().map(proCardHTML).join('')+'</div>';
   bindEnterAsBlur();
 }
+document.getElementById('proEditor').addEventListener('click', (e)=>{
+  if(e.target.closest('.go-plans-tab')) document.querySelector('.section-tab[data-pane="plansPane"]').click();
+});
 function readPro(){
   const root = document.getElementById('proEditor');
-  const v = {
+  const plans = proPlans();
+  return Object.assign({}, currentSettings.pro, {
     eyebrow: root.querySelector('[data-f="pro-eyebrow"]').value.trim(),
     title: root.querySelector('[data-f="pro-title"]').value.trim(),
     desc: root.querySelector('[data-f="desc"]').innerText.trim(),
-    plans: [],
-  };
-  root.querySelectorAll('.pro-card-prev').forEach(card=>{
-    v.plans.push({
-      tier: card.querySelector('[data-f="tier"]').innerText.trim(),
-      tagline: card.querySelector('[data-f="tagline"]').innerText.trim(),
-      price: card.querySelector('[data-f="price"]').innerText.trim(),
-      period: card.querySelector('[data-f="period"]').innerText.trim(),
-      featured: card.classList.contains('featured'),
-      badge: card.querySelector('.badge-pop') ? card.querySelector('.badge-pop').innerText.trim() : '',
-      feats: [...card.querySelectorAll('.pro-feats li span')].map(s=>s.innerText.trim()),
-      cta: card.querySelector('[data-f="cta"]').innerText.trim(),
-      checkout_url: card.querySelector('[data-f="checkout_url"]').value.trim(),
-    });
+    plans: [...root.querySelectorAll('.pro-card-prev')].map(card=>Object.assign({}, plans[+card.dataset.i], {
+      price: card.querySelector('[data-f="price"]').value.trim(),
+      period: card.querySelector('[data-f="period"]').value.trim(),
+    })),
   });
-  return v;
 }
 
 // ---------- ASSET CLASSES ----------
@@ -1150,6 +1214,133 @@ document.getElementById('clearErrorsBtn').addEventListener('click', async ()=>{
   const { error } = await sb.from('client_errors').delete().gt('id', 0);
   if(error) alert('Could not clear the log: ' + error.message);
   loadErrors();
+});
+
+// ----- Plans & Payments -----
+const LIVE_WARNING = 'Live mode takes real payments. Only switch once the Stripe account is activated and the live links are pasted.';
+const PAY_LINK_KEYS = ['pro_monthly','pro_yearly','ultimate_monthly','ultimate_yearly'];
+let payMode = 'test';
+
+// RPC errors in plain words for the organiser.
+function plainRpcError(error){
+  const m = (error && error.message) || '';
+  if((error && error.code === 'PGRST202') || /could not find the function/i.test(m))
+    return "The plans database functions aren't set up yet: run supabase-pro-1.sql in the Supabase SQL Editor.";
+  if(/failed to fetch|network/i.test(m)) return "Couldn't reach the database. Check your connection and try again.";
+  return m || 'Something went wrong. Try again.';
+}
+function isHttpsOrEmpty(v){
+  if(!v) return true;
+  try { const u = new URL(v); return u.protocol === 'https:' && !!u.hostname; } catch(e){ return false; }
+}
+function paymentsValue(){
+  const v = currentSettings.payments;
+  return v && typeof v === 'object' ? v : { mode:'test', portal_url:'', links:{} };
+}
+function renderPaymentsForm(){
+  const v = paymentsValue();
+  payMode = ['off','test','live'].includes(v.mode) ? v.mode : 'test';
+  document.querySelectorAll('input[name="payMode"]').forEach(r=>{ r.checked = r.value === payMode; });
+  const links = v.links || {};
+  document.querySelectorAll('#payLinks [data-link]').forEach(inp=>{ inp.value = links[inp.dataset.link] || ''; });
+  document.getElementById('payPortal').value = v.portal_url || '';
+  document.querySelectorAll('#payLinks .pay-err').forEach(el=>{ el.textContent = ''; });
+  document.querySelectorAll('#payLinks input').forEach(el=>el.classList.remove('bad'));
+}
+document.querySelectorAll('input[name="payMode"]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    if(r.value === 'live' && payMode !== 'live' && !confirm(LIVE_WARNING)){
+      document.querySelector('input[name="payMode"][value="'+payMode+'"]').checked = true;
+      return;
+    }
+    payMode = r.value;
+  });
+});
+document.getElementById('payLinks').addEventListener('input', (e)=>{
+  if(e.target.matches('input')){ e.target.classList.remove('bad'); e.target.parentNode.querySelector('.pay-err').textContent = ''; }
+});
+document.getElementById('savePaymentsBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('savePaymentsBtn');
+  const status = document.getElementById('payStatus');
+  let ok = true;
+  document.querySelectorAll('#payLinks input').forEach(inp=>{
+    inp.value = inp.value.trim();
+    const good = isHttpsOrEmpty(inp.value);
+    inp.classList.toggle('bad', !good);
+    inp.parentNode.querySelector('.pay-err').textContent = good ? '' : 'Must be a full link starting with https://, or left blank.';
+    if(!good) ok = false;
+  });
+  if(!ok){ status.textContent = 'Not saved: fix the link marked in red.'; status.className = 'editor-status err'; return; }
+  const cur = paymentsValue();
+  const links = Object.assign({}, cur.links);
+  document.querySelectorAll('#payLinks [data-link]').forEach(inp=>{ links[inp.dataset.link] = inp.value; });
+  const value = Object.assign({}, cur, { mode: payMode, portal_url: document.getElementById('payPortal').value, links });
+  btn.disabled = true; status.textContent = 'Saving…'; status.className = 'editor-status';
+  const { error } = await sb.from('site_settings').upsert({ key:'payments', value, updated_at: new Date().toISOString() }, { onConflict:'key' });
+  btn.disabled = false;
+  if(error){ status.textContent = 'Not saved: ' + plainRpcError(error); status.className = 'editor-status err'; return; }
+  currentSettings.payments = value;
+  status.textContent = 'Saved ✓ — live now.'; status.className = 'editor-status ok';
+  setTimeout(()=>{ if(status.className === 'editor-status ok') status.textContent = ''; }, 3000);
+});
+
+const SOURCE_LABEL = { stripe:'Subscription', grant:'Grant', free:'Grant (ended)' };
+function fmtDay(ts){ return ts ? new Date(ts).toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' }) : 'No end'; }
+async function loadPlans(){
+  const tbody = document.querySelector('#plansTable tbody');
+  const empty = document.getElementById('plansEmpty');
+  const { data, error } = await sb.rpc('admin_list_plans');
+  if(error){ tbody.innerHTML = ''; empty.textContent = "Couldn't load the list: " + plainRpcError(error); return; }
+  const rows = data || [];
+  empty.textContent = rows.length ? '' : 'Nobody is on Pro or Ultimate yet.';
+  tbody.innerHTML = rows.map(r=>{
+    const tier = r.tier === 'pro' || r.tier === 'ultimate' ? r.tier : 'free';
+    // Rows a grant is behind: given by grant, ended grants, or a grant with a note.
+    const hasGrant = r.source === 'grant' || r.source === 'free' || !!r.note;
+    return '<tr data-user="'+escAttr(r.user_id)+'">'+
+      '<td><div class="t-name">'+esc(r.display_name || '—')+'</div><div class="t-league">'+esc(r.email)+'</div></td>'+
+      '<td data-l="Plan"><span class="plan-tag '+tier+'">'+esc(tier.toUpperCase())+'</span></td>'+
+      '<td data-l="From">'+esc(SOURCE_LABEL[r.source] || r.source || '')+'</td>'+
+      '<td data-l="Until">'+esc(fmtDay(r.until))+'</td>'+
+      (r.note ? '<td data-l="Note">'+esc(r.note)+'</td>' : '<td class="no-note"></td>')+
+      '<td>'+(hasGrant ? '<button class="revoke-btn" type="button">Revoke</button>' : '')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+document.getElementById('refreshPlansBtn').addEventListener('click', ()=>{ loadPlans(); });
+document.getElementById('plansTable').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.revoke-btn');
+  if(!btn) return;
+  const tr = btn.closest('tr');
+  const who = tr.querySelector('.t-league').textContent;
+  if(!confirm('Take away the plan given to ' + who + '? A paid subscription is not affected.')) return;
+  btn.disabled = true;
+  const { error } = await sb.rpc('admin_revoke_grant', { p_user: tr.dataset.user });
+  if(error){ btn.disabled = false; alert("Couldn't revoke: " + plainRpcError(error)); return; }
+  loadPlans();
+});
+document.getElementById('grantBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('grantBtn');
+  const status = document.getElementById('grantStatus');
+  const email = document.getElementById('grantEmail').value.trim();
+  const tier = document.getElementById('grantTier').value;
+  const day = document.getElementById('grantUntil').value;
+  const note = document.getElementById('grantNote').value.trim();
+  if(!email){ status.textContent = "Enter the player's email."; status.className = 'editor-status err'; return; }
+  // The end date runs to the end of that day in this computer's time zone.
+  let until = null;
+  if(day){
+    const [y, m, d] = day.split('-').map(Number);
+    until = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
+  }
+  btn.disabled = true; status.textContent = 'Saving…'; status.className = 'editor-status';
+  const { error } = await sb.rpc('admin_grant_plan', { p_email: email, p_tier: tier, p_until: until, p_note: note });
+  btn.disabled = false;
+  if(error){ status.textContent = "Couldn't give the plan: " + plainRpcError(error); status.className = 'editor-status err'; return; }
+  status.textContent = 'Granted ✓ ' + (tier === 'ultimate' ? 'Ultimate' : 'Pro') + ' to ' + email + (until ? ' until ' + fmtDay(until) : '') + '.';
+  status.className = 'editor-status ok';
+  ['grantEmail','grantUntil','grantNote'].forEach(id=>{ document.getElementById(id).value = ''; });
+  loadPlans();
 });
 
 async function loadPendingEvents(){
