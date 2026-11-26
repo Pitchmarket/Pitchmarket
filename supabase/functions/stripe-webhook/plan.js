@@ -58,3 +58,20 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export function isUuid(value) {
   return typeof value === 'string' && UUID_RE.test(value);
 }
+
+// The six Edge Function secrets the webhook needs.
+export const REQUIRED_SECRETS = [
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  ...PRICE_ENV_TIERS.map(([name]) => name),
+];
+
+// Names (never values) of the secrets in `names` that are unset or empty.
+export function missingSecrets(env, names = REQUIRED_SECRETS) {
+  return names.filter((name) => !env[name]);
+}
+
+// True for a Stripe error saying the object doesn't exist.
+export function isResourceMissing(err) {
+  return Boolean(err) && err.code === 'resource_missing';
+}

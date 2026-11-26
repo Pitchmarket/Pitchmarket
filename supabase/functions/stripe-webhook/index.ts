@@ -3,29 +3,38 @@
 // `subscriptions` table in sync. Pure logic lives in ./plan.js.
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
-import { isUuid, nextRow, subscriptionFields } from './plan.js';
+import {
+  isResourceMissing,
+  isUuid,
+  missingSecrets,
+  nextRow,
+  REQUIRED_SECRETS,
+  subscriptionFields,
+} from './plan.js';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+// Read the six secrets once. Only names are ever logged, never values.
+const secrets: Record<string, string> = {};
+for (const name of REQUIRED_SECRETS) secrets[name] = Deno.env.get(name) ?? '';
+
+const missing = missingSecrets(secrets);
+if (missing.length > 0) {
+  console.error(`stripe-webhook configuration error: missing secrets ${missing.join(', ')}`);
+}
+// Without these two the webhook can't verify or retrieve anything.
+const missingCore = missingSecrets(secrets, ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']);
+
+const stripe = new Stripe(secrets.STRIPE_SECRET_KEY, {
   httpClient: Stripe.createFetchHttpClient(),
 });
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+const webhookSecret = secrets.STRIPE_WEBHOOK_SECRET;
+const priceEnv = secrets;
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   { auth: { persistSession: false } },
 );
-
-const priceEnv: Record<string, string> = {};
-for (const name of [
-  'STRIPE_PRICE_PRO_MONTHLY',
-  'STRIPE_PRICE_PRO_YEARLY',
-  'STRIPE_PRICE_ULTIMATE_MONTHLY',
-  'STRIPE_PRICE_ULTIMATE_YEARLY',
-]) {
-  priceEnv[name] = Deno.env.get(name) ?? '';
-}
 
 function reply(status: number, text: string): Response {
   return new Response(text, { status, headers: { 'Content-Type': 'text/plain' } });
@@ -36,9 +45,10 @@ function reply(status: number, text: string): Response {
 // from another row of the same Stripe customer.
 async function syncSubscription(sub: Stripe.Subscription, userId: string | null, forceCanceled = false): Promise<Response> {
   const fresh = subscriptionFields(sub, priceEnv);
+  // A deleted event means the subscription has ended, whatever the retrieved object says.
   if (forceCanceled) fresh.status = 'canceled';
 
-  const existing = await supabase.from('subscriptions').select('id, tier').eq('id', fresh.id).maybeSingle();
+  const existing = await supabase.from('subscriptions').select('id, tier, user_id').eq('id', fresh.id).maybeSingle();
   if (existing.error) throw existing.error;
 
   const row = nextRow(existing.data, fresh);
@@ -51,7 +61,11 @@ async function syncSubscription(sub: Stripe.Subscription, userId: string | null,
   }
   const updatedAt = new Date().toISOString();
 
-  if (!userId && existing.data) {
+  if (existing.data) {
+    // Never move an existing subscription to another player.
+    if (userId && existing.data.user_id !== userId) {
+      console.log('checkout client_reference_id differs from the stored player; keeping stored user_id', row.id);
+    }
     const { error } = await supabase
       .from('subscriptions')
       .update({ ...row, updated_at: updatedAt })
@@ -101,7 +115,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     return reply(200, 'ignored: client_reference_id is not a UUID');
   }
 
-  const sub = await stripe.subscriptions.retrieve(subId);
+  let sub: Stripe.Subscription;
+  try {
+    sub = await stripe.subscriptions.retrieve(subId);
+  } catch (err) {
+    if (!isResourceMissing(err)) throw err;
+    console.log('checkout subscription no longer exists in Stripe; not written', subId);
+    return reply(200, 'ignored: subscription missing');
+  }
   return await syncSubscription(sub, userId);
 }
 
@@ -112,7 +133,7 @@ async function handleSubscriptionEvent(subId: string, deleted: boolean): Promise
   try {
     sub = await stripe.subscriptions.retrieve(subId);
   } catch (err) {
-    if ((err as { code?: string })?.code !== 'resource_missing') throw err;
+    if (!isResourceMissing(err)) throw err;
     console.log('subscription no longer exists in Stripe; marking canceled', subId);
     const { error } = await supabase
       .from('subscriptions')
@@ -126,6 +147,7 @@ async function handleSubscriptionEvent(subId: string, deleted: boolean): Promise
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return reply(405, 'Method not allowed');
+  if (missingCore.length > 0) return reply(500, `Webhook not configured: missing ${missingCore.join(', ')}`);
 
   const body = await req.text();
   const signature = req.headers.get('stripe-signature');

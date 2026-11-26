@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tierForPrice, rowFromSubscription, isUuid, subscriptionFields, nextRow } from '../supabase/functions/stripe-webhook/plan.js';
+import { tierForPrice, rowFromSubscription, isUuid, subscriptionFields, nextRow, missingSecrets, isResourceMissing, REQUIRED_SECRETS } from '../supabase/functions/stripe-webhook/plan.js';
 
 const env = {
   STRIPE_PRICE_PRO_MONTHLY: 'price_pm',
@@ -117,4 +117,21 @@ test('nextRow returns null when there is no tier to write', () => {
   const fresh = subscriptionFields(sub({ current_period_end: 1767225600 }, { price: { id: 'price_x' } }), env);
   assert.equal(nextRow(null, fresh), null);
   assert.equal(nextRow({ id: 'sub_123', tier: null }, fresh), null);
+});
+
+test('missingSecrets names empty or unset secrets, in order', () => {
+  const full = { ...env, STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: 'whsec_x' };
+  assert.deepEqual(missingSecrets(full), []);
+  assert.deepEqual(missingSecrets({ ...full, STRIPE_WEBHOOK_SECRET: '', STRIPE_PRICE_PRO_YEARLY: undefined }),
+    ['STRIPE_WEBHOOK_SECRET', 'STRIPE_PRICE_PRO_YEARLY']);
+  assert.deepEqual(missingSecrets({}), REQUIRED_SECRETS);
+  assert.deepEqual(missingSecrets({ STRIPE_PRICE_PRO_MONTHLY: 'p' }, ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']),
+    ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']);
+});
+
+test('isResourceMissing recognises only Stripe resource_missing errors', () => {
+  assert.equal(isResourceMissing({ code: 'resource_missing' }), true);
+  assert.equal(isResourceMissing({ code: 'rate_limit' }), false);
+  assert.equal(isResourceMissing(new Error('boom')), false);
+  assert.equal(isResourceMissing(null), false);
 });
