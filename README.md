@@ -109,11 +109,46 @@ Four daily football games on the main page: **Scouted** (guess the player from l
 - **Player data**: `import-players.js` runs every Monday from `.github/workflows/import-players.yml`. Current squads come from football-data.org (the same feed and key as the price updater), so every player is listed at their real club. Each squad player is matched to [Wikidata](https://www.wikidata.org) (CC0) by birth date and name, for fame, continent and club-by-club careers. Clubs are linked to Wikidata in `teams.wikidata_id`; if one is linked wrongly, set it by hand and the importer won't overwrite it. Every squad player in the nine leagues is kept, including players at clubs that aren't listed for trading (they show under the club's own name); the run log lists those clubs, and if one should be on the site, add an alias in `update-prices.js` (`NAME_ALIASES`). Senior national-team spells go to `player_intl`, so Link-Up counts international teammates as well as club teammates and current squad-mates. Wikidata lists national teams for only some players, so each player's English Wikipedia infobox (`national_team` / `national_years`) is read too; if Wikipedia can't be reached, the run carries on with Wikidata's.
 - **Puzzles and coins** are handled in the database: `daily_puzzle()` makes each game's puzzle for the day (Ball Knowledge questions come from `make_question()`, Link-Up pairs from `teammates_of()`), `kickabout_guess()` checks guesses and pays out, and `kickabout_state()` returns what the page shows. Answers, careers and quiz answers can't be read from the page until a player has finished.
 
+## Plans and payments
+
+Pro ($1.99 a month or $20 a year) and Ultimate ($4.99 a month or $50 a year) are paid through Stripe. Nothing paid changes trading, coins or the leaderboard: the plans add things like more watchlist slots (2 Free, 5 Pro, 15 Ultimate), price alerts, Pro skins and a badge on the leaderboard.
+
+- The site's buttons open Stripe **Payment Links**. After a purchase, Stripe tells the `stripe-webhook` Edge Function (`supabase/functions/stripe-webhook/`), which records the subscription in the database. Every limit is checked in the database, so a plan can't be faked from the browser.
+- Admin → **Plans & Payments** sets payments to Off, Test or Live, holds the links and the customer portal link, lists who has a plan, and gives or takes away a free plan.
+- The nightly backup also saves each player's portfolio value for Pro's portfolio history, once the Christmas reset has started the season.
+
+**Setting it up:** follow [docs/stripe-setup.md](docs/stripe-setup.md), step by step. It starts in Stripe test mode (no real money) and ends with a checklist for going live. The database part is `supabase-pro-1.sql`.
+
+Tests: the webhook's logic in `tests/stripe-plan.test.mjs`, the database side in the SQL tests, and the plan pages in `tests/browser/plans.mjs`, `admin-plans.mjs` and `skins.mjs`. How to run them is under Tests below.
+
 ## Backups
 
 **Code.** Every version is in the git history. After each major change, a branch named `backup/vX.Y-YYYY-MM-DD` keeps a snapshot of the site at that point; open it on GitHub and use **Code → Download ZIP** to get it.
 
-**Data.** `.github/workflows/backup-data.yml` runs `backup-data.js` every night at 03:23 UTC and saves `teams`, `price_history` and `site_settings` to the `data-backups` branch, with a `restore.sql` that puts them back. Each night with changes is a commit on that branch, so older backups stay in its history. No player data is included (no emails, balances, holdings or trades), because the repo is public. Restore steps are in that branch's README. Run it by hand from the Actions tab (**Back up PitchMarket data → Run workflow**).
+**Data.** `.github/workflows/backup-data.yml` runs `backup-data.js` every night at 03:23 UTC and saves `teams`, `price_history` and `site_settings` to the `data-backups` branch, with a `restore.sql` that puts them back. Each night with changes is a commit on that branch, so older backups stay in its history. No player data is included (no emails, balances, holdings or trades), because the repo is public. Restore steps are in that branch's README. Run it by hand from the Actions tab (**Back up PitchMarket data → Run workflow**). Before saving, it calls `take_portfolio_snapshots()` to record each player's portfolio value for the night (it saves nothing until a season start is recorded); if that fails, the log says so and the backup still runs.
+
+## Tests
+
+SQL tests run against a throwaway local Postgres (stubs stand in for Supabase auth):
+
+```
+PGHOST=/path/to/socket PGPORT=5433 tests/run-sql-tests.sh
+```
+
+It creates database `pm_test`, loads `tests/sql/supabase-stubs.sql` and `supabase-schema.sql`, then runs each `tests/sql/*.test.sql`.
+
+Browser tests use Playwright with Supabase and CDN requests stubbed (`tests/browser/harness.mjs`). Serve the repo, then run a test:
+
+```
+python3 -m http.server 8765 --bind 127.0.0.1 &
+node tests/browser/smoke.mjs
+```
+
+The Stripe webhook's plan logic and the backup's restore script have Node tests:
+
+```
+node --test tests/stripe-plan.test.mjs tests/backup-restore.test.mjs
+```
 
 ## Contributing
 
