@@ -10,6 +10,38 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
+  // Error log: when something breaks on a player's device it's reported to
+  // the database and listed in admin, without anyone having to tell you.
+  // At most 5 reports per visit, each error once. Errors from browser
+  // extensions and other sites are ignored. Reports wait here until the
+  // database connection is ready (pmErrorSink, set further down).
+  (function(){
+    var queue = [], seen = {}, sent = 0, sink = null;
+    function add(message, source){
+      message = String(message || '').slice(0, 500);
+      if(!message || /^Script error\.?$/.test(message) || /ResizeObserver loop/.test(message)) return;
+      var key = message + '|' + source;
+      if(seen[key] || sent >= 5) return;
+      seen[key] = 1; sent++;
+      var item = { m: message, s: String(source || '').slice(0, 300) };
+      if(sink) sink(item); else queue.push(item);
+    }
+    var ours = function(file){ return !file || file.indexOf(location.origin) === 0 || /cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com/.test(file); };
+    addEventListener('error', function(e){
+      if(e.message){
+        if(ours(e.filename)) add(e.message, e.filename ? e.filename.replace(location.origin, '') + ':' + e.lineno + ':' + e.colno : '');
+      } else if(e.target && e.target !== window && (e.target.src || e.target.href)){
+        add('Failed to load ' + (e.target.src || e.target.href), '');
+      }
+    }, true);
+    addEventListener('unhandledrejection', function(e){
+      var r = e.reason;
+      add((r && (r.message || String(r))) || 'Unhandled promise rejection', r && r.stack ? String(r.stack).split('\n').slice(1, 2).join('').trim() : '');
+    });
+    window.pmErrorSink = function(fn){ sink = fn; queue.splice(0).forEach(fn); };
+  })();
+</script>
+<script>
   // Theme: applied before first paint so there's no flash of the default look.
   // THEMES lists every look the picker offers, with the Google Fonts it needs.
   window.THEMES = {
@@ -1678,7 +1710,43 @@ function sparkSVG(data, color){
   return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" style="stroke:'+color+'" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>';
 }
 // Escape text from players (display names) before putting it into HTML.
-function escapeHtml(v){ return String(v).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function escapeHtml(v){ return String(v ?? '').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+// Text edited in admin may use simple formatting (bold, italics, line
+// breaks, links) and nothing else. Any other tag is reduced to its text,
+// scripts and embeds are dropped, and every attribute except a safe link
+// address is removed, so even a hijacked admin account can't run code on
+// players' pages.
+const SAFE_TAGS = new Set(['B','STRONG','I','EM','U','S','SMALL','BR','SPAN','A']);
+const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','TEMPLATE','NOSCRIPT','SVG','MATH','LINK','META','BASE','FORM','INPUT','TEXTAREA','SELECT','BUTTON']);
+// Web, email and on-page links only; anything else (javascript:, data:...) becomes "#".
+function safeUrl(u){
+  const v = String(u ?? '').trim();
+  if(/^(https?:|mailto:)/i.test(v) || /^[#/?]/.test(v) || /^[\w.-]+\.html([#?].*)?$/i.test(v)) return v;
+  return '#';
+}
+function safeHtml(html){
+  const tpl = document.createElement('template');
+  tpl.innerHTML = String(html ?? '');
+  const clean = (node)=>{
+    for(const el of [...node.children]){
+      const tag = el.tagName.toUpperCase();
+      if(DROP_TAGS.has(tag)){ el.remove(); continue; }
+      clean(el);
+      if(!SAFE_TAGS.has(tag)){ el.replaceWith(...el.childNodes); continue; }
+      const href = tag === 'A' ? el.getAttribute('href') : null;
+      for(const a of [...el.attributes]) el.removeAttribute(a.name);
+      if(tag === 'A'){
+        el.setAttribute('href', safeUrl(href));
+        if(/^https?:/i.test(el.getAttribute('href'))){ el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+      }
+    }
+  };
+  clean(tpl.content);
+  const out = document.createElement('div');
+  out.append(tpl.content);
+  return out.innerHTML;
+}
 function fmtChg(chg){ return (chg>=0?'▲ ':'▼ ')+Math.abs(chg).toFixed(1)+'%'; }
 function coin(n, decimals){ return '<span class="coin-ic"></span>'+Number(n).toFixed(decimals===undefined?2:decimals); }
 
@@ -1887,13 +1955,13 @@ function renderSiteContent(){
   document.getElementById('heroStat3L').textContent = c.hero.stat3_l;
   // ad banners
   document.getElementById('adTopTag').textContent = c.ad_top.tag;
-  document.getElementById('adTopCopy').innerHTML = c.ad_top.copy;
+  document.getElementById('adTopCopy').innerHTML = safeHtml(c.ad_top.copy);
   document.getElementById('adTopCta').textContent = c.ad_top.cta_text;
-  document.getElementById('adTopCta').href = c.ad_top.cta_url;
+  document.getElementById('adTopCta').href = safeUrl(c.ad_top.cta_url);
   document.getElementById('adNativeTag').textContent = c.ad_native.tag;
-  document.getElementById('adNativeCopy').innerHTML = c.ad_native.copy;
+  document.getElementById('adNativeCopy').innerHTML = safeHtml(c.ad_native.copy);
   document.getElementById('adNativeCta').textContent = c.ad_native.cta_text;
-  document.getElementById('adNativeCta').href = c.ad_native.cta_url;
+  document.getElementById('adNativeCta').href = safeUrl(c.ad_native.cta_url);
   // An ad with no copy is hidden, so blanking it in admin removes it from the page.
   document.getElementById('adTopBanner').style.display = c.ad_top.copy ? '' : 'none';
   document.getElementById('adNativeBanner').style.display = c.ad_native.copy ? '' : 'none';
@@ -1902,7 +1970,7 @@ function renderSiteContent(){
   document.getElementById('lbTitle').textContent = c.leaderboard.title;
   document.getElementById('lbDesc').textContent = c.leaderboard.desc;
   document.getElementById('lbRules').innerHTML = c.leaderboard.rules.map(r=>
-    '<div class="lb-rule"><b>'+r.b+'</b> '+r.t+'</div>'
+    '<div class="lb-rule"><b>'+escapeHtml(r.b)+'</b> '+safeHtml(r.t)+'</div>'
   ).join('');
   // pro
   document.getElementById('proEyebrow').textContent = c.pro.eyebrow || 'MEMBERSHIP';
@@ -1911,26 +1979,26 @@ function renderSiteContent(){
   document.getElementById('proGrid').innerHTML = c.pro.plans.map(p=>{
     const hasCheckout = p.checkout_url && !p.checkout_url.includes('PASTE_');
     const btn = hasCheckout
-      ? '<a href="'+p.checkout_url+'" target="_blank" rel="noopener" class="pro-btn '+(p.featured?'filled':'ghost')+'">'+p.cta+'</a>'
-      : '<div class="pro-btn ghost" style="cursor:default; opacity:0.7;">'+p.cta+'</div>';
+      ? '<a href="'+escapeHtml(safeUrl(p.checkout_url))+'" target="_blank" rel="noopener" class="pro-btn '+(p.featured?'filled':'ghost')+'">'+safeHtml(p.cta)+'</a>'
+      : '<div class="pro-btn ghost" style="cursor:default; opacity:0.7;">'+safeHtml(p.cta)+'</div>';
     return '<div class="pro-card'+(p.featured?' featured':'')+'">'+
-      (p.badge?'<div class="badge-pop">'+p.badge+'</div>':'')+
-      '<div class="pro-tier">'+p.tier+'</div>'+
-      (p.tagline?'<div style="font-size:11.5px; color:var(--gilt); margin-bottom:10px; margin-top:-6px;">'+p.tagline+'</div>':'')+
-      '<div class="pro-price mono">'+p.price+'<span>'+p.period+'</span></div>'+
-      '<ul class="pro-feats">'+p.feats.map(f=>'<li>'+f+'</li>').join('')+'</ul>'+
+      (p.badge?'<div class="badge-pop">'+safeHtml(p.badge)+'</div>':'')+
+      '<div class="pro-tier">'+safeHtml(p.tier)+'</div>'+
+      (p.tagline?'<div style="font-size:11.5px; color:var(--gilt); margin-bottom:10px; margin-top:-6px;">'+safeHtml(p.tagline)+'</div>':'')+
+      '<div class="pro-price mono">'+safeHtml(p.price)+'<span>'+safeHtml(p.period)+'</span></div>'+
+      '<ul class="pro-feats">'+p.feats.map(f=>'<li>'+safeHtml(f)+'</li>').join('')+'</ul>'+
       btn+
     '</div>';
   }).join('');
   // asset classes
   document.getElementById('classesGrid').innerHTML = c.classes.map(cl=>
     '<div class="class-card">'+
-      '<div class="cc-icon mc">'+cl.icon+'</div>'+
-      '<h3>'+cl.title+'</h3>'+
-      '<p>'+cl.desc+'</p>'+
+      '<div class="cc-icon mc">'+safeHtml(cl.icon)+'</div>'+
+      '<h3>'+safeHtml(cl.title)+'</h3>'+
+      '<p>'+safeHtml(cl.desc)+'</p>'+
       '<div class="cc-stats">'+
-        '<div class="cc-stat"><div class="n">'+cl.stat1_n+'</div><div class="l">'+cl.stat1_l+'</div></div>'+
-        '<div class="cc-stat"><div class="n">'+cl.stat2_n+'</div><div class="l">'+cl.stat2_l+'</div></div>'+
+        '<div class="cc-stat"><div class="n">'+safeHtml(cl.stat1_n)+'</div><div class="l">'+safeHtml(cl.stat1_l)+'</div></div>'+
+        '<div class="cc-stat"><div class="n">'+safeHtml(cl.stat2_n)+'</div><div class="l">'+safeHtml(cl.stat2_l)+'</div></div>'+
       '</div>'+
     '</div>'
   ).join('');
@@ -1942,7 +2010,7 @@ function renderSiteContent(){
   const setTxt = (id, val)=>{ const el=document.getElementById(id); if(el && val!=null) el.textContent = val; };
   setTxt('brandMark', b.mark);
   const bn = document.getElementById('brandName');
-  if(bn && (b.name_1 != null || b.name_2 != null)) bn.innerHTML = (b.name_1||'') + '<span>' + (b.name_2||'') + '</span>';
+  if(bn && (b.name_1 != null || b.name_2 != null)) bn.innerHTML = escapeHtml(b.name_1||'') + '<span>' + escapeHtml(b.name_2||'') + '</span>';
   setTxt('navMarkets', b.nav_markets);
   setTxt('navSpotlight', b.nav_spotlight);
   setTxt('navPortfolio', b.nav_portfolio);
@@ -1973,14 +2041,14 @@ function renderSiteContent(){
   setTxt('footerLine', f.line);
   const fl = document.getElementById('footLinks');
   if(fl && Array.isArray(f.links))
-    fl.innerHTML = f.links.map(l=>'<a href="'+(l.href||'#')+'">'+(l.label||'')+'</a>').join('');
+    fl.innerHTML = f.links.map(l=>'<a href="'+escapeHtml(safeUrl(l.href||'#'))+'">'+escapeHtml(l.label||'')+'</a>').join('');
 
   // ad rails
   const ar = c.ad_rails || {};
   const arl = document.getElementById('adRailLeftText');
   const arr = document.getElementById('adRailRightText');
-  if(arl && ar.left != null) arl.innerHTML = ar.left;
-  if(arr && ar.right != null) arr.innerHTML = ar.right;
+  if(arl && ar.left != null) arl.innerHTML = safeHtml(ar.left);
+  if(arr && ar.right != null) arr.innerHTML = safeHtml(ar.right);
   document.getElementById('adRailLeft').style.display = ar.left ? '' : 'none';
   document.getElementById('adRailRight').style.display = ar.right ? '' : 'none';
 }
@@ -2002,7 +2070,7 @@ function buildTicker(){
   const tickerItems = [];
   Object.values(leagues).forEach(l=> l.teams.forEach(t=> tickerItems.push(t)));
   const html = tickerItems.map(t=>
-    '<span class="tick"><span class="sym">'+t.name.toUpperCase().slice(0,4)+'</span><span class="px">'+coin(t.price)+'</span><span class="'+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></span>'
+    '<span class="tick"><span class="sym">'+escapeHtml(t.name.toUpperCase().slice(0,4))+'</span><span class="px">'+coin(t.price)+'</span><span class="'+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></span>'
   ).join('');
   document.getElementById('tickerTrack').innerHTML = html + html;
 }
@@ -2026,8 +2094,8 @@ function buildIndices(){
   grid.innerHTML = cards.map(ix=>{
     const color = ix.chg == null ? 'var(--steel-dim)' : up(ix.chg)?'var(--surge)':'var(--drop)';
     return '<div class="index-card">'+
-      '<div class="ic-top"><div class="ic-name">'+ix.name+'</div></div>'+
-      '<div class="ic-tier">'+ix.tier+'</div>'+
+      '<div class="ic-top"><div class="ic-name">'+escapeHtml(ix.name)+'</div></div>'+
+      '<div class="ic-tier">'+escapeHtml(ix.tier)+'</div>'+
       '<div class="ic-value mono">'+Number(ix.value).toFixed(2)+'</div>'+
       '<div class="ic-chg" style="color:'+color+'">'+(ix.chg == null ? '—' : fmtChg(ix.chg))+'</div>'+
       sparkSVG(ix.series,color)+
@@ -2051,14 +2119,14 @@ function renderTable(key){
     const series = teamSeries(t, 20);
     const color = series && series[series.length-1] < series[0] ? 'var(--drop)' : 'var(--surge)';
     return '<tr>'+
-      '<td><div class="team-name">'+t.name+'</div><div class="team-tier">'+t.tier+'</div></td>'+
+      '<td><div class="team-name">'+escapeHtml(t.name)+'</div><div class="team-tier">'+escapeHtml(t.tier)+'</div></td>'+
       '<td class="num mono">'+coin(t.price)+'</td>'+
       '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
       '<td style="white-space:nowrap;"><button class="star-btn" data-id="'+(t.id||'')+'" title="Add to watchlist">☆</button>'+
         (lockedTeams.has(t.id)
           ? '<button class="buy-btn paused" disabled title="Match in progress or result being priced. Trading reopens once the new price is set.">Paused</button></td>'
-          : '<button class="buy-btn" data-id="'+(t.id||'')+'" data-name="'+t.name+'" data-price="'+t.price+'">Trade</button></td>')+
+          : '<button class="buy-btn" data-id="'+escapeHtml(t.id||'')+'" data-name="'+escapeHtml(t.name)+'" data-price="'+escapeHtml(t.price)+'">Trade</button></td>')+
     '</tr>';
   }).join('');
   // Keep the ☆/★ state correct when switching league tabs
@@ -2076,7 +2144,7 @@ function orderedLeagueKeys(){
 function buildTabs(){
   const orderedKeys = orderedLeagueKeys();
   tabBar.innerHTML = orderedKeys.map((k,i)=>
-    '<button class="tab-btn'+(i===0?' active':'')+'" data-key="'+k+'">'+leagues[k].label+'</button>'
+    '<button class="tab-btn'+(i===0?' active':'')+'" data-key="'+escapeHtml(k)+'">'+escapeHtml(leagues[k].label)+'</button>'
   ).join('');
   tabBar.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -2109,6 +2177,14 @@ function initSupabase(){
     return;
   }
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Send error reports (see the error log at the top of the page). A failed
+  // send is ignored, so reporting can never cause errors of its own.
+  if(window.pmErrorSink) pmErrorSink(item=>{
+    try {
+      sb.rpc('log_client_error', { p_message: item.m, p_source: item.s, p_page: location.pathname + location.hash,
+        p_agent: navigator.userAgent }).then(()=>{}, ()=>{});
+    } catch(e){}
+  });
   let loadedFor;   // the player whose data is on screen (null = signed out)
   sb.auth.onAuthStateChange((event, session)=>{
     currentSession = session;
@@ -2236,13 +2312,13 @@ async function loadPortfolio(){
   } else {
     body.innerHTML = rows.map(r=>
       '<tr>'+
-        '<td><div class="team-name">'+r.name+'</div><div class="team-tier">'+r.meta+'</div></td>'+
+        '<td><div class="team-name">'+escapeHtml(r.name)+'</div><div class="team-tier">'+escapeHtml(r.meta)+'</div></td>'+
         '<td class="num mono" data-label="Shares">'+r.shares.toLocaleString()+'</td>'+
         '<td class="num mono" data-label="Avg. cost">'+coin(r.avgCost)+'</td>'+
         '<td class="num mono" data-label="Price now">'+coin(r.priceNow)+'</td>'+
         '<td class="num mono">'+coin(r.value)+'</td>'+
         '<td class="num"><span class="chip '+(r.pnl>=0?'up':'down')+'">'+(r.pnl>=0?'▲ ':'▼ ')+Math.abs(r.pnlPct).toFixed(1)+'%</span></td>'+
-        '<td><button class="sell-btn" data-id="'+r.id+'" data-name="'+r.name+'" data-price="'+r.priceNow+'">Sell</button></td>'+
+        '<td><button class="sell-btn" data-id="'+escapeHtml(r.id)+'" data-name="'+escapeHtml(r.name)+'" data-price="'+escapeHtml(r.priceNow)+'">Sell</button></td>'+
       '</tr>'
     ).join('');
   }
@@ -2284,8 +2360,8 @@ function populateTeamSelect(){
   Object.values(leagues).forEach(l=>{
     const available = l.teams.filter(t=> t.id && !watched.has(t.id));
     if(available.length === 0) return;
-    opts.push('<optgroup label="'+l.label+'">');
-    available.forEach(t=>{ opts.push('<option value="'+t.id+'">'+t.name+'</option>'); });
+    opts.push('<optgroup label="'+escapeHtml(l.label)+'">');
+    available.forEach(t=>{ opts.push('<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.name)+'</option>'); });
     opts.push('</optgroup>');
   });
   sel.innerHTML = opts.join('');
@@ -2359,8 +2435,8 @@ function renderWatchlistCards(byTeam){
       '<div>'+
         '<div class="wl-head">'+
           '<div>'+
-            '<div class="wl-name">'+t.name+'</div>'+
-            '<div class="wl-meta">'+t.league_label+' · '+t.tier+'</div>'+
+            '<div class="wl-name">'+escapeHtml(t.name)+'</div>'+
+            '<div class="wl-meta">'+escapeHtml(t.league_label)+' · '+escapeHtml(t.tier)+'</div>'+
           '</div>'+
           '<button class="wl-remove" title="Remove from watchlist">×</button>'+
         '</div>'+
@@ -2472,7 +2548,7 @@ async function loadNotifications(){
 
   list.innerHTML = notifRows.map(n=>
     '<div class="notif-item'+(n.read?'':' unread')+'" data-id="'+n.id+'" data-team="'+(n.team_id||'')+'">'+
-      '<div class="notif-team">'+n.team_name+'</div>'+
+      '<div class="notif-team">'+escapeHtml(n.team_name)+'</div>'+
       '<div class="notif-detail">'+
         (n.kind === 'below'
           ? 'Fell below your level — now <span class="dn">'+Number(n.price).toFixed(2)+'</span>, alert at '+Number(n.threshold).toFixed(2)
@@ -2534,7 +2610,7 @@ function renderWatchAlerts(){
       hits.push({ cls:'above', text: r.teams.name + ' has risen above your alert level — now ' + Number(p).toFixed(2) + ', alert set at ' + Number(r.alert_above).toFixed(2) + '.' });
   });
   document.getElementById('wlAlerts').innerHTML = hits.map(h=>
-    '<div class="wl-alert '+h.cls+'">'+h.text+'</div>'
+    '<div class="wl-alert '+h.cls+'">'+escapeHtml(h.text)+'</div>'
   ).join('');
 }
 
