@@ -1574,15 +1574,23 @@ as $function$
     '{"mode":"test","portal_url":"","links":{}}'::jsonb);
 $function$;
 
--- When the current season started, or null before the first reset.
+-- When the current season started, or null before the first reset (or if
+-- the season row doesn't hold a valid date).
 create or replace function public.season_start()
  returns timestamptz
- language sql
+ language plpgsql
  stable
  security definer
  set search_path = public
 as $function$
-  select nullif(value ->> 'start', '')::timestamptz from site_settings where key = 'season';
+declare
+  v_start text;
+begin
+  select value ->> 'start' into v_start from site_settings where key = 'season';
+  return nullif(btrim(v_start), '')::timestamptz;
+exception when others then
+  return null;                      -- not a valid date: no season
+end;
 $function$;
 
 -- ---------- Plans ----------
@@ -1823,6 +1831,8 @@ grant execute on function public.season_start() to anon, authenticated;
 grant execute on function public.my_plan() to anon, authenticated;
 grant execute on function public.get_leaderboard(integer) to anon, authenticated;
 
+revoke execute on function public.tier_rank(text) from public, anon, authenticated;
+revoke execute on function public.subscription_counts(text, timestamptz, boolean) from public, anon, authenticated;
 revoke execute on function public.plan_of(uuid) from public, anon, authenticated;
 revoke execute on function public.user_tier(uuid) from public, anon, authenticated;
 grant execute on function public.plan_of(uuid) to service_role;

@@ -3,9 +3,8 @@
 -- rolls back, so it leaves nothing behind.
 begin;
 
--- Supabase grants these to anon and authenticated by default.
-grant usage on schema public to anon, authenticated, service_role;
-grant all on all tables in schema public to anon, authenticated, service_role;
+-- Supabase's default grants to anon and authenticated are set up in
+-- supabase-stubs.sql before the schema loads.
 
 -- Players (profiles come from the on_auth_user_created trigger).
 insert into auth.users (id, email) values
@@ -160,6 +159,12 @@ do $$ declare n integer; begin
   assert n = 0, 'no snapshots before the season starts, got ' || n;
   assert (select count(*) from public.portfolio_snapshots) = 0, 'nothing written before the season starts';
 
+  insert into public.site_settings (key, value) values ('season', '{"start":"not a date"}');
+  assert public.season_start() is null, 'malformed season start reads as no season';
+  n := public.take_portfolio_snapshots();
+  assert n = 0, 'no snapshots with a malformed season start, got ' || n;
+  delete from public.site_settings where key = 'season';
+
   insert into public.site_settings (key, value) values ('season', jsonb_build_object('start', now()));
   assert public.season_start() is not null, 'season start recorded';
   insert into public.holdings (user_id, team_id, shares)
@@ -210,6 +215,70 @@ do $$ declare v_ok boolean; begin
   assert (select l.tier from public.get_leaderboard() l limit 1) is not null, 'authenticated can read the leaderboard';
 end $$;
 reset role;
+
+-- A player can't give themselves a plan or change payments settings.
+set role authenticated;
+do $$ declare
+  u uuid := (select pro_u from ids);
+  v_before text;
+  v_blocked boolean;
+  n bigint;
+begin
+  reset role;
+  v_before := public.user_tier(u);
+  set local role authenticated;
+
+  v_blocked := false;
+  begin
+    insert into public.subscriptions (id, user_id, tier, status, current_period_end, livemode)
+    values ('sub_fake', u, 'ultimate', 'active', now() + interval '1 year', true);
+  exception when insufficient_privilege then v_blocked := true;
+  end;
+  assert v_blocked, 'player cannot insert a subscription';
+
+  update public.subscriptions set tier = 'ultimate', livemode = true where user_id = u;
+  get diagnostics n = row_count;
+  assert n = 0, 'player cannot update own subscription, updated ' || n;
+
+  v_blocked := false;
+  begin
+    insert into public.grants (user_id, tier) values (u, 'ultimate');
+  exception when insufficient_privilege then v_blocked := true;
+  end;
+  assert v_blocked, 'player cannot insert a grant';
+
+  update public.grants set tier = 'ultimate' where user_id = u;
+  get diagnostics n = row_count;
+  assert n = 0, 'player cannot update a grant, updated ' || n;
+
+  update public.site_settings set value = '{"mode":"off","portal_url":"","links":{}}' where key = 'payments';
+  get diagnostics n = row_count;
+  assert n = 0, 'player cannot change payments settings, updated ' || n;
+
+  reset role;
+  assert public.user_tier(u) = v_before, 'tier unchanged: was ' || v_before || ', now ' || public.user_tier(u);
+  assert public.payments_settings() ->> 'mode' = 'test', 'payments mode unchanged';
+end $$;
+reset role;
+
+-- Function privileges, with Supabase's default EXECUTE grants in place.
+do $$ declare r text; f text; begin
+  foreach f in array array['public.take_portfolio_snapshots()', 'public.user_tier(uuid)', 'public.plan_of(uuid)',
+                           'public.tier_rank(text)', 'public.subscription_counts(text, timestamptz, boolean)'] loop
+    foreach r in array array['anon', 'authenticated'] loop
+      assert not has_function_privilege(r, f, 'execute'), r || ' must not execute ' || f;
+    end loop;
+  end loop;
+  assert not has_function_privilege('anon', 'public.admin_grant_plan(text, text, timestamptz, text)', 'execute'), 'anon must not execute admin_grant_plan';
+  assert not has_function_privilege('anon', 'public.admin_list_plans()', 'execute'), 'anon must not execute admin_list_plans';
+  assert not has_function_privilege('anon', 'public.admin_revoke_grant(uuid)', 'execute'), 'anon must not execute admin_revoke_grant';
+  assert has_function_privilege('service_role', 'public.take_portfolio_snapshots()', 'execute'), 'service_role takes snapshots';
+  foreach f in array array['public.my_plan()', 'public.get_leaderboard(integer)', 'public.payments_settings()', 'public.season_start()'] loop
+    foreach r in array array['anon', 'authenticated'] loop
+      assert has_function_privilege(r, f, 'execute'), r || ' should execute ' || f;
+    end loop;
+  end loop;
+end $$;
 
 set role service_role;
 do $$ begin

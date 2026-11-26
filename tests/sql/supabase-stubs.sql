@@ -24,3 +24,11 @@ create or replace function auth.role() returns text language sql stable as
 $$ select coalesce(auth.jwt() ->> 'role', 'anon') $$;
 
 grant usage on schema auth to anon, authenticated, service_role;
+
+-- Supabase's default privileges: anon, authenticated and service_role get
+-- every table and sequence, and EXECUTE on every function, created in
+-- public. Shipped SQL must revoke what they shouldn't have.
+grant usage on schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
