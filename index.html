@@ -746,6 +746,11 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 .theme-lock{ margin-left:auto; flex-shrink:0; color:var(--steel); }
 .theme-opt.is-locked{ color:var(--steel); }
 .theme-opt.is-locked:hover{ color:var(--chalk); }
+.theme-opt[aria-disabled="true"]{ color:var(--steel); cursor:default; }
+.theme-opt[aria-disabled="true"]:hover{ background:none; }
+.theme-group-note{ font-size:11.5px; color:var(--steel); padding:0 10px 6px; }
+.theme-menu::after{ content:""; position:sticky; display:block; bottom:0; height:36px; margin:-36px -6px 0; background:linear-gradient(to bottom, transparent, var(--panel) 85%); pointer-events:none; opacity:0; }
+.theme-menu.has-more::after{ opacity:1; }
 /* "Pro skins come with Pro and Ultimate." after choosing a locked skin */
 .skin-notice{ position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:140; max-width:calc(100vw - 32px); width:max-content;
   background:var(--panel); color:var(--chalk); border:1px solid var(--border); border-left:3px solid var(--gilt); border-radius:var(--r-md); padding:10px 16px; font-size:13.5px; font-weight:600; box-shadow:0 12px 32px rgba(0,0,0,0.35); visibility:hidden; opacity:0; }
@@ -1189,7 +1194,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   --gilt:#7CF0A8; --on-gilt:#062012;
   --surge:#4BE08E; --drop:#FF7A7A;
   --accent:#EAF1FF; --on-accent:#0A1230;
-  --chalk:#F2F5FF; --steel:#AEB9DA; --steel-dim:#8390BA;
+  --chalk:#F2F5FF; --steel:#AEB9DA; --steel-dim:#8A97C0;
   --overlay:rgba(3,6,20,0.78);
   --shadow:0 0 0 1px rgba(234,241,255,0.04), 0 14px 40px rgba(0,0,0,0.45);
   --font-body:'Saira',sans-serif; --font-display:'Saira Extra Condensed',sans-serif; --font-mono:'Saira Semi Condensed',sans-serif;
@@ -1239,7 +1244,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   --gilt:#7B1733; --gilt-fill:linear-gradient(180deg,#962244 0%,#7B1733 55%,#63112A 100%); --on-gilt:#FFFFFF;
   --surge:#1C6E40; --drop:#A8202A;
   --accent:#7B1733; --accent-fill:var(--gilt-fill); --on-accent:#FFFFFF;
-  --chalk:#1C1F26; --steel:#4A505C; --steel-dim:#5E6470;
+  --chalk:#1C1F26; --steel:#4A505C; --steel-dim:#545A66;
   --overlay:rgba(28,31,38,0.5);
   --shadow:inset 0 1px 0 #FFFFFF, 0 1px 0 rgba(28,31,38,0.06), 0 8px 22px rgba(28,31,38,0.08);
   --font-body:'Libre Franklin',sans-serif; --font-display:'Cinzel',serif; --font-mono:'Libre Franklin',sans-serif;
@@ -1291,7 +1296,7 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
   --gilt:#F4B73F; --on-gilt:#1E1708;
   --surge:#6FD68F; --drop:#FF8A80;
   --accent:#C8202C; --on-accent:#FFFFFF;
-  --chalk:#F3F1EC; --steel:#C9C6BF; --steel-dim:#A4A19A;
+  --chalk:#F3F1EC; --steel:#C9C6BF; --steel-dim:#B3B0A9;
   --overlay:rgba(16,17,19,0.78);
   --shadow:0 4px 0 #1C1E21;
   --font-body:'Archivo',sans-serif; --font-display:'Bebas Neue',sans-serif; --font-mono:'Archivo Narrow',sans-serif;
@@ -1331,6 +1336,8 @@ footer .fl{ font-size:12px; color:var(--steel-dim); font-family:var(--font-mono)
 [data-theme="terrace"] .chip.up{ background:rgba(111,214,143,0.14); }
 [data-theme="terrace"] .chip.down{ background:rgba(255,138,128,0.14); }
 [data-theme="terrace"] .btn-primary, [data-theme="terrace"] .nav-cta{ box-shadow:0 3px 0 #7A1219; }
+/* Scarf red is for fills; where the accent would be text, use scarf gold. */
+[data-theme="terrace"] .m-toggle a, [data-theme="terrace"] .theme-opt[aria-checked="true"]::after{ color:var(--gilt); }
 [data-theme="terrace"] .disclaimer-bar{ background:#1F2124; border-top:none; position:relative; }
 [data-theme="terrace"] .disclaimer-bar::before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--scarf); }
 
@@ -1861,7 +1868,17 @@ function themeChart(chart){
 // Pro skins (THEMES entries with pro:true) open once the plan is confirmed
 // as Pro or Ultimate; checkProSkin() keeps this up to date.
 let proSkinsOpen = false;
+let skinAuthKnown = false;   // set on the first plan update, once sign-in state is known
+let skinOwner = null;        // the player whose Pro skin is on screen, once confirmed
 const LOCK_SVG = '<svg class="theme-lock" width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><rect x="1" y="6" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="M3.3 6V4.3a2.7 2.7 0 0 1 5.4 0V6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+// 'open', 'locked' (free or signed out), or, while the plan isn't known,
+// 'checking' / 'error': then the skins are neither offered nor sold.
+function skinState(){
+  if(proSkinsOpen) return 'open';
+  if(!skinAuthKnown || (currentSession && planStatus === 'pending')) return 'checking';
+  if(currentSession && planStatus === 'error') return 'error';
+  return 'locked';
+}
 function setTheme(name){
   name = applyTheme(name);
   try { localStorage.setItem('pm-theme', name); } catch(e){}
@@ -1872,36 +1889,63 @@ function setTheme(name){
   if(document.fonts) document.fonts.ready.then(restyle);
   return name;
 }
+// The Pro skin to bring back for a player: { uid, theme } in storage.
+function rememberedSkin(){
+  try { const v = JSON.parse(localStorage.getItem('pm-theme-pro')); return v && THEMES[v.theme] && THEMES[v.theme].pro ? v : null; }
+  catch(e){ return null; }
+}
+function rememberSkin(uid, theme){
+  try {
+    if(uid) localStorage.setItem('pm-theme-pro', JSON.stringify({ uid, theme }));
+    else localStorage.removeItem('pm-theme-pro');
+  } catch(e){}
+}
+// Fades the bottom of the theme menu while more options are below.
+function updateMenuCue(){
+  const menu = document.getElementById('themeMenu');
+  menu.classList.toggle('has-more', menu.scrollTop + menu.clientHeight < menu.scrollHeight - 4);
+}
 function buildThemeMenu(){
   const menu = document.getElementById('themeMenu');
   const btn = document.getElementById('themeBtn');
   const current = document.documentElement.getAttribute('data-theme');
+  const state = skinState();
+  const note = { checking:'Checking your plan…', error:"Couldn't check your plan" }[state] || '';
   document.getElementById('themeLabel').textContent = THEMES[current].label;
   const opt = ([key, th])=>{
-    const locked = th.pro && !proSkinsOpen;
+    const locked = th.pro && state === 'locked', waiting = th.pro && !!note;
     return '<button class="theme-opt'+(locked?' is-locked':'')+'" role="menuitemradio" aria-checked="'+(key===current)+'" data-theme-key="'+key+'"'+
-      (locked?' aria-label="'+th.label+', locked: Pro and Ultimate only"':'')+'>'+
+      (locked?' aria-label="'+th.label+', locked: Pro and Ultimate only"':'')+
+      (waiting?' aria-disabled="true" aria-label="'+th.label+', '+note.toLowerCase()+'"':'')+'>'+
       '<span class="theme-sw" style="background:linear-gradient(135deg,'+th.sw[0]+' 0 50%,'+th.sw[1]+' 50% 75%,'+th.sw[2]+' 75%)"></span>'+
       th.label+(locked?LOCK_SVG:'')+'</button>';
   };
   const all = Object.entries(THEMES);
   menu.innerHTML = all.filter(([, th])=>!th.pro).map(opt).join('')+
     '<div role="group" aria-labelledby="themeProHead"><div class="theme-group" id="themeProHead">Pro skins</div>'+
+    (note?'<div class="theme-group-note">'+note+'</div>':'')+
     all.filter(([, th])=>th.pro).map(opt).join('')+'</div>';
   menu.querySelectorAll('.theme-opt').forEach(opt=> opt.onclick = ()=>{
     const key = opt.dataset.themeKey;
+    if(THEMES[key].pro && skinState() !== 'open' && skinState() !== 'locked') return;   // plan not known yet
     menu.classList.remove('open'); btn.setAttribute('aria-expanded','false');
     if(THEMES[key].pro && !proSkinsOpen) return showSkinLocked();
     withTransition(()=>{
-      try { localStorage.removeItem('pm-theme-pro'); } catch(e){}   // a choice of its own replaces any remembered skin
+      rememberSkin(null);   // a choice of its own replaces any remembered skin
+      skinOwner = THEMES[key].pro ? currentSession.user.id : null;
       setTheme(key);
     });
   });
+  if(menu.classList.contains('open')) updateMenuCue();
 }
 // A locked skin: point the player at the plans instead of applying it.
 let skinNoticeTimer;
 function showSkinLocked(){
-  document.getElementById('pro').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block:'start' });
+  const pro = document.getElementById('pro');
+  pro.scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block:'start' });
+  // Keyboard focus follows: the first thing to press in the plans, else the picker button.
+  const target = [...pro.querySelectorAll('a[href], button:not([disabled])')].find(el=>el.offsetParent) || document.getElementById('themeBtn');
+  target.focus({ preventScroll:true });
   const note = document.getElementById('skinNotice');
   note.classList.add('show');
   note.textContent = 'Pro skins come with Pro and Ultimate.';
@@ -1910,20 +1954,24 @@ function showSkinLocked(){
 }
 // Called whenever the plan changes. A saved Pro skin is only taken away once
 // the plan is confirmed as free, or the player is signed out: never while
-// it is still loading or after a failed check. The skin is remembered, so
-// it comes back when a Pro or Ultimate player signs in again.
+// it is still loading or after a failed check. The skin is remembered for
+// its player, and comes back when they sign in again on Pro or Ultimate.
 function checkProSkin(){
-  const confirmed = !currentSession || planStatus === 'ok';
-  proSkinsOpen = !!currentSession && planStatus === 'ok' && planTier() !== 'free';
+  skinAuthKnown = true;
+  const uid = currentSession ? currentSession.user.id : null;
+  const confirmed = !uid || planStatus === 'ok';
+  proSkinsOpen = !!uid && planStatus === 'ok' && planTier() !== 'free';
   const current = document.documentElement.getAttribute('data-theme');
-  let remembered = null;
-  try { remembered = localStorage.getItem('pm-theme-pro'); } catch(e){}
+  const remembered = rememberedSkin();
+  if(proSkinsOpen && THEMES[current].pro) skinOwner = uid;
   if(THEMES[current].pro && confirmed && !proSkinsOpen){
-    try { localStorage.setItem('pm-theme-pro', current); } catch(e){}
+    rememberSkin(skinOwner || uid, current);
+    skinOwner = null;
     setTheme('normal');
-  } else if(proSkinsOpen && current === 'normal' && THEMES[remembered] && THEMES[remembered].pro){
-    try { localStorage.removeItem('pm-theme-pro'); } catch(e){}
-    setTheme(remembered);
+  } else if(proSkinsOpen && current === 'normal' && remembered && remembered.uid === uid){
+    rememberSkin(null);
+    skinOwner = uid;
+    setTheme(remembered.theme);
   } else buildThemeMenu();
 }
 document.getElementById('themeBtn').onclick = (e)=>{
@@ -1931,7 +1979,10 @@ document.getElementById('themeBtn').onclick = (e)=>{
   const menu = document.getElementById('themeMenu');
   const open = menu.classList.toggle('open');
   document.getElementById('themeBtn').setAttribute('aria-expanded', String(open));
+  if(open) updateMenuCue();
 };
+document.getElementById('themeMenu').addEventListener('scroll', updateMenuCue, { passive:true });
+addEventListener('resize', ()=>{ if(document.getElementById('themeMenu').classList.contains('open')) updateMenuCue(); });
 document.addEventListener('click', (e)=>{
   if(!document.getElementById('themeWrap').contains(e.target)) document.getElementById('themeMenu').classList.remove('open');
 });
@@ -2521,6 +2572,7 @@ function supaConfigured(){
 function initSupabase(){
   if(!supaConfigured()){
     document.getElementById('configBanner').style.display = 'block';
+    checkProSkin();   // nobody can sign in, so treat everyone as signed out
     return;
   }
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

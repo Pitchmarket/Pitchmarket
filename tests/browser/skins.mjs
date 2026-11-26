@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { openPage } from './harness.mjs';
+import { openPage, makeSession } from './harness.mjs';
 
 const URL_ = 'http://127.0.0.1:8765/index.html';
 const USER = { id: 'u1', email: 'fan@example.com' };
@@ -55,6 +55,8 @@ await run('free player picker', { session: USER, routes: routes('free') }, async
   assert.equal((await page.textContent('#skinNotice')).trim(), 'Pro skins come with Pro and Ultimate.');
   assert.equal(await page.getAttribute('#skinNotice', 'aria-live'), 'polite');
   assert.ok(!(await page.isVisible('#themeMenu')), 'menu closed');
+  const focus = await page.evaluate(() => { const a = document.activeElement; return a === document.body ? 'body' : (document.getElementById('pro').contains(a) ? 'pro' : a.id); });
+  assert.ok(focus === 'pro' || focus === 'themeBtn', 'focus moves to the plans or the picker, not ' + focus);
   // A free theme still applies.
   await page.click('#themeBtn');
   await page.click('.theme-opt[data-theme-key="chalk"]');
@@ -95,7 +97,91 @@ await run('pro player', { session: USER, routes: routes('pro') }, async (page) =
   assert.ok(!(await page.isVisible('#skinNotice')));
 });
 
-// 6. Each skin draws the table, with readable text and recognisable clue colours.
+// 6. While the plan loads, Pro skins are neither locked nor offered.
+await run('plan pending picker', { session: USER, routes: routes('pro', { delay: 1500 }) }, async (page) => {
+  await page.waitForFunction(() => planStatus === 'pending' && !!currentSession, null, { timeout: 8000 });
+  await page.click('#themeBtn');
+  assert.equal(await page.locator('#themeMenu .theme-opt.is-locked').count(), 0, 'no locks while checking');
+  assert.equal(await page.locator('#themeMenu .theme-opt[aria-disabled="true"]').count(), 3);
+  assert.equal((await page.textContent('#themeMenu .theme-group-note')).trim(), 'Checking your plan…');
+  await page.click('.theme-opt[data-theme-key="floodlights"]', { force: true });   // Playwright would wait for aria-disabled to clear
+  assert.equal(await page.evaluate(() => planStatus), 'pending', 'clicked while still pending');
+  await page.waitForTimeout(300);
+  assert.equal(await theme(page), 'normal', 'not applied');
+  assert.ok(!(await page.isVisible('#skinNotice')), 'no upsell');
+  assert.ok(await page.isVisible('#themeMenu'), 'menu stays open');
+  await planOk(page);
+  assert.equal(await page.locator('#themeMenu .theme-opt[aria-disabled="true"]').count(), 0, 'open once confirmed');
+  await page.click('.theme-opt[data-theme-key="floodlights"]');
+  await page.waitForFunction(() => document.documentElement.dataset.theme === 'floodlights', null, { timeout: 4000 });
+});
+
+// 7. The remembered skin belongs to its player: it comes back for them,
+// never for someone else on the same browser, and a hand-picked theme clears it.
+const PRO_IDS = { u1: 'pro', u3: 'pro', u4: 'free' };
+const authRoutes = {
+  ...routes('free'),
+  token: async (req) => { const { email } = JSON.parse(req.postData() || '{}'); const id = email.split('@')[0]; return makeSession({ id, email }); },
+  logout: () => ({}),
+  'rpc/my_plan': (req) => {
+    const tok = (req.headers()['authorization'] || '').split(' ')[1] || '';
+    let sub = ''; try { sub = JSON.parse(Buffer.from(tok.split('.')[1], 'base64url').toString()).sub; } catch (e) {}
+    const tier = PRO_IDS[sub] || 'free';
+    return { tier, source: tier === 'free' ? 'free' : 'stripe', has_subscription: tier !== 'free' };
+  },
+};
+const signOut = (page) => page.evaluate(() => sb.auth.signOut());
+const signIn = (page, id) => page.evaluate((email) => sb.auth.signInWithPassword({ email, password: 'pw123456' }), id + '@example.com');
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 8000 });
+const themeIs = (page, t) => waitFor(page, (t) => document.documentElement.dataset.theme === t, t);
+await run('remember per player', { session: USER, routes: authRoutes }, async (page) => {
+  await planOk(page);
+  assert.equal(await theme(page), 'terrace');
+  await signOut(page);
+  await themeIs(page, 'normal');
+  assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('pm-theme-pro'))), { uid: 'u1', theme: 'terrace' });
+  // Another Pro player on this browser doesn't inherit it.
+  await signIn(page, 'u3');
+  await waitFor(page, () => currentSession && currentSession.user.id === 'u3' && planStatus === 'ok');
+  await page.waitForTimeout(200);
+  assert.equal(await theme(page), 'normal', 'u3 does not get u1\'s skin');
+  await signOut(page);
+  await waitFor(page, () => !currentSession);
+  // Its owner gets it back.
+  await signIn(page, 'u1');
+  await themeIs(page, 'terrace');
+  assert.equal(await page.evaluate(() => localStorage.getItem('pm-theme-pro')), null, 'memory used up');
+  // Signed out again, then a theme picked by hand: the memory is cleared.
+  await signOut(page);
+  await themeIs(page, 'normal');
+  await page.click('#themeBtn');
+  await page.click('.theme-opt[data-theme-key="chalk"]');
+  await themeIs(page, 'chalk');
+  assert.equal(await page.evaluate(() => localStorage.getItem('pm-theme-pro')), null, 'hand-picked theme clears the memory');
+  await signIn(page, 'u1');
+  await waitFor(page, () => currentSession && planStatus === 'ok');
+  await page.waitForTimeout(200);
+  assert.equal(await theme(page), 'chalk');
+  // A skin picked by hand is remembered for its player too.
+  await page.click('#themeBtn');
+  await page.click('.theme-opt[data-theme-key="floodlights"]');
+  await themeIs(page, 'floodlights');
+  await signOut(page);
+  await themeIs(page, 'normal');
+  assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('pm-theme-pro'))), { uid: 'u1', theme: 'floodlights' });
+}, { savedTheme: 'terrace' });
+
+// 7b. A short window: the menu scrolls, with a fade while more is below, and Terrace is reachable.
+await run('picker scroll cue', { session: USER, routes: routes('free'), viewport: { width: 1280, height: 600 } }, async (page) => {
+  await planOk(page);
+  await page.click('#themeBtn');
+  await waitFor(page, () => document.getElementById('themeMenu').classList.contains('has-more'));
+  await page.locator('.theme-opt[data-theme-key="terrace"]').scrollIntoViewIfNeeded();
+  await waitFor(page, () => !document.getElementById('themeMenu').classList.contains('has-more'));
+  assert.ok(await page.isVisible('.theme-opt[data-theme-key="terrace"]'));
+});
+
+// 8. Each skin draws the table, with readable text and recognisable clue colours.
 const lum = (hex) => {
   const n = parseInt(hex.slice(1), 16);
   const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
@@ -116,11 +202,22 @@ for (const skin of SKINS) {
         const checks = {
           'chalk/bg': ratio(t['--chalk'], t['--bg']), 'chalk/panel': ratio(t['--chalk'], t['--panel']), 'chalk/panel2': ratio(t['--chalk'], t['--panel2']),
           'steel/bg': ratio(t['--steel'], t['--bg']), 'steel/panel': ratio(t['--steel'], t['--panel']),
-          'steel-dim/bg': ratio(t['--steel-dim'], t['--bg']), 'steel-dim/panel': ratio(t['--steel-dim'], t['--panel']),
+          'steel-dim/bg': ratio(t['--steel-dim'], t['--bg']), 'steel-dim/panel': ratio(t['--steel-dim'], t['--panel']), 'steel-dim/panel2': ratio(t['--steel-dim'], t['--panel2']),
           'gilt/bg': ratio(t['--gilt'], t['--bg']), 'surge/panel': ratio(t['--surge'], t['--panel']), 'drop/panel': ratio(t['--drop'], t['--panel']),
           'on-gilt/gilt': ratio(t['--on-gilt'], t['--gilt']), 'on-accent/accent': ratio(t['--on-accent'], t['--accent']),
           'ka-on/match': ratio(t['--ka-on'], t['--ka-match']), 'ka-on/close': ratio(t['--ka-on'], t['--ka-close']),
         };
+        // Every solid colour in the page background (its lightest and darkest stops).
+        const pageStops = (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--page-bg'))).match(/#[0-9A-Fa-f]{6}\b/g) || [];
+        for (const c of pageStops) for (const k of ['--chalk', '--steel', '--steel-dim']) checks[k.slice(2) + '/page ' + c] = ratio(t[k], c);
+        // Where the accent is used as text: sign-in modal links on the panel, the picker's tick on panel2.
+        const rgbHex = (c) => '#' + c.match(/\d+/g).slice(0, 3).map((n) => (+n).toString(16).padStart(2, '0')).join('');
+        const used = await page.evaluate(() => ({
+          link: getComputedStyle(document.querySelector('.m-toggle a')).color,
+          tick: (() => { const o = document.createElement('button'); o.className = 'theme-opt'; o.setAttribute('aria-checked', 'true'); document.getElementById('themeMenu').appendChild(o); const c = getComputedStyle(o, '::after').color; o.remove(); return c; })(),
+        }));
+        checks['accent-text link/panel'] = ratio(rgbHex(used.link), t['--panel']);
+        checks['accent-text tick/panel2'] = ratio(rgbHex(used.tick), t['--panel2']);
         for (const [k, r] of Object.entries(checks)) assert.ok(r >= 4.5, `${skin} ${k} contrast ${r.toFixed(2)} < 4.5`);
         contrast[skin] = Object.fromEntries(Object.entries(checks).map(([k, r]) => [k, +r.toFixed(2)]));
         // Clue colours stay green and yellow.
