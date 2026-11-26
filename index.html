@@ -2255,10 +2255,12 @@ let currentPlan = { tier:'free', source:'free' };
 let planStatus = 'pending';
 let plansReady = false;   // set once currentSession exists (cards depend on it)
 function planTier(){ return ['pro','ultimate'].includes(currentPlan.tier) ? currentPlan.tier : 'free'; }
+function tierRank(t){ return t === 'ultimate' ? 2 : t === 'pro' ? 1 : 0; }
 function hasPaidPerks(){ return planTier() !== 'free'; }
 function paymentsSettings(){
   const p = siteContent.payments || {};
-  return { mode: ['off','test','live'].includes(p.mode) ? p.mode : 'off',
+  // Missing or unknown mode: test, as in admin and payments_settings().
+  return { mode: ['off','test','live'].includes(p.mode) ? p.mode : 'test',
            portal_url: p.portal_url || '', links: (p.links && typeof p.links === 'object') ? p.links : {} };
 }
 // Stripe links must be web addresses; anything else counts as missing.
@@ -2285,6 +2287,8 @@ function planButton(card){
   if(currentSession && planStatus === 'pending') return idle('Checking your plan…');
   if(currentSession && planStatus !== 'ok') return idle("Couldn't check your plan, refresh to try again");
   if(currentSession && card.tier === tier) return idle('Your plan');
+  // A higher plan includes this one: nothing to buy here.
+  if(currentSession && tierRank(tier) > tierRank(card.tier)) return idle('Included in your plan');
   if(currentSession && currentPlan.has_subscription){
     const portal = httpUrl(pay.portal_url);
     return portal ? link(portal, 'Change plan') : idle('Change plan');

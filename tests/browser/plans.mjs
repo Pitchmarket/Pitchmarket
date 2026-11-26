@@ -228,4 +228,40 @@ await run('user switch', {
   await page.waitForFunction(() => /client_reference_id=u2/.test(document.querySelector('.pro-card[data-plan="pro_monthly"] a.pro-btn')?.href || ''), null, { timeout: 8000 });
 });
 
+// 9. A higher plan includes the lower one: Ultimate (grant or subscription)
+// sees "Included in your plan" on the Pro cards, never a buy link.
+for (const [label, plan] of [
+  ['ultimate grant', { tier: 'ultimate', source: 'grant', has_subscription: false }],
+  ['ultimate subscriber', { tier: 'ultimate', source: 'stripe', has_subscription: true }],
+]) {
+  await run(label, {
+    session: USER,
+    routes: {
+      site_settings: settings({ mode: 'test', portal_url: 'https://billing.stripe.com/p/login/test', links: LINKS }),
+      profiles: profile,
+      'rpc/my_plan': () => plan,
+      watchlist: () => [],
+    },
+  }, async (page) => {
+    await page.waitForFunction(() => document.querySelector('.pro-card[data-plan="ultimate_monthly"] .pro-btn').textContent.trim() === 'Your plan', null, { timeout: 8000 });
+    assert.deepEqual(await texts(page, PAID), ['Included in your plan', 'Included in your plan', 'Your plan', 'Your plan']);
+    for (const key of ['pro_monthly', 'pro_yearly']) {
+      assert.equal(await page.locator('.pro-card[data-plan="' + key + '"] a').count(), 0, key + ' has no link');
+      assert.equal(await page.getAttribute('.pro-card[data-plan="' + key + '"] .pro-btn', 'aria-disabled'), 'true', key + ' idle');
+    }
+    assert.equal(await page.locator('a[href*="buy.stripe.com"]').count(), 0, 'no buy link');
+  });
+}
+
+// 10. A missing or unknown payments mode reads as test, as in admin and SQL.
+await run('unknown mode', { routes: { site_settings: settings({ mode: 'bogus', portal_url: '', links: LINKS }) } }, async (page) => {
+  await page.waitForFunction(() => document.querySelector('.pro-card[data-plan="pro_monthly"] .pro-btn').textContent.includes('Sign in to upgrade'), null, { timeout: 8000 });
+  assert.deepEqual(await texts(page, PAID), Array(4).fill('Sign in to upgrade'));
+  assert.ok(await page.isVisible('#planTestNote'), 'test note shown');
+});
+await run('no mode', { routes: { site_settings: settings({ portal_url: '', links: LINKS }) } }, async (page) => {
+  await page.waitForFunction(() => document.querySelector('.pro-card[data-plan="pro_monthly"] .pro-btn').textContent.includes('Sign in to upgrade'), null, { timeout: 8000 });
+  assert.ok(await page.isVisible('#planTestNote'), 'test note shown');
+});
+
 console.log('ok');

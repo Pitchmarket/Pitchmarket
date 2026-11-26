@@ -540,22 +540,14 @@ const settingsDefaults = {
   pro: {
     eyebrow:'MEMBERSHIP', title:'Play free. Go deeper if you want.',
     desc:"Every tier competes on identical terms. Pro and Ultimate add tools, data, customization and comfort — never an edge in trading or the leaderboard.",
+    // Only what the editor and the site use: names and features are fixed
+    // on the site, links are in Plans & Payments.
     plans:[
-      { tier:'Free', tagline:'Play PitchMarket', price:'$0', period:'/mo', featured:false, badge:'',
-        feats:['Ads','Basic rankings','Basic watchlist','Standard data','Basic portfolio history','No paid feature affects competitive outcomes'],
-        cta:'Current plan', checkout_url:'' },
-      { tier:'Pro', tagline:'Enhance Your Experience', price:'$1.99', period:'/mo', featured:false, badge:'',
-        feats:['No ads','Private rankings/leagues','More watchlist slots','Market simulations','Advanced portfolio analytics','Custom price/event alerts','Expanded personal history','Better profile customization'],
-        cta:'Upgrade to Pro', checkout_url:'PASTE_YOUR_STRIPE_PRO_MONTHLY_LINK_HERE' },
-      { tier:'Pro Annual', tagline:'Enhance Your Experience', price:'$20', period:'/yr', featured:false, badge:'',
-        feats:['Everything in Pro','Save vs. paying monthly'],
-        cta:'Upgrade to Pro Annual', checkout_url:'PASTE_YOUR_STRIPE_PRO_ANNUAL_LINK_HERE' },
-      { tier:'Ultimate', tagline:'Analyze Everything', price:'$4.99', period:'/mo', featured:true, badge:'Most popular',
-        feats:['Everything in Pro','Unlimited watchlists','Unlimited market simulations','Full historical market data','Deeper portfolio analytics','Advanced charts & visualizations','Custom dashboards','Unlimited private rankings/leagues','Custom private league branding','AI-written portfolio recaps','Weekly/monthly personalized reports','Early access to new non-competitive features','Ultimate profile badge & cosmetics'],
-        cta:'Upgrade to Ultimate', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_MONTHLY_LINK_HERE' },
-      { tier:'Ultimate Annual', tagline:'Analyze Everything', price:'$50', period:'/yr', featured:false, badge:'',
-        feats:['Everything in Ultimate','Save vs. paying monthly'],
-        cta:'Upgrade to Ultimate Annual', checkout_url:'PASTE_YOUR_STRIPE_ULTIMATE_ANNUAL_LINK_HERE' },
+      { tier:'Free', price:'$0', period:'/mo' },
+      { tier:'Pro', price:'$1.99', period:'/mo' },
+      { tier:'Pro Annual', price:'$20', period:'/yr' },
+      { tier:'Ultimate', price:'$4.99', period:'/mo' },
+      { tier:'Ultimate Annual', price:'$50', period:'/yr' },
     ] },
   classes: [
     { icon:'EQ', title:'Club equities', desc:'Ordinary shares in a football club. Price moves with results, transfers, managerial news and European qualification. High liquidity, high volatility, no maturity date.', stat1_n:'±4.8%', stat1_l:'Avg. matchday move', stat2_n:'2,140', stat2_l:'Clubs listed' },

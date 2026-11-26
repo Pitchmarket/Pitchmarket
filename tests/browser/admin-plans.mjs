@@ -18,11 +18,11 @@ const PLANS = [
   { user_id: 'u-ended', email: 'ended@example.com', display_name: 'Ended', tier: 'free', source: 'free', until: '2026-10-01T23:59:59Z', note: 'Season 0 prize', has_grant: true, grant_tier: 'ultimate', grant_until: '2026-10-01T23:59:59Z' },
 ];
 
-function setup(state) {
+function setup(state, rows = []) {
   return {
     site_settings: (req) => {
       if (req.method() === 'POST') { state.upserts.push(req.postDataJSON()); return []; }
-      return [{ key: 'payments', value: PAYMENTS }];
+      return [{ key: 'payments', value: PAYMENTS }, ...rows];
     },
     'rpc/admin_list_plans': () => PLANS,
     'rpc/admin_grant_plan': (req) => {
@@ -35,9 +35,9 @@ function setup(state) {
   };
 }
 
-async function run(name, fn, viewport, { failedLoads = 0 } = {}) {
+async function run(name, fn, viewport, { failedLoads = 0, rows = [] } = {}) {
   const state = { upserts: [], grants: [], revokes: [], dialogs: [] };
-  const { page, errors, browser } = await openPage(URL_, { session: ADMIN, routes: setup(state), viewport });
+  const { page, errors, browser } = await openPage(URL_, { session: ADMIN, routes: setup(state, rows), viewport });
   try {
     await page.click('.section-tab[data-pane="plansPane"]');
     await page.waitForFunction(() => document.querySelectorAll('#plansTable tbody tr').length === 4, null, { timeout: 8000 });
@@ -159,11 +159,24 @@ await run('pro editor', async (page, state) => {
   const v = state.upserts.at(-1).value;
   assert.equal(state.upserts.at(-1).key, 'pro');
   assert.equal(v.plans.length, 5);
-  assert.equal(v.plans[1].price, '$2.49');
-  assert.equal(v.plans[1].tier, 'Pro');
-  assert.ok(v.plans[1].feats.length > 0, 'features kept');
-  assert.ok('checkout_url' in v.plans[1] && 'cta' in v.plans[1], 'cta and link kept');
+  // The defaults hold only what the editor and the site use.
+  assert.deepEqual(v.plans[1], { tier: 'Pro', price: '$2.49', period: '/mo' });
+  assert.deepEqual(v.plans.map((p) => Object.keys(p).sort().join()), Array(5).fill('period,price,tier'));
 });
+
+// 3b. A stored pro value with older keys (features, CTA, link): kept on save.
+const OLD_PRO = { eyebrow: 'E', title: 'T', desc: 'D', plans: [
+  { tier: 'Free', price: '$0', period: '/mo', feats: ['a'], cta: 'Current plan', checkout_url: '' },
+  { tier: 'Pro', price: '$1.99', period: '/mo', feats: ['b'], cta: 'Upgrade', checkout_url: 'https://buy.stripe.com/x' },
+] };
+await run('pro editor keeps old keys', async (page, state) => {
+  await page.click('.section-tab[data-pane="contentPane"]');
+  await page.locator('#proEditor .pro-card-prev').nth(1).locator('[data-f="price"]').fill('$2.49');
+  await page.click('.editor-block[data-key="pro"] .editor-save');
+  await page.waitForFunction(() => /Saved/.test(document.querySelector('.editor-block[data-key="pro"] .editor-status').textContent), null, { timeout: 8000 });
+  const v = state.upserts.at(-1).value;
+  assert.deepEqual(v.plans[1], { ...OLD_PRO.plans[1], price: '$2.49' });
+}, undefined, { rows: [{ key: 'pro', value: OLD_PRO }] });
 
 // 4. Phone width: no sideways scroll on the tab.
 await run('phone', async (page) => {
