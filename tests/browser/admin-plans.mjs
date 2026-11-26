@@ -7,8 +7,10 @@ const ADMIN = { id: 'a1', email: 'pitchmarketadmin@gmail.com' };
 const LIVE_MSG = 'Live mode takes real payments. Only switch once the Stripe account is activated and the live links are pasted.';
 const PAYMENTS = { mode: 'test', portal_url: 'https://billing.stripe.com/p/login/test', links: { pro_monthly: 'https://buy.stripe.com/test_old' }, extra: 'kept' };
 const PLANS = [
-  { user_id: 'u-grant', email: 'friend@example.com', display_name: 'Friend <b>x</b>', tier: 'pro', source: 'grant', until: '2026-12-31T23:59:59Z', note: 'Beta tester' },
-  { user_id: 'u-paid', email: 'payer@example.com', display_name: 'Payer', tier: 'ultimate', source: 'stripe', until: '2026-12-20T10:00:00Z', note: null },
+  { user_id: 'u-grant', email: 'friend@example.com', display_name: 'Friend <b>x</b>', tier: 'pro', source: 'grant', until: '2026-12-31T23:59:59Z', note: 'Beta tester', has_grant: true, grant_tier: 'pro', grant_until: '2026-12-31T23:59:59Z' },
+  { user_id: 'u-paid', email: 'payer@example.com', display_name: 'Payer', tier: 'ultimate', source: 'stripe', until: '2026-12-20T10:00:00Z', note: null, has_grant: false, grant_tier: null, grant_until: null },
+  // A subscriber who also has a grant with no note: Revoke must still show.
+  { user_id: 'u-both', email: 'both@example.com', display_name: 'Both', tier: 'ultimate', source: 'stripe', until: '2026-12-22T10:00:00Z', note: null, has_grant: true, grant_tier: 'pro', grant_until: null },
 ];
 
 function setup(state) {
@@ -33,7 +35,7 @@ async function run(name, fn, viewport, { failedLoads = 0 } = {}) {
   const { page, errors, browser } = await openPage(URL_, { session: ADMIN, routes: setup(state), viewport });
   try {
     await page.click('.section-tab[data-pane="plansPane"]');
-    await page.waitForFunction(() => document.querySelectorAll('#plansTable tbody tr').length === 2, null, { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelectorAll('#plansTable tbody tr').length === 3, null, { timeout: 8000 });
     await page.waitForFunction(() => document.querySelector('#payLinks [data-link="pro_monthly"]')?.value === 'https://buy.stripe.com/test_old', null, { timeout: 8000 });
     await fn(page, state);
     // A stubbed RPC error shows as one failed resource load in the console.
@@ -96,6 +98,10 @@ await run('grants', async (page, state) => {
   assert.equal(await page.locator('#plansTable b').count(), 0);
   assert.equal(await page.locator('#plansTable tbody tr:nth-child(1) .revoke-btn').count(), 1, 'grant row has Revoke');
   assert.equal(await page.locator('#plansTable tbody tr:nth-child(2) .revoke-btn').count(), 0, 'paid row has no Revoke');
+  assert.equal(await page.locator('#plansTable tbody tr:nth-child(3) .revoke-btn').count(), 1, 'subscriber with a grant has Revoke');
+  assert.match(rows[2], /Subscription/);
+  assert.match(rows[2], /Pro grant, no end/, 'grant shown apart from the plan');
+  assert.ok(!/grant/i.test(rows[1]), 'no grant line without a grant');
 
   // Grant with an end date: end of that day, local time.
   await page.fill('#grantEmail', 'new@example.com');

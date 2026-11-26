@@ -1284,7 +1284,7 @@ document.getElementById('savePaymentsBtn').addEventListener('click', async ()=>{
   setTimeout(()=>{ if(status.className === 'editor-status ok') status.textContent = ''; }, 3000);
 });
 
-const SOURCE_LABEL = { stripe:'Subscription', grant:'Grant', free:'Grant (ended)' };
+const SOURCE_LABEL = { stripe:'Subscription', grant:'Grant', free:'No plan' };
 function fmtDay(ts){ return ts ? new Date(ts).toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' }) : 'No end'; }
 async function loadPlans(){
   const tbody = document.querySelector('#plansTable tbody');
@@ -1295,12 +1295,19 @@ async function loadPlans(){
   empty.textContent = rows.length ? '' : 'Nobody is on Pro or Ultimate yet.';
   tbody.innerHTML = rows.map(r=>{
     const tier = r.tier === 'pro' || r.tier === 'ultimate' ? r.tier : 'free';
-    // Rows a grant is behind: given by grant, ended grants, or a grant with a note.
-    const hasGrant = r.source === 'grant' || r.source === 'free' || !!r.note;
+    const hasGrant = r.has_grant === true;
+    // The grant on its own, when the row's plan isn't simply that grant
+    // (a subscription outranks it, or it has ended).
+    let grantLine = '';
+    if(hasGrant && r.source !== 'grant'){
+      const name = r.grant_tier === 'ultimate' ? 'Ultimate' : 'Pro';
+      const ended = r.grant_until && new Date(r.grant_until) <= Date.now();
+      grantLine = name + ' grant' + (r.grant_until ? (ended ? ' ended ' : ' until ') + fmtDay(r.grant_until) : ', no end');
+    }
     return '<tr data-user="'+escAttr(r.user_id)+'">'+
       '<td><div class="t-name">'+esc(r.display_name || '—')+'</div><div class="t-league">'+esc(r.email)+'</div></td>'+
       '<td data-l="Plan"><span class="plan-tag '+tier+'">'+esc(tier.toUpperCase())+'</span></td>'+
-      '<td data-l="From">'+esc(SOURCE_LABEL[r.source] || r.source || '')+'</td>'+
+      '<td data-l="From"><div>'+esc(SOURCE_LABEL[r.source] || r.source || '')+(grantLine ? '<div class="t-league grant-line">'+esc(grantLine)+'</div>' : '')+'</div></td>'+
       '<td data-l="Until">'+esc(fmtDay(r.until))+'</td>'+
       (r.note ? '<td data-l="Note">'+esc(r.note)+'</td>' : '<td class="no-note"></td>')+
       '<td>'+(hasGrant ? '<button class="revoke-btn" type="button">Revoke</button>' : '')+'</td>'+

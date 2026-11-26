@@ -142,6 +142,19 @@ do $$ declare v_err text; u uuid := (select free_u from ids); begin
   assert public.user_tier(u) = 'pro', 'admin grant gives pro';
   assert (select source from public.admin_list_plans() where user_id = u) = 'grant', 'grant listed for admin';
   assert (select count(*) from public.admin_list_plans() where user_id = (select pro_u from ids)) = 1, 'stripe player listed';
+  -- The grant is shown apart from the effective plan.
+  assert (select has_grant and grant_tier = 'pro' and grant_until is not null from public.admin_list_plans() where user_id = u), 'grant columns for a granted player';
+  assert (select not has_grant and grant_tier is null and grant_until is null from public.admin_list_plans() where user_id = (select pro_u from ids)), 'no grant on a plain subscriber';
+  -- A paid subscriber who also has a grant with no note: still revocable.
+  perform public.admin_grant_plan('pro@example.com', 'pro', null, null);
+  assert (select has_grant and source = 'stripe' and note is null and grant_tier = 'pro' and grant_until is null
+          from public.admin_list_plans() where user_id = (select pro_u from ids)), 'subscriber with a note-less grant has has_grant';
+  perform public.admin_revoke_grant((select pro_u from ids));
+  assert (select not has_grant from public.admin_list_plans() where user_id = (select pro_u from ids)), 'grant gone after revoke';
+  -- An ended grant is still listed, as free with has_grant.
+  perform public.admin_grant_plan('free@example.com', 'ultimate', now() - interval '1 day', null);
+  assert (select tier = 'free' and has_grant and grant_tier = 'ultimate' and grant_until < now()
+          from public.admin_list_plans() where user_id = u), 'ended grant listed with its tier and date';
   perform public.admin_grant_plan('free@example.com', 'ultimate', null, 'upgraded');
   assert public.user_tier(u) = 'ultimate', 'second grant replaces the first';
   perform public.admin_revoke_grant(u);

@@ -1719,8 +1719,12 @@ $function$;
 -- ---------- Admin ----------
 
 -- Everyone on Pro or Ultimate, plus every grant (even one that has ended).
-create or replace function public.admin_list_plans()
- returns table(user_id uuid, email text, display_name text, tier text, source text, until timestamptz, note text)
+-- tier/source/until are the plan in force; has_grant, grant_tier and
+-- grant_until describe the grant on its own (it may be outranked or ended).
+drop function if exists public.admin_list_plans();
+create function public.admin_list_plans()
+ returns table(user_id uuid, email text, display_name text, tier text, source text, until timestamptz, note text,
+   has_grant boolean, grant_tier text, grant_until timestamptz)
  language plpgsql
  stable
  security definer
@@ -1735,7 +1739,8 @@ begin
   select x.user_id, u.email::text, p.display_name,
     pl.plan ->> 'tier', pl.plan ->> 'source',
     case when g.user_id is not null then g.until else (pl.plan ->> 'period_end')::timestamptz end,
-    g.note
+    g.note,
+    g.user_id is not null, g.tier, g.until
   from (select s.user_id from subscriptions s union select gr.user_id from grants gr) x
   join auth.users u on u.id = x.user_id
   left join profiles p on p.id = x.user_id
