@@ -6,11 +6,16 @@ const URL_ = 'http://127.0.0.1:8765/admin.html';
 const ADMIN = { id: 'a1', email: 'pitchmarketadmin@gmail.com' };
 const LIVE_MSG = 'Live mode takes real payments. Only switch once the Stripe account is activated and the live links are pasted.';
 const PAYMENTS = { mode: 'test', portal_url: 'https://billing.stripe.com/p/login/test', links: { pro_monthly: 'https://buy.stripe.com/test_old' }, extra: 'kept' };
+// Rows shaped as admin_list_plans() returns them: `until` is the end of the
+// plan in force (subscription period end for stripe, the grant's end for a
+// grant or an ended grant); grant_* describe the grant on its own.
 const PLANS = [
   { user_id: 'u-grant', email: 'friend@example.com', display_name: 'Friend <b>x</b>', tier: 'pro', source: 'grant', until: '2026-12-31T23:59:59Z', note: 'Beta tester', has_grant: true, grant_tier: 'pro', grant_until: '2026-12-31T23:59:59Z' },
   { user_id: 'u-paid', email: 'payer@example.com', display_name: 'Payer', tier: 'ultimate', source: 'stripe', until: '2026-12-20T10:00:00Z', note: null, has_grant: false, grant_tier: null, grant_until: null },
   // A subscriber who also has a grant with no note: Revoke must still show.
   { user_id: 'u-both', email: 'both@example.com', display_name: 'Both', tier: 'ultimate', source: 'stripe', until: '2026-12-22T10:00:00Z', note: null, has_grant: true, grant_tier: 'pro', grant_until: null },
+  // An ended grant with a note: tier free, until = the grant's end.
+  { user_id: 'u-ended', email: 'ended@example.com', display_name: 'Ended', tier: 'free', source: 'free', until: '2026-10-01T23:59:59Z', note: 'Season 0 prize', has_grant: true, grant_tier: 'ultimate', grant_until: '2026-10-01T23:59:59Z' },
 ];
 
 function setup(state) {
@@ -35,7 +40,7 @@ async function run(name, fn, viewport, { failedLoads = 0 } = {}) {
   const { page, errors, browser } = await openPage(URL_, { session: ADMIN, routes: setup(state), viewport });
   try {
     await page.click('.section-tab[data-pane="plansPane"]');
-    await page.waitForFunction(() => document.querySelectorAll('#plansTable tbody tr').length === 3, null, { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelectorAll('#plansTable tbody tr').length === 4, null, { timeout: 8000 });
     await page.waitForFunction(() => document.querySelector('#payLinks [data-link="pro_monthly"]')?.value === 'https://buy.stripe.com/test_old', null, { timeout: 8000 });
     await fn(page, state);
     // A stubbed RPC error shows as one failed resource load in the console.
@@ -50,7 +55,8 @@ async function run(name, fn, viewport, { failedLoads = 0 } = {}) {
 await run('payments form', async (page, state) => {
   assert.ok(await page.isChecked('input[name="payMode"][value="test"]'), 'loaded mode');
   page.once('dialog', (d) => { state.dialogs.push(d.message()); d.dismiss(); });
-  await page.check('input[name="payMode"][value="live"]').catch(() => {});
+  // Dismissing puts Test back, so click (check() would insist Live stays checked).
+  await page.click('input[name="payMode"][value="live"]');
   await page.waitForTimeout(100);
   assert.deepEqual(state.dialogs, [LIVE_MSG], 'live asks first');
   assert.ok(await page.isChecked('input[name="payMode"][value="test"]'), 'still test after cancel');
@@ -102,6 +108,13 @@ await run('grants', async (page, state) => {
   assert.match(rows[2], /Subscription/);
   assert.match(rows[2], /Pro grant, no end/, 'grant shown apart from the plan');
   assert.ok(!/grant/i.test(rows[1]), 'no grant line without a grant');
+  assert.match(rows[2], /Dec 2[12], 2026/, 'subscriber until is the period end');
+  // An ended grant's note sits under the grant line, not in the Note column.
+  assert.equal(await page.locator('#plansTable tbody tr:nth-child(4) .revoke-btn').count(), 1);
+  const from = await page.textContent('#plansTable tbody tr:nth-child(4) td[data-l="From"]');
+  assert.match(from, /Ultimate grant ended Oct [12], 2026\s*Note: Season 0 prize/);
+  assert.equal(await page.locator('#plansTable tbody tr:nth-child(4) td[data-l="Note"]').count(), 0);
+  assert.match(await page.textContent('#plansPane'), /Players with a plan or grant/);
 
   // Grant with an end date: end of that day, local time.
   await page.fill('#grantEmail', 'new@example.com');

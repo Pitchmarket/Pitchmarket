@@ -330,7 +330,8 @@ begin
   return query
   select x.user_id, u.email::text, p.display_name,
     pl.plan ->> 'tier', pl.plan ->> 'source',
-    case when g.user_id is not null then g.until else (pl.plan ->> 'period_end')::timestamptz end,
+    -- The end of the plan in force; for an ended grant (free), the grant's end.
+    case when pl.plan ->> 'source' = 'free' then g.until else (pl.plan ->> 'period_end')::timestamptz end,
     g.note,
     g.user_id is not null, g.tier, g.until
   from (select s.user_id from subscriptions s union select gr.user_id from grants gr) x

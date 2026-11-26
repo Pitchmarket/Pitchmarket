@@ -237,18 +237,9 @@ tbody tr:last-child td{ border-bottom:none; }
 /* -- pro plans -- */
 .pro-grid-prev{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .pro-card-prev{ border:1px solid var(--border); border-radius:6px; padding:22px; background:var(--panel); position:relative; }
-.pro-card-prev.featured{ border-color:var(--gilt); }
-.pro-card-prev .remove-x{ position:absolute; top:10px; left:10px; }
 .pro-tier{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel-dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
 .pro-price{ font-size:28px; font-family:'JetBrains Mono'; font-weight:700; margin-bottom:4px; }
 .pro-price .per{ font-size:12px; color:var(--steel-dim); font-weight:400; }
-.pro-feats{ list-style:none; margin:16px 0 18px; }
-.pro-feats li{ font-size:13px; color:var(--steel); padding:6px 0; border-top:1px solid var(--border-soft); display:flex; align-items:center; gap:8px; }
-.pro-feats li:first-child{ border-top:none; }
-.pro-feats li .editable{ flex:1; }
-.pro-btn-prev{ display:block; text-align:center; padding:10px; border-radius:3px; font-weight:700; font-size:13px; border:1px solid var(--border); }
-.badge-pop{ position:absolute; top:-11px; right:20px; background:var(--gilt); color:#241906; font-family:'JetBrains Mono'; font-size:10px; font-weight:700; padding:3px 9px; border-radius:3px; letter-spacing:.04em; }
-.pro-featured-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--steel-dim); margin-bottom:10px; }
 @media(max-width:900px){ .pro-grid-prev{ grid-template-columns:1fr; } }
 
 /* -- asset classes -- */
@@ -504,7 +495,7 @@ tbody tr:last-child td{ border-bottom:none; }
         <div><button class="editor-save" id="grantBtn">Give plan</button><span class="editor-status" id="grantStatus"></span></div>
       </div>
 
-      <div class="history-label">Players on Pro or Ultimate</div>
+      <div class="history-label">Players with a plan or grant</div>
       <div class="plans-wrap"><table id="plansTable">
         <thead><tr><th>Player</th><th>Plan</th><th>From</th><th>Until</th><th>Note</th><th></th></tr></thead>
         <tbody></tbody>
@@ -1307,9 +1298,12 @@ async function loadPlans(){
     return '<tr data-user="'+escAttr(r.user_id)+'">'+
       '<td><div class="t-name">'+esc(r.display_name || '—')+'</div><div class="t-league">'+esc(r.email)+'</div></td>'+
       '<td data-l="Plan"><span class="plan-tag '+tier+'">'+esc(tier.toUpperCase())+'</span></td>'+
-      '<td data-l="From"><div>'+esc(SOURCE_LABEL[r.source] || r.source || '')+(grantLine ? '<div class="t-league grant-line">'+esc(grantLine)+'</div>' : '')+'</div></td>'+
+      '<td data-l="From"><div>'+esc(SOURCE_LABEL[r.source] || r.source || '')+
+        (grantLine ? '<div class="t-league grant-line">'+esc(grantLine)+'</div>' : '')+
+        // The note belongs to the grant: keep it with the grant line.
+        (grantLine && r.note ? '<div class="t-league grant-note">Note: '+esc(r.note)+'</div>' : '')+'</div></td>'+
       '<td data-l="Until">'+esc(fmtDay(r.until))+'</td>'+
-      (r.note ? '<td data-l="Note">'+esc(r.note)+'</td>' : '<td class="no-note"></td>')+
+      (r.note && !grantLine ? '<td data-l="Note">'+esc(r.note)+'</td>' : '<td class="no-note"></td>')+
       '<td>'+(hasGrant ? '<button class="revoke-btn" type="button">Revoke</button>' : '')+'</td>'+
     '</tr>';
   }).join('');
