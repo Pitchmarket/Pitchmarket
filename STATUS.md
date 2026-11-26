@@ -1,6 +1,6 @@
 # PitchMarket status
 
-_Last updated: 23 Nov 2026_
+_Last updated: 26 Nov 2026_
 
 Where the project stands before public launch. Update this file in the same pull request as the work it describes. Keep it under 10 KB: when something is done, delete it here instead of marking it done.
 
@@ -10,8 +10,7 @@ Launch blockers, roughly in the order to tackle them.
 
 ### Running the competition
 
-- **Load every player into the Daily Kickabout games.** Run `supabase-linkup-2.sql` in the Supabase SQL Editor (it includes `supabase-squads.sql`, which was never run, so the 23 Nov import failed at the save step), then run the **Import players for Daily Kickabout** workflow from the Actions tab (30–45 minutes now that it fetches every player's career). The import then runs every Monday. If the games were never switched on, run `supabase-daily-kickabout.sql` and `supabase-kickabout-2.sql` first.
-- **Championship clubs missing from the site:** Norwich City, West Bromwich Albion and Sheffield United are in the Championship feed but not on the site, so their results and players are skipped. Add them in admin if wanted.
+- **Switch on the error log.** Run `supabase-error-log.sql` in the Supabase SQL Editor. Errors players hit then show in admin under **Errors**.
 - **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql`: it clears `holdings` and `trades` and sets every balance to 2,000. Prices and price history stay, so the charts keep their data.
 - **Run `supabase-names-and-leaderboard.sql`** in the Supabase SQL Editor. It makes display names unique and hides the organiser's accounts (admin and 27hufferdinea) from the leaderboard. Its last line lists the hidden accounts; check they're the right ones.
 - **The organiser runs the competition and doesn't play.** The admin and 27hufferdinea accounts are hidden from the leaderboard. To hide another account, set `hidden_from_leaderboard` to true on its row in `profiles`.
@@ -31,14 +30,13 @@ Not blocking launch, but wanted soon after.
 - **Staging backend.** A second Supabase project for testing, with a simple way to switch both HTML files to it. Today every local test changes production data.
 - **Pro lifecycle.** Handle cancellations, failed payments and expiry through Stripe webhooks.
 - **Auth hardening.** Custom SMTP sender in Supabase, email confirmation, and CAPTCHA on sign-up.
-- **Analytics and error tracking.**
+- **Analytics.** (Error tracking is built in: admin → Errors.)
 - **Branch protection on `main`**, requiring pull requests as the README asks.
 
 ## Known issues
 
 | Issue | Where | Impact |
 |---|---|---|
-| Admin-edited site content and checkout links are inserted as raw HTML | `index.html:963`, `index.html:1012` | A compromised admin account could run script on every visitor's page |
 | Both HTML files point at production Supabase | `index.html:398`, `admin.html:244` | Local testing changes live data |
 | Stripe checkout links are placeholders, so Pro plans show no buy button | `index.html:917` | Pro can't be bought |
 | Nothing sets `is_pro` / `pro_expires_at` after payment | (missing) | Paying users wouldn't get Pro |

@@ -124,6 +124,8 @@ tbody tr:last-child td{ border-bottom:none; }
 .skip-reason.infra{ border-left-color:var(--drop); color:var(--drop); }
 .skip-reason.unknown{ color:var(--steel-dim); }
 .skip-retry{ font-size:11.5px; color:var(--steel-dim); margin-bottom:10px; }
+.err-count{ font-family:'JetBrains Mono'; font-size:11px; color:var(--steel); border:1px solid var(--border); border-radius:4px; padding:1px 6px; margin-left:auto; }
+.err-msg{ font-family:'JetBrains Mono'; font-size:13px; word-break:break-word; }
 .history-label{ font-family:'JetBrains Mono'; font-size:10.5px; color:var(--steel-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
 .foot-link-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
 .foot-link-row input{ background:var(--bg); border:1px solid var(--border); color:var(--chalk); border-radius:4px; padding:7px 9px; font-size:12.5px; }
@@ -264,6 +266,7 @@ tbody tr:last-child td{ border-bottom:none; }
       <button class="section-tab active" data-pane="teamsPane">Teams & Leagues</button>
       <button class="section-tab" data-pane="contentPane">Site Content</button>
       <button class="section-tab" data-pane="approvalsPane">Price Approvals<span id="pendingCountBadge" style="display:none;"></span></button>
+      <button class="section-tab" data-pane="errorsPane">Errors<span id="errorCountBadge" style="display:none;"></span></button>
     </div>
 
     <!-- ============ TEAMS & LEAGUES ============ -->
@@ -407,6 +410,21 @@ tbody tr:last-child td{ border-bottom:none; }
         <div id="historyEventsList"></div>
       </div>
     </div>
+
+    <!-- ============ ERRORS ============ -->
+    <div class="section-pane" id="errorsPane">
+      <div class="bar">
+        <div>
+          <h1 class="display">Errors</h1>
+          <div class="desc">Problems players' browsers hit on the site, reported automatically. The same error again within a day adds to its count. Clear them once fixed.</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="refresh" id="refreshErrorsBtn">↻ Refresh</button>
+          <button class="refresh" id="clearErrorsBtn">Clear all</button>
+        </div>
+      </div>
+      <div id="errorsList"></div>
+    </div>
   </main>
 </div>
 
@@ -517,6 +535,7 @@ async function onAuthed(user){
   loadContentSettings();
   loadPendingEvents();
   loadHistoryEvents();
+  loadErrors();
 }
 
 document.querySelectorAll('.section-tab').forEach(tab=>{
@@ -1092,6 +1111,46 @@ function eventCardHTML(ev, isPending){
       : '')+
   '</div>';
 }
+
+// ----- Errors reported by players' browsers -----
+function shortDevice(ua){
+  ua = ua || '';
+  const os = /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac OS/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Other';
+  const br = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'browser';
+  return br + ' on ' + os;
+}
+async function loadErrors(){
+  const list = document.getElementById('errorsList');
+  const badge = document.getElementById('errorCountBadge');
+  const { data, error } = await sb.from('client_errors').select('*').order('last_seen', { ascending:false }).limit(100);
+  if(error){
+    list.innerHTML = '<div style="color:var(--steel-dim); font-size:13px;">The error log isn\'t set up yet: run supabase-error-log.sql in the Supabase SQL Editor.</div>';
+    return;
+  }
+  const recent = (data || []).filter(e=> new Date(e.last_seen) > Date.now() - 864e5).length;
+  if(recent){ badge.textContent = recent; badge.className = 'pending-badge'; badge.style.display = 'inline-block'; }
+  else badge.style.display = 'none';
+  if(!data || !data.length){
+    list.innerHTML = '<div style="color:var(--steel-dim); font-size:13px; padding:16px 0;">No errors reported. Everything players have opened has worked.</div>';
+    return;
+  }
+  list.innerHTML = data.map(e=>
+    '<div class="event-card">'+
+      '<div class="event-teams"><span class="err-msg">'+esc(e.message)+'</span><span class="err-count">×'+e.count+'</span></div>'+
+      '<div class="event-meta">'+(e.source ? esc(e.source)+' · ' : '')+esc(e.page || '')+'</div>'+
+      '<div class="event-meta">Last seen '+new Date(e.last_seen).toLocaleString()+
+        (e.count > 1 ? ' · first '+new Date(e.first_seen).toLocaleString() : '')+
+        ' · '+esc(shortDevice(e.user_agent))+(e.signed_in ? ' · signed in' : '')+'</div>'+
+    '</div>'
+  ).join('');
+}
+document.getElementById('refreshErrorsBtn').addEventListener('click', loadErrors);
+document.getElementById('clearErrorsBtn').addEventListener('click', async ()=>{
+  if(!confirm('Clear every error in the log?')) return;
+  const { error } = await sb.from('client_errors').delete().gt('id', 0);
+  if(error) alert('Could not clear the log: ' + error.message);
+  loadErrors();
+});
 
 async function loadPendingEvents(){
   const { data, error } = await sb.from('match_events').select('*').eq('status','pending').order('created_at', { ascending:false });

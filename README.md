@@ -36,7 +36,7 @@ The site uses [Supabase](https://supabase.com) for auth and data. The browser us
 
 **Functions (RPC):** `trade`, `get_leaderboard`, `approve_match_event`, `auto_apply_match_event`, `clear_read_notifications`
 
-**Schema:** [`supabase-schema.sql`](supabase-schema.sql) has every table, RLS policy, function and trigger. Run it in the SQL Editor of an empty Supabase project to set up your own copy of the backend. When you change the live database, update this file in the same pull request.
+**Schema:** [`supabase-schema.sql`](supabase-schema.sql) has every table, RLS policy, function and trigger. Browser errors players hit are reported to `client_errors` (at most 5 per visit, repeats counted) and listed in admin under **Errors**. Text edited in admin may use simple formatting (bold, italics, line breaks, links); anything else, including scripts and `javascript:` links, is stripped before it reaches the page. Run it in the SQL Editor of an empty Supabase project to set up your own copy of the backend. When you change the live database, update this file in the same pull request.
 
 ## Running locally
 
