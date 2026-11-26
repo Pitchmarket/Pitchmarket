@@ -482,6 +482,7 @@ button.pro-btn.filled{ background:var(--gilt-fill); }
 .pro-btn.is-idle{ cursor:default; opacity:0.7; }
 .soon-tag{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--steel-dim); border:1px solid var(--border); border-radius:999px; padding:1px 7px; margin-left:4px; vertical-align:1px; white-space:nowrap; }
 .plan-test-note{ margin-top:18px; font-size:12px; color:var(--steel-dim); text-align:center; overflow-wrap:anywhere; }
+.plan-manage{ margin-top:10px; text-align:center; }
 .manage-sub{ font-size:12px; color:var(--steel); text-decoration:underline; white-space:nowrap; }
 .lb-tier{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:.04em; padding:1px 6px; border-radius:var(--r-sm); margin-left:6px; vertical-align:1px; background:var(--gilt); color:var(--on-gilt); }
 .lb-tier.ultimate{ background:linear-gradient(90deg,#E7B54B,#F5D687); }
@@ -1470,6 +1471,7 @@ html{ scroll-padding-top:56px; }
   </div>
   <div class="pro-grid" id="proGrid"></div>
   <p class="plan-test-note mono" id="planTestNote" style="display:none;"></p>
+  <p class="plan-manage"><a class="manage-sub" id="proManageLink" href="#" target="_blank" rel="noopener" style="display:none;">Manage subscription</a></p>
 </section>
 
 <section id="explorer">
@@ -1973,6 +1975,11 @@ const PLAN_TEST_NOTE = 'Test mode: pay with card 4242 4242 4242 4242, any future
 
 // The signed-in player's plan, from my_plan(). Signed out: free.
 let currentPlan = { tier:'free', source:'free' };
+// Whether currentPlan is known for the signed-in player: 'pending' until
+// the first my_plan() reply, 'ok' after it, 'error' if it failed. No
+// checkout link is offered until it is 'ok', so nobody is sent to buy a
+// plan they already have.
+let planStatus = 'pending';
 let plansReady = false;   // set once currentSession exists (cards depend on it)
 function planTier(){ return ['pro','ultimate'].includes(currentPlan.tier) ? currentPlan.tier : 'free'; }
 function hasPaidPerks(){ return planTier() !== 'free'; }
@@ -1999,8 +2006,11 @@ function planButton(card){
   const cls = 'pro-btn ' + (card.featured ? 'filled' : 'ghost');
   const idle = (label)=>'<div class="'+cls+' is-idle" aria-disabled="true">'+escapeHtml(label)+'</div>';
   const link = (href, label)=>'<a href="'+escapeHtml(href)+'" target="_blank" rel="noopener" class="'+cls+'">'+escapeHtml(label)+'</a>';
-  if(card.tier === 'free') return idle(currentSession && tier === 'free' ? 'Your plan' : 'Free to play');
+  const known = currentSession && planStatus === 'ok';
+  if(card.tier === 'free') return idle(known && tier === 'free' ? 'Your plan' : 'Free to play');
   if(pay.mode === 'off') return idle('Coming soon');
+  if(currentSession && planStatus === 'pending') return idle('Checking your plan…');
+  if(currentSession && planStatus !== 'ok') return idle("Couldn't check your plan, refresh to try again");
   if(currentSession && card.tier === tier) return idle('Your plan');
   if(currentSession && currentPlan.has_subscription){
     const portal = httpUrl(pay.portal_url);
@@ -2029,19 +2039,23 @@ function renderPlans(){
   const note = document.getElementById('planTestNote');
   note.textContent = PLAN_TEST_NOTE;
   note.style.display = paymentsSettings().mode === 'test' ? '' : 'none';
-  // Account area: manage a subscription in Stripe's customer portal.
-  const manage = document.getElementById('manageSubLink');
+  // Manage a subscription in Stripe's customer portal: in the account
+  // area, and under the plans (phones hide the account area).
   const portal = httpUrl(paymentsSettings().portal_url);
-  if(currentSession && currentPlan.has_subscription && portal){
-    manage.href = portal;
-    manage.style.display = '';
-  } else manage.style.display = 'none';
+  const showManage = !!(currentSession && planStatus === 'ok' && currentPlan.has_subscription && portal);
+  ['manageSubLink','proManageLink'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(showManage) el.href = portal;
+    el.style.display = showManage ? '' : 'none';
+  });
 }
 document.getElementById('proGrid').addEventListener('click', (e)=>{
   if(e.target.closest('.plan-signin')) openAuth();
 });
 // Plan state everywhere on the page: badge, ads, account link, cards.
-function applyPlan(plan){
+// status: 'ok' for a my_plan() reply, 'pending' while waiting, 'error'.
+function applyPlan(plan, status = 'pending'){
+  planStatus = status;
   currentPlan = plan && typeof plan === 'object' ? plan : { tier:'free', source:'free' };
   currentIsUltimate = planTier() === 'ultimate';
   currentIsPro = hasPaidPerks();
@@ -2052,9 +2066,12 @@ function applyPlan(plan){
 async function loadPlan(){
   if(!sb || !currentSession) return applyPlan(null);
   const uid = currentSession.user.id;
-  const { data, error } = await sb.rpc('my_plan');
-  if(!currentSession || currentSession.user.id !== uid) return;   // signed out meanwhile
-  applyPlan(!error && data ? data : null);
+  let data = null, error = null;
+  try { ({ data, error } = await sb.rpc('my_plan')); } catch(e){ error = e; }
+  if(!currentSession || currentSession.user.id !== uid) return;   // signed out or switched meanwhile
+  if(!error && data && typeof data === 'object') return applyPlan(data, 'ok');
+  // A failed later check keeps the plan already confirmed for this player.
+  if(planStatus !== 'ok') applyPlan(null, 'error');
 }
 
 function renderSiteContent(){
@@ -2318,7 +2335,7 @@ function updateAuthUI(){
   if(currentSession){
     walletChip.style.display = 'flex';
     authBtn.textContent = 'Sign out';
-    renderPlans();
+    applyPlan(null, 'pending');   // a new player: unconfirmed until my_plan replies
   } else {
     applyPlan(null);
     walletChip.style.display = 'none';
@@ -2340,15 +2357,17 @@ let currentIsPro = false, currentIsUltimate = false;
 
 async function refreshWallet(){
   if(!sb || !currentSession) return;
+  // The plan comes from my_plan() (subscriptions and grants), never
+  // profiles; it loads whatever happens to the profile fetch.
+  const plan = loadPlan();
   const { data, error } = await sb.from('profiles').select('coin_balance, display_name').eq('id', currentSession.user.id).single();
+  await plan;   // the watchlist caps depend on it
   if(!error && data){
     currentCash = Number(data.coin_balance) || 0;
     currentName = data.display_name || '';
     document.getElementById('walletName').textContent = (currentName || 'Fan Coins') + ' ✎';
     maybeAskForName();
     document.getElementById('walletAmt').textContent = Math.round(data.coin_balance).toLocaleString();
-    // The plan comes from my_plan() (subscriptions and grants), never profiles.
-    await loadPlan();
     loadPortfolio();
     loadWatchlist();
     loadNotifications();
@@ -2494,7 +2513,7 @@ async function loadWatchlist(){
   // Slot counter + plan tag
   const limit = wlSlotLimit();
   document.getElementById('wlSlotText').textContent =
-    watchlistRows.length + ' / ' + (limit === Infinity ? '∞' : limit) + ' slots used';
+    watchlistRows.length + ' / ' + limit + ' slots used';
   const tag = document.getElementById('wlPlanTag');
   tag.textContent = currentIsUltimate ? 'ULTIMATE' : (currentIsPro ? 'PRO' : 'FREE');
   tag.className = 'wl-plan ' + (currentIsUltimate ? 'ultimate' : (currentIsPro ? 'pro' : ''));
