@@ -116,6 +116,20 @@ To restore an older night, open this branch's commit history, pick the date, and
 `;
 }
 
+// Record tonight's portfolio value for every player (Pro portfolio history).
+// The database function saves nothing until the Christmas reset records a
+// season start. A failure here is logged and the backup carries on.
+async function takePortfolioSnapshots(supabase){
+  try{
+    const { data, error } = await supabase.rpc('take_portfolio_snapshots');
+    if(error) throw new Error(error.message);
+    const saved = Number(data) || 0;
+    console.log(`Portfolio snapshots: ${saved} saved${saved === 0 ? ' (0 until the season starts)' : ''}.`);
+  }catch(err){
+    console.error('Portfolio snapshots failed (backup continues):', err && err.message ? err.message : err);
+  }
+}
+
 async function main(){
   const outDir = process.argv[2];
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
@@ -125,6 +139,8 @@ async function main(){
     process.exit(1);
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  await takePortfolioSnapshots(supabase);
 
   const data = {};
   for(const t of TABLES){
