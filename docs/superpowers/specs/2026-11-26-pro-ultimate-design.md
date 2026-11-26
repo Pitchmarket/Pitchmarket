@@ -2,6 +2,14 @@
 
 _26 Nov 2026. Agreed with the organiser in conversation; calls the builder made are marked "(builder's call)"._
 
+## Decided after review
+
+- **Nothing is tracked until the Christmas reset.** Portfolio snapshots, portfolio history, best/worst trades and Season Wrapped all start from the reset (few players are on the site yet). The reset script records the season start; everything counts from then.
+- **The organiser can give Pro or Ultimate by hand** from admin, with an optional end date, and take it away again.
+- **Switching plans** (Pro ↔ Ultimate, monthly ↔ yearly) goes through Stripe's customer portal, set up with both products. While a player has an active paid subscription, the plan cards show "Change plan" (opening the portal) instead of buy links, so nobody is billed twice. If two subscriptions exist anyway, the highest active tier wins. (builder's call)
+- **Test-mode purchases are marked as test** (`livemode = false`). When payments mode is `live`, test rows no longer count, so test grants end at go-live without code changes. (builder's call)
+- **Weekly AI recaps run Tuesday early morning**, after the weekend's prices. If the AI provider's daily limit is hit, the run stops and tries again next week rather than competing with price updates. (builder's call)
+
 ## Why
 
 PitchMarket should feel complete: Pro and Ultimate are advertised as the way to get the most out of the site, and everything on the plan cards actually exists and can be bought. Revenue is secondary for now.
@@ -62,7 +70,7 @@ Flow:
    - `checkout.session.completed`: links the Stripe customer and subscription to the player (from `client_reference_id`).
    - `customer.subscription.created/updated/deleted`: sets the player's plan from the subscription's price and status, and its period end.
 4. Plan state lives in a new private table `subscriptions` (one row per player: `stripe_customer_id`, `stripe_subscription_id`, `tier` free/pro/ultimate, `status`, `current_period_end`). Only the Edge Function (service role) writes it. Players can read their own row.
-5. One database function `user_tier(uid)` returns `free`, `pro` or `ultimate`: the tier if `status` is active, trialing or past_due and `current_period_end` is in the future, plus a 3-day grace. Every limit (watchlist cap, alerts, league creation, archive, recap) uses it. The old `profiles.is_pro / is_ultimate / pro_expires_at` columns are kept in sync for anything still reading them, then retired.
+5. One database function `user_tier(uid)` returns `free`, `pro` or `ultimate`: the highest of (a) a paid subscription whose `status` is active, trialing or past_due, whose `current_period_end` is less than 3 days ago, and which counts in the current payments mode (test rows don't count in `live`), and (b) a **manual grant** (`grants` table: player, tier, optional end date, note), set and removed from admin. Every limit (watchlist cap, alerts, league creation, archive, recap) uses it. The old `profiles.is_pro / is_ultimate / pro_expires_at` columns are kept in sync for anything still reading them, then retired.
 6. **Manage subscription**: a link to Stripe's customer portal (no-code login link from the Stripe dashboard, stored in admin) for cancelling or changing card.
 7. **Payments mode** setting in admin: `off` (cards say "Coming soon", no buy buttons), `test` (buy buttons plus a note "Test mode: pay with card 4242 4242 4242 4242, any future date, any CVC"), `live`. Starts in `test`. While the site isn't public, test mode only lets people "buy" with fake cards, so nothing can be charged.
 8. Price IDs → tiers are configured in the Edge Function's secrets (`STRIPE_PRICE_PRO_MONTHLY` etc.), along with `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Nothing secret is in the repo or the page.
@@ -79,9 +87,9 @@ Setup instructions for the organiser (Stripe products and links, webhook, deploy
 
 **Private leagues:** tables `leagues` (id, name, invite code of 6 letters, owner, colour, emblem) and `league_members`. Functions: `create_league` (Pro+, max 3 owned per player (builder's call)), `join_league(code)`, `leave_league`, `league_leaderboard(id)` (members' portfolio value, the same calculation as the main leaderboard). A player can be in up to 10 leagues (builder's call). UI: a "Leagues" tab next to the main leaderboard.
 
-**Portfolio history:** a nightly snapshot of every player's portfolio value (cash + holdings at that night's prices) into `portfolio_snapshots`, written by a database function called from the existing nightly backup workflow (builder's call: reuse, rather than a new schedule). Snapshots start in part 1 so history builds up before part 3 ships. Best/worst trades are computed from `trades` (realised gain per sell against average buy cost). Players read only their own snapshots.
+**Portfolio history:** a nightly snapshot of every player's portfolio value (cash + holdings at that night's prices) into `portfolio_snapshots`, written by a database function called from the existing nightly backup workflow (builder's call: reuse, rather than a new schedule). The function only writes once a season start is recorded, which the Christmas reset does; the reset also clears old snapshots. Best/worst trades are computed from `trades` (realised gain per sell against average buy cost). Players read only their own snapshots.
 
-**Season Wrapped (free):** a card "Your season so far": final or current rank, value change, best and worst trade, most-traded club, Kickabout wins and best streak. "Save image" draws it to a canvas and downloads a PNG to share. Available any time; the organiser's season reset is the natural moment to promote it.
+**Season Wrapped (free):** counts from the season start only. A card "Your season so far": final or current rank, value change, best and worst trade, most-traded club, Kickabout wins and best streak. "Save image" draws it to a canvas and downloads a PNG to share. Available any time; the organiser's season reset is the natural moment to promote it.
 
 **Kickabout archive (Ultimate):** past days' puzzles are already stored in `daily_puzzles`. Archive plays are stored separately from daily plays (`game_plays` gains an `archive` flag, or a sibling table (builder's call)), pay no coins, and never count toward Wrapped streaks. A date picker lists past days.
 
@@ -93,7 +101,7 @@ Setup instructions for the organiser (Stripe products and links, webhook, deploy
 
 ## Build order (one pull request each)
 
-1. Payments and tiers: `subscriptions`, `user_tier`, Edge Function, admin settings (links, portal link, payments mode), plan cards rewritten to the table above, new caps, badges, Pro skins, nightly snapshots start, setup guide.
+1. Payments and tiers: `subscriptions`, `grants`, `user_tier`, Edge Function, admin settings (links, portal link, payments mode, manual grants), plan cards rewritten to the table above, new caps, badges, Pro skins, the snapshot function (dormant until the reset), the season start in the reset script, setup guide.
 2. Private leagues (with Ultimate branding).
 3. Portfolio history and Season Wrapped.
 4. Kickabout archive, weekly AI recap, compare charts.
