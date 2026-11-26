@@ -115,6 +115,23 @@ Four daily football games on the main page: **Scouted** (guess the player from l
 
 **Data.** `.github/workflows/backup-data.yml` runs `backup-data.js` every night at 03:23 UTC and saves `teams`, `price_history` and `site_settings` to the `data-backups` branch, with a `restore.sql` that puts them back. Each night with changes is a commit on that branch, so older backups stay in its history. No player data is included (no emails, balances, holdings or trades), because the repo is public. Restore steps are in that branch's README. Run it by hand from the Actions tab (**Back up PitchMarket data → Run workflow**).
 
+## Tests
+
+SQL tests run against a throwaway local Postgres (stubs stand in for Supabase auth):
+
+```
+PGHOST=/path/to/socket PGPORT=5433 tests/run-sql-tests.sh
+```
+
+It creates database `pm_test`, loads `tests/sql/supabase-stubs.sql` and `supabase-schema.sql`, then runs each `tests/sql/*.test.sql`.
+
+Browser tests use Playwright with Supabase and CDN requests stubbed (`tests/browser/harness.mjs`). Serve the repo, then run a test:
+
+```
+python3 -m http.server 8765 --bind 127.0.0.1 &
+node tests/browser/smoke.mjs
+```
+
 ## Contributing
 
 1. Branch off `main` and open a pull request. Don't push directly to `main`.
