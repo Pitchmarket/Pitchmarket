@@ -2,7 +2,7 @@
 // Receives Stripe events, verifies the signature and keeps the private
 // `subscriptions` table in sync. Pure logic lives in ./plan.js.
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 import {
   isResourceMissing,
   isUuid,
@@ -12,29 +12,40 @@ import {
   subscriptionFields,
 } from './plan.js';
 
-// Read the six secrets once. Only names are ever logged, never values.
+// Read the secrets once. Only names are ever logged, never values.
+// SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
+const SUPABASE_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 const secrets: Record<string, string> = {};
-for (const name of REQUIRED_SECRETS) secrets[name] = Deno.env.get(name) ?? '';
+for (const name of [...REQUIRED_SECRETS, ...SUPABASE_SECRETS]) secrets[name] = Deno.env.get(name) ?? '';
 
-const missing = missingSecrets(secrets);
+const missing = missingSecrets(secrets, [...REQUIRED_SECRETS, ...SUPABASE_SECRETS]);
 if (missing.length > 0) {
   console.error(`stripe-webhook configuration error: missing secrets ${missing.join(', ')}`);
 }
-// Without these two the webhook can't verify or retrieve anything.
-const missingCore = missingSecrets(secrets, ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']);
+// Without these the webhook can't verify, retrieve or write anything.
+const missingCore = missingSecrets(secrets, ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', ...SUPABASE_SECRETS]);
 
-const stripe = new Stripe(secrets.STRIPE_SECRET_KEY, {
-  httpClient: Stripe.createFetchHttpClient(),
-});
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const webhookSecret = secrets.STRIPE_WEBHOOK_SECRET;
 const priceEnv = secrets;
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  { auth: { persistSession: false } },
-);
+// Clients are built on first use, after the missing-secret check: both
+// constructors throw on an empty key/URL, which would crash the module at load.
+let stripeClient: Stripe | null = null;
+function getStripe(): Stripe {
+  stripeClient ??= new Stripe(secrets.STRIPE_SECRET_KEY, {
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+  return stripeClient;
+}
+
+let supabaseClient: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  supabaseClient ??= createClient(secrets.SUPABASE_URL, secrets.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+  return supabaseClient;
+}
 
 function reply(status: number, text: string): Response {
   return new Response(text, { status, headers: { 'Content-Type': 'text/plain' } });
@@ -48,7 +59,7 @@ async function syncSubscription(sub: Stripe.Subscription, userId: string | null,
   // A deleted event means the subscription has ended, whatever the retrieved object says.
   if (forceCanceled) fresh.status = 'canceled';
 
-  const existing = await supabase.from('subscriptions').select('id, tier, user_id').eq('id', fresh.id).maybeSingle();
+  const existing = await getSupabase().from('subscriptions').select('id, tier, user_id').eq('id', fresh.id).maybeSingle();
   if (existing.error) throw existing.error;
 
   const row = nextRow(existing.data, fresh);
@@ -66,7 +77,7 @@ async function syncSubscription(sub: Stripe.Subscription, userId: string | null,
     if (userId && existing.data.user_id !== userId) {
       console.log('checkout client_reference_id differs from the stored player; keeping stored user_id', row.id);
     }
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('subscriptions')
       .update({ ...row, updated_at: updatedAt })
       .eq('id', row.id);
@@ -80,7 +91,7 @@ async function syncSubscription(sub: Stripe.Subscription, userId: string | null,
       console.log('subscription event for an unknown subscription with no customer', row.id);
       return reply(200, 'ignored: unknown subscription');
     }
-    const owner = await supabase
+    const owner = await getSupabase()
       .from('subscriptions')
       .select('user_id')
       .eq('stripe_customer_id', row.stripe_customer_id)
@@ -94,7 +105,7 @@ async function syncSubscription(sub: Stripe.Subscription, userId: string | null,
     userId = owner.data.user_id;
   }
 
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from('subscriptions')
     .upsert({ ...row, user_id: userId, updated_at: updatedAt }, { onConflict: 'id' });
   if (error) throw error;
@@ -117,7 +128,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   let sub: Stripe.Subscription;
   try {
-    sub = await stripe.subscriptions.retrieve(subId);
+    sub = await getStripe().subscriptions.retrieve(subId);
   } catch (err) {
     if (!isResourceMissing(err)) throw err;
     console.log('checkout subscription no longer exists in Stripe; not written', subId);
@@ -131,11 +142,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 async function handleSubscriptionEvent(subId: string, deleted: boolean): Promise<Response> {
   let sub: Stripe.Subscription;
   try {
-    sub = await stripe.subscriptions.retrieve(subId);
+    sub = await getStripe().subscriptions.retrieve(subId);
   } catch (err) {
     if (!isResourceMissing(err)) throw err;
     console.log('subscription no longer exists in Stripe; marking canceled', subId);
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('subscriptions')
       .update({ status: 'canceled', updated_at: new Date().toISOString() })
       .eq('id', subId);
@@ -155,7 +166,7 @@ Deno.serve(async (req: Request) => {
 
   let event: Stripe.Event;
   try {
-    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret, undefined, cryptoProvider);
+    event = await getStripe().webhooks.constructEventAsync(body, signature, webhookSecret, undefined, cryptoProvider);
   } catch (err) {
     console.log('signature verification failed', err instanceof Error ? err.message : err);
     return reply(400, 'Bad signature');
