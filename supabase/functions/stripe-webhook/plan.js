@@ -23,7 +23,8 @@ export function subscriptionFields(sub, env) {
   const item = sub.items && sub.items.data && sub.items.data[0];
   const priceId = item && item.price ? item.price.id : null;
 
-  // Newer Stripe API versions moved current_period_end onto subscription items.
+  // Newer Stripe API versions moved the current period onto subscription items.
+  const periodStart = sub.current_period_start ?? (item ? item.current_period_start : undefined);
   const periodEnd = sub.current_period_end ?? (item ? item.current_period_end : undefined);
   const customer = sub.customer && typeof sub.customer === 'object' ? sub.customer.id : sub.customer;
 
@@ -32,6 +33,7 @@ export function subscriptionFields(sub, env) {
     stripe_customer_id: customer ?? null,
     tier: tierForPrice(priceId, env),
     status: sub.status,
+    current_period_start: periodStart != null ? new Date(periodStart * 1000).toISOString() : null,
     current_period_end: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
     cancel_at_period_end: Boolean(sub.cancel_at_period_end),
     livemode: Boolean(sub.livemode),
@@ -74,4 +76,10 @@ export function missingSecrets(env, names = REQUIRED_SECRETS) {
 // True for a Stripe error saying the object doesn't exist.
 export function isResourceMissing(err) {
   return Boolean(err) && err.code === 'resource_missing';
+}
+
+// True for a Postgres foreign key violation (23503): on a checkout, the
+// client_reference_id is a UUID but not a player.
+export function isUnknownPlayer(err) {
+  return Boolean(err) && err.code === '23503';
 }

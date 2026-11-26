@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tierForPrice, rowFromSubscription, isUuid, subscriptionFields, nextRow, missingSecrets, isResourceMissing, REQUIRED_SECRETS } from '../supabase/functions/stripe-webhook/plan.js';
+import { tierForPrice, rowFromSubscription, isUuid, subscriptionFields, nextRow, missingSecrets, isResourceMissing, isUnknownPlayer, REQUIRED_SECRETS } from '../supabase/functions/stripe-webhook/plan.js';
 
 const env = {
   STRIPE_PRICE_PRO_MONTHLY: 'price_pm',
@@ -41,10 +41,22 @@ test('rowFromSubscription reads top-level current_period_end', () => {
     stripe_customer_id: 'cus_456',
     tier: 'pro',
     status: 'active',
+    current_period_start: null,
     current_period_end: '2026-01-01T00:00:00.000Z',
     cancel_at_period_end: false,
     livemode: false,
   });
+});
+
+test('rowFromSubscription reads top-level current_period_start', () => {
+  const row = rowFromSubscription(sub({ current_period_start: 1764547200, current_period_end: 1767225600 }), env);
+  assert.equal(row.current_period_start, '2025-12-01T00:00:00.000Z');
+});
+
+test('rowFromSubscription falls back to items.data[0].current_period_start', () => {
+  const row = rowFromSubscription(sub({}, { current_period_start: 1764547200, current_period_end: 1767225600 }), env);
+  assert.equal(row.current_period_start, '2025-12-01T00:00:00.000Z');
+  assert.equal(row.current_period_end, '2026-01-01T00:00:00.000Z');
 });
 
 test('rowFromSubscription falls back to items.data[0].current_period_end', () => {
@@ -74,6 +86,7 @@ test('rowFromSubscription accepts an expanded customer object', () => {
 test('rowFromSubscription leaves current_period_end null when Stripe omits it', () => {
   const row = rowFromSubscription(sub(), env);
   assert.equal(row.current_period_end, null);
+  assert.equal(row.current_period_start, null);
 });
 
 test('isUuid accepts UUIDs and rejects anything else', () => {
@@ -92,6 +105,7 @@ test('subscriptionFields keeps the fields even when the price maps to no tier', 
     stripe_customer_id: 'cus_456',
     tier: null,
     status: 'past_due',
+    current_period_start: null,
     current_period_end: '2026-01-01T00:00:00.000Z',
     cancel_at_period_end: false,
     livemode: false,
@@ -134,4 +148,11 @@ test('isResourceMissing recognises only Stripe resource_missing errors', () => {
   assert.equal(isResourceMissing({ code: 'rate_limit' }), false);
   assert.equal(isResourceMissing(new Error('boom')), false);
   assert.equal(isResourceMissing(null), false);
+});
+
+test('isUnknownPlayer recognises only a Postgres foreign key violation', () => {
+  assert.equal(isUnknownPlayer({ code: '23503', message: 'violates foreign key constraint' }), true);
+  assert.equal(isUnknownPlayer({ code: '23505' }), false);
+  assert.equal(isUnknownPlayer({ code: 'resource_missing' }), false);
+  assert.equal(isUnknownPlayer(null), false);
 });

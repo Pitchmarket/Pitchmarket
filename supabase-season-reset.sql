@@ -17,6 +17,14 @@
 -- export the holdings, trades and profiles tables as CSV from the Table
 -- Editor before running it.
 
+-- Stops here, changing nothing, if supabase-pro-1.sql hasn't been run.
+do $$
+begin
+  if to_regclass('public.portfolio_snapshots') is null then
+    raise exception 'Run supabase-pro-1.sql first.';
+  end if;
+end $$;
+
 begin;
 
 delete from public.holdings;

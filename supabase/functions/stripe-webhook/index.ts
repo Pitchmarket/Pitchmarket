@@ -5,6 +5,7 @@ import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 import {
   isResourceMissing,
+  isUnknownPlayer,
   isUuid,
   missingSecrets,
   nextRow,
@@ -55,6 +56,7 @@ function reply(status: number, text: string): Response {
 // a checkout; without it the row must already exist or the player is found
 // from another row of the same Stripe customer.
 async function syncSubscription(sub: Stripe.Subscription, userId: string | null, forceCanceled = false): Promise<Response> {
+  const fromCheckout = userId !== null;
   const fresh = subscriptionFields(sub, priceEnv);
   // A deleted event means the subscription has ended, whatever the retrieved object says.
   if (forceCanceled) fresh.status = 'canceled';
@@ -108,7 +110,15 @@ async function syncSubscription(sub: Stripe.Subscription, userId: string | null,
   const { error } = await getSupabase()
     .from('subscriptions')
     .upsert({ ...row, user_id: userId, updated_at: updatedAt }, { onConflict: 'id' });
-  if (error) throw error;
+  if (error) {
+    // The checkout's client_reference_id is a UUID but not a player.
+    // Retrying won't help, so don't ask Stripe to.
+    if (fromCheckout && isUnknownPlayer(error)) {
+      console.log('checkout client_reference_id is not a known player; not written', row.id);
+      return reply(200, 'ignored: unknown player');
+    }
+    throw error;
+  }
   return reply(200, 'ok');
 }
 

@@ -46,7 +46,20 @@ do $$ declare u uuid := (select pro_u from ids); begin
   assert public.user_tier(u) = 'free', 'sub 4 days past period end no longer counts';
   update public.subscriptions set current_period_end = now() + interval '10 days', status = 'canceled' where id = 'sub_pro';
   assert public.user_tier(u) = 'free', 'canceled sub does not count';
+
+  -- A failed renewal: Stripe moves the period on and sets past_due. It
+  -- counts for 3 days from the start of the new period, no longer.
+  update public.subscriptions set status = 'past_due',
+    current_period_start = now() - interval '1 day', current_period_end = now() + interval '29 days' where id = 'sub_pro';
+  assert public.user_tier(u) = 'pro', 'past_due 1 day into the new period still counts';
+  update public.subscriptions set
+    current_period_start = now() - interval '4 days', current_period_end = now() + interval '26 days' where id = 'sub_pro';
+  assert public.user_tier(u) = 'free', 'past_due 4 days into the new period no longer counts';
+  update public.subscriptions set current_period_start = null where id = 'sub_pro';
+  assert public.user_tier(u) = 'free', 'past_due with no period start does not count';
   update public.subscriptions set status = 'active' where id = 'sub_pro';
+  assert public.user_tier(u) = 'pro', 'active sub with no period start counts';
+  update public.subscriptions set current_period_end = now() + interval '10 days' where id = 'sub_pro';
 
   insert into public.grants (user_id, tier, until, note) values (u, 'ultimate', null, 'friend');
   assert public.user_tier(u) = 'ultimate', 'pro sub + ultimate grant should be ultimate';
@@ -193,8 +206,9 @@ do $$ declare n integer; begin
   n := public.take_portfolio_snapshots();
   assert (select count(*) from public.portfolio_snapshots) = (select count(*) from public.profiles), 'second run same day does not duplicate';
   assert (select value from public.portfolio_snapshots
-          where user_id = (select pro_u from ids) and day = (now() at time zone 'Europe/London')::date) = 2030,
-         'snapshot value is coins + holdings';
+          where user_id = (select pro_u from ids)
+            and day = ((now() at time zone 'Europe/London') - interval '6 hours')::date) = 2030,
+         'snapshot value is coins + holdings, stamped with the trading day that just ended';
 end $$;
 
 -- ---------- access rules ----------
@@ -293,8 +307,9 @@ end $$;
 
 -- Function privileges, with Supabase's default EXECUTE grants in place.
 do $$ declare r text; f text; begin
+  assert to_regprocedure('public.subscription_counts(text, timestamptz, boolean)') is null, 'old subscription_counts signature is gone';
   foreach f in array array['public.take_portfolio_snapshots()', 'public.user_tier(uuid)', 'public.plan_of(uuid)',
-                           'public.tier_rank(text)', 'public.subscription_counts(text, timestamptz, boolean)'] loop
+                           'public.tier_rank(text)', 'public.subscription_counts(text, timestamptz, timestamptz, boolean)'] loop
     foreach r in array array['anon', 'authenticated'] loop
       assert not has_function_privilege(r, f, 'execute'), r || ' must not execute ' || f;
     end loop;

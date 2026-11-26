@@ -26,7 +26,7 @@
 
 ## Review Focus
 
-1. A subscription that was cancelled or stopped renewing: tier drops to free 3 days after `current_period_end`, never earlier, never later.
+1. A cancelled subscription ends when Stripe reports it ended (status `canceled` at period end); the 3-day grace after `current_period_end` only covers a late or lost webhook. A failed renewal (`past_due`) stops counting 3 days after the new period started (`current_period_start`).
 2. A test-mode subscription after payments mode is switched to `live`: no longer counts; a manual grant still does.
 3. A player already watching more clubs than their new cap: existing rows stay, the next add is refused with the cap in the message.
 4. A signed-out visitor pressing a buy button: asked to sign in; no Stripe link opens without `client_reference_id`.

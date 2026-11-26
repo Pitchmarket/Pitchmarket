@@ -1510,11 +1510,14 @@ create table if not exists public.subscriptions (
   stripe_customer_id    text,
   tier                  text check (tier in ('pro', 'ultimate')),
   status                text not null,
+  current_period_start  timestamptz,
   current_period_end    timestamptz,
   cancel_at_period_end  boolean not null default false,
   livemode              boolean not null,
   updated_at            timestamptz not null default now()
 );
+-- For a database that ran an earlier draft of this file.
+alter table public.subscriptions add column if not exists current_period_start timestamptz;
 create index if not exists subscriptions_user on public.subscriptions (user_id);
 alter table public.subscriptions enable row level security;
 drop policy if exists "players read own subscriptions" on public.subscriptions;
@@ -1531,6 +1534,15 @@ create table if not exists public.grants (
   granted_at  timestamptz not null default now()
 );
 alter table public.grants enable row level security;
+
+-- Players given Pro or Ultimate by hand under the old profiles flags
+-- (is_pro, is_ultimate, pro_expires_at) keep it as a grant. A player who
+-- already has a grant keeps that one.
+insert into public.grants (user_id, tier, until, note)
+select id, case when is_ultimate then 'ultimate' else 'pro' end, pro_expires_at, 'migrated from profiles'
+from public.profiles
+where (is_pro or is_ultimate) and (pro_expires_at is null or pro_expires_at > now())
+on conflict (user_id) do nothing;
 
 -- Each player's portfolio value at the end of each day (UK date).
 create table if not exists public.portfolio_snapshots (
@@ -1605,18 +1617,24 @@ as $function$
   select case p_tier when 'ultimate' then 2 when 'pro' then 1 else 0 end;
 $function$;
 
--- Whether a subscription gives its tier now: active, trialing or past_due,
--- its period ended less than 3 days ago, and a test purchase doesn't count
--- once payments mode is live.
-create or replace function public.subscription_counts(p_status text, p_period_end timestamptz, p_livemode boolean)
+-- Whether a subscription gives its tier now. Active or trialing: until 3
+-- days after its period ends (the 3 days only cover a late or lost
+-- webhook; a cancelled subscription stops when Stripe reports it
+-- canceled). Past due (a failed renewal, where Stripe has already moved
+-- the period on): only for 3 days from the start of the new period. A
+-- test purchase doesn't count once payments mode is live.
+drop function if exists public.subscription_counts(text, timestamptz, boolean);
+create or replace function public.subscription_counts(p_status text, p_period_start timestamptz,
+  p_period_end timestamptz, p_livemode boolean)
  returns boolean
  language sql
  stable
  set search_path = public
 as $function$
   select coalesce(
-    p_status in ('active', 'trialing', 'past_due')
-    and p_period_end > now() - interval '3 days'
+    p_period_end > now() - interval '3 days'
+    and (p_status in ('active', 'trialing')
+         or (p_status = 'past_due' and p_period_start > now() - interval '3 days'))
     and (p_livemode or coalesce(payments_settings() ->> 'mode', 'test') <> 'live'),
     false);
 $function$;
@@ -1639,7 +1657,7 @@ declare
 begin
   select * into s from subscriptions
   where user_id = p_user and tier is not null
-    and subscription_counts(status, current_period_end, livemode)
+    and subscription_counts(status, current_period_start, current_period_end, livemode)
   order by tier_rank(tier) desc, current_period_end desc
   limit 1;
   if found then v_sub := tier_rank(s.tier); end if;
@@ -1689,6 +1707,10 @@ as $function$
 $function$;
 
 -- ---------- Leaderboard ----------
+
+-- Also added by supabase-names-and-leaderboard.sql; repeated here so this
+-- file works whichever is run first.
+alter table public.profiles add column if not exists hidden_from_leaderboard boolean not null default false;
 
 -- Top players by coins plus holdings at current prices, with their tier
 -- for badges. Hidden accounts (the organiser's) are left out.
@@ -1800,8 +1822,8 @@ $function$;
 
 -- ---------- Portfolio snapshots ----------
 
--- Records today's (UK date) portfolio value for every player: coins plus
--- holdings at current prices. Does nothing until a season start is
+-- Records each player's portfolio value (coins plus holdings at current
+-- prices) for the trading day that just ended. Does nothing until a season start is
 -- recorded. Run again on the same day, it updates the day's values.
 -- Returns the number of rows written.
 create or replace function public.take_portfolio_snapshots()
@@ -1817,7 +1839,10 @@ begin
     return 0;
   end if;
   insert into portfolio_snapshots (user_id, day, value)
-  select p.id, (now() at time zone 'Europe/London')::date,
+  -- The nightly backup runs at 03:23 UTC (3-4am UK time), after the UK date
+  -- has turned over, so stamp it with the UK date 6 hours earlier: the
+  -- trading day that just ended. A run after 6am UK time stamps that day.
+  select p.id, ((now() at time zone 'Europe/London') - interval '6 hours')::date,
          p.coin_balance + coalesce(sum(h.shares * t.price), 0)
   from profiles p
   left join holdings h on h.user_id = p.id
@@ -1838,7 +1863,7 @@ grant execute on function public.my_plan() to anon, authenticated;
 grant execute on function public.get_leaderboard(integer) to anon, authenticated;
 
 revoke execute on function public.tier_rank(text) from public, anon, authenticated;
-revoke execute on function public.subscription_counts(text, timestamptz, boolean) from public, anon, authenticated;
+revoke execute on function public.subscription_counts(text, timestamptz, timestamptz, boolean) from public, anon, authenticated;
 revoke execute on function public.plan_of(uuid) from public, anon, authenticated;
 revoke execute on function public.user_tier(uuid) from public, anon, authenticated;
 grant execute on function public.plan_of(uuid) to service_role;
