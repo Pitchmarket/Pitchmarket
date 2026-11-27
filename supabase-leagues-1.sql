@@ -174,6 +174,27 @@ begin
 end;
 $function$;
 
+-- A player's join value in a league this season (used by join_league and
+-- the Classic table): the join value of their first stint in the league
+-- this season, where a stint that was running when the season started
+-- counts as 2000 (the reset puts everyone on 2000). So leaving and
+-- rejoining never resets a player's percentage. Null if they have no stint
+-- this season.
+create or replace function public.league_season_join_value(p_league bigint, p_user uuid, p_start timestamptz)
+ returns numeric
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select case when m.joined_at < p_start then 2000 else m.join_value end
+  from league_members m
+  where m.league_id = p_league and m.user_id = p_user
+    and (m.left_at is null or m.left_at > p_start)
+  order by m.joined_at, m.id
+  limit 1;
+$function$;
+
 -- ---------- Membership ----------
 
 create or replace function public.create_league(p_name text, p_type text)
@@ -246,18 +267,19 @@ begin
     raise exception 'You can be in up to 10 leagues.';
   end if;
 
-  -- Rejoining in the same season keeps that season's first join value.
-  -- Same season: both stints began on/after the season start, or both
-  -- before it; with no season start, any earlier stint counts.
-  -- A stint that began before the season start keeps its live join_value
-  -- here, but the Classic table must count it as 2000 (the season-start
-  -- value).
-  select join_value into v_value
-  from league_members
-  where league_id = v_league.id and user_id = v_uid
-    and (v_start is null or (joined_at >= v_start) = (now() >= v_start))
-  order by joined_at, id
-  limit 1;
+  -- Rejoining in the same season keeps that season's first join value,
+  -- the same value the Classic table uses (2000 for a stint that was
+  -- running when the season started). Before a season start, any earlier
+  -- stint counts.
+  if v_start is not null and now() >= v_start then
+    v_value := league_season_join_value(v_league.id, v_uid, v_start);
+  else
+    select join_value into v_value
+    from league_members
+    where league_id = v_league.id and user_id = v_uid
+    order by joined_at, id
+    limit 1;
+  end if;
   if v_value is null then v_value := coalesce(player_value(v_uid), 0); end if;
 
   insert into league_members (league_id, user_id, join_value)
@@ -481,31 +503,16 @@ $function$;
 
 -- ---------- Weekly scores ----------
 
--- A stint's join value for the Classic table: the join value of the
--- player's first stint in this league this season, where a stint that was
--- running when the season started counts as 2000 (the reset puts everyone
--- on 2000). So leaving and rejoining never resets a player's percentage.
-create or replace function public.league_season_join_value(p_league bigint, p_user uuid, p_start timestamptz)
- returns numeric
- language sql
- stable
- security definer
- set search_path = public
-as $function$
-  select case when m.joined_at < p_start then 2000 else m.join_value end
-  from league_members m
-  where m.league_id = p_league and m.user_id = p_user
-    and (m.left_at is null or m.left_at > p_start)
-  order by m.joined_at, m.id
-  limit 1;
-$function$;
-
 -- Closes every finished matchweek not yet closed, oldest first, and returns
--- how many it closed. Run by the nightly backup (Monday ~03:23 UTC, just
--- after Sunday's snapshot is taken). A week counts if its previous Sunday
--- is on or after the season start date; it's scored if both its Sunday
--- and the previous Sunday have snapshots, otherwise void. Does nothing
--- before a season start. p_today (the UK date) is for tests only.
+-- how many it closed. Run by the nightly backup (~03:23 UTC) after the
+-- snapshot step succeeds. "Today" is the trading day the snapshots use
+-- (the UK date 6 hours ago), so a week closes only once the trading day
+-- after its Sunday has begun: Tuesday's run closes the week, after
+-- Monday's run has saved (and could still re-save) Sunday's snapshot. A
+-- week counts if its previous Sunday is on or after the season start
+-- date; it's scored if both its Sunday and the previous Sunday have
+-- snapshots, otherwise void. Does nothing before a season start. p_today
+-- (a trading day) is for tests only.
 create or replace function public.close_matchweeks(p_today date default null)
  returns integer
  language plpgsql
@@ -515,7 +522,7 @@ create or replace function public.close_matchweeks(p_today date default null)
 as $function$
 declare
   v_start timestamptz := season_start();
-  v_today date := coalesce(p_today, (now() at time zone 'Europe/London')::date);
+  v_today date := coalesce(p_today, ((now() at time zone 'Europe/London') - interval '6 hours')::date);
   v_first date;
   v_week date;
   v_closed integer := 0;
@@ -524,6 +531,9 @@ begin
   -- One run at a time.
   perform pg_advisory_xact_lock(hashtextextended('close-matchweeks', 0));
   -- The first Sunday at least 7 days after the season start date.
+  -- Weeks are closed for the season recorded now, so recording the next
+  -- season's start early stops the current season's remaining weeks
+  -- closing: record it when you run the reset.
   v_first := (v_start at time zone 'Europe/London')::date + 7;
   v_first := v_first + (7 - extract(isodow from v_first)::integer) % 7;
 
@@ -555,7 +565,8 @@ end;
 $function$;
 
 -- A league's Classic table: current members ranked by % gained since they
--- joined (this season); ties share a rank. Empty before a season start.
+-- joined (this season); ties share a rank. Empty until the season has
+-- started (as league_detail's season_started).
 create or replace function public.league_classic_table(p_league bigint)
  returns table(rank integer, member_id bigint, display_name text, tier text, pct numeric)
  language plpgsql
@@ -573,7 +584,7 @@ begin
       where league_id = p_league and user_id = v_uid and left_at is null) then
     raise exception 'You''re not in this league.';
   end if;
-  if v_start is null then return; end if;
+  if v_start is null or v_start > now() then return; end if;
   return query
   select (rank() over (order by x.pct desc))::integer, x.id, x.display_name, x.tier, x.pct
   from (

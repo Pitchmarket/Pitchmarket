@@ -4,15 +4,17 @@
 -- back, so it leaves nothing behind.
 begin;
 
--- Players 1..7: 1 Alice, 2 Bob, 3 Cat, 4 Dan, 5 Eve, 6 Fay, 7 Gus (not in
--- any league).
+-- Players 1..13: 1 Alice, 2 Bob, 3 Cat, 4 Dan, 5 Eve, 6 Fay, 7 Gus (not in
+-- any league), 8 Hal (never scores), and 9..13 Ivy, Jo, Kit, Lou, Mo for
+-- the clock-change weeks.
 insert into auth.users (id, email)
 select (lpad(n::text, 6, '0') || 'dd-0000-0000-0000-00000000000d')::uuid, 's' || n || '@example.com'
-from generate_series(1, 7) n;
+from generate_series(1, 13) n;
 create function pg_temp.u(n int) returns uuid language sql immutable as
 $$ select (lpad(n::text, 6, '0') || 'dd-0000-0000-0000-00000000000d')::uuid $$;
 update public.profiles p set display_name = v.name
-from (values (1, 'Alice'), (2, 'Bob'), (3, 'Cat'), (4, 'Dan'), (5, 'Eve'), (6, 'Fay'), (7, 'Gus')) v(n, name)
+from (values (1, 'Alice'), (2, 'Bob'), (3, 'Cat'), (4, 'Dan'), (5, 'Eve'), (6, 'Fay'), (7, 'Gus'),
+            (8, 'Hal'), (9, 'Ivy'), (10, 'Jo'), (11, 'Kit'), (12, 'Lou'), (13, 'Mo')) v(n, name)
 where p.id = pg_temp.u(v.n);
 insert into public.grants (user_id, tier) values (pg_temp.u(1), 'pro');
 create function pg_temp.as_player(n int) returns void language sql as
@@ -82,8 +84,9 @@ do $$ begin
     'void weeks have no scores';
   assert (select pct from public.player_week_scores where week_end = '2027-02-07' and user_id = pg_temp.u(3)) = 20.00, 'C +20';
   assert public.close_matchweeks('2027-02-08') = 0, 'catch-up is idempotent';
-  -- Sunday 14 Feb itself isn't over yet.
-  assert public.close_matchweeks('2027-02-14') = 0, 'a week closes only after its Sunday';
+  -- p_today is a trading day: on trading day Sunday 14 Feb (which, run
+  -- without p_today, lasts until 06:00 UK on Monday) that week isn't closed.
+  assert public.close_matchweeks('2027-02-14') = 0, 'a week closes only after its Sunday''s trading day';
   assert (select count(*) from public.matchweeks) = 5, 'five weeks in all';
 end $$;
 
@@ -153,7 +156,73 @@ do $$ declare r record; begin
   assert r.winners = array['Cat'] and r.pct = 20.00, '7 Feb Cat ' || r::text;
 end $$;
 
+-- A scored week where nobody in the league counted: no winners, not void.
+reset role;
+insert into public.leagues (name, type, owner_id, invite_code) values ('Hal', 'classic', pg_temp.u(8), 'CCCCCC');
+insert into l select 'hal', id from public.leagues where invite_code = 'CCCCCC';
+insert into public.league_members (league_id, user_id, joined_at, join_value)
+values ((select id from l where k = 'hal'), pg_temp.u(8), pg_temp.uk('2026-12-20 10:00'), 2000);
+set role authenticated;
+do $$ declare r record; begin
+  perform pg_temp.as_player(8);
+  select * into r from public.league_player_of_week((select id from l where k = 'hal')) where week_end = '2027-01-10';
+  assert r.status = 'scored' and r.winners = '{}'::text[] and r.pct is null, 'scored, nobody counted ' || r::text;
+end $$;
+
+-- ---------- Clock changes ----------
+-- BST starts at 01:00 on Sunday 28 March 2027, so that week ends at 23:59:59
+-- BST (22:59:59 UTC). BST ends on Sunday 31 October, so the week to 31 Oct
+-- starts at 00:00 BST on Monday 25 Oct (23:00 UTC on Sunday 24 Oct).
+reset role;
+insert into public.portfolio_snapshots (user_id, day, value) values
+  (pg_temp.u(9),  '2027-03-21', 1000), (pg_temp.u(9),  '2027-03-28', 1100),
+  (pg_temp.u(10), '2027-03-21', 1000), (pg_temp.u(10), '2027-03-28', 1300),
+  (pg_temp.u(11), '2027-03-21', 1000), (pg_temp.u(11), '2027-03-28', 1400),
+  (pg_temp.u(9),  '2027-10-24', 1000), (pg_temp.u(9),  '2027-10-31', 1100),
+  (pg_temp.u(12), '2027-10-24', 1000), (pg_temp.u(12), '2027-10-31', 1500),
+  (pg_temp.u(13), '2027-10-24', 1000), (pg_temp.u(13), '2027-10-31', 1200);
+do $$ begin
+  -- Trading day Monday 15 Feb: the week to 14 Feb closes (void: no snapshots).
+  assert public.close_matchweeks('2027-02-15') = 1, 'week to 14 Feb closes the day after';
+  assert (select status from public.matchweeks where week_end = '2027-02-14') = 'void', '14 Feb void';
+  perform public.close_matchweeks('2027-11-01');
+  assert (select status from public.matchweeks where week_end = '2027-03-28') = 'scored', '28 Mar scored';
+  assert (select status from public.matchweeks where week_end = '2027-10-31') = 'scored', '31 Oct scored';
+end $$;
+insert into public.leagues (name, type, owner_id, invite_code) values ('Clocks', 'classic', pg_temp.u(9), 'DDDDDD');
+insert into l select 'clocks', id from public.leagues where invite_code = 'DDDDDD';
+insert into public.league_members (league_id, user_id, joined_at, left_at, join_value) values
+  ((select id from l where k = 'clocks'), pg_temp.u(9),  pg_temp.uk('2026-12-20 10:00'), null, 2000),
+  -- Left at 00:30 BST on Monday 29 Mar (23:30 UTC Sunday): after the week, counts.
+  ((select id from l where k = 'clocks'), pg_temp.u(10), pg_temp.uk('2026-12-20 10:00'), '2027-03-28 23:30:00+00', 2000),
+  -- Left at 23:30 BST on Sunday 28 Mar (22:30 UTC): before the week ended, doesn't.
+  ((select id from l where k = 'clocks'), pg_temp.u(11), pg_temp.uk('2026-12-20 10:00'), '2027-03-28 22:30:00+00', 2000),
+  -- Joined at 00:30 BST on Monday 25 Oct (23:30 UTC Sunday): after the week began, doesn't count.
+  ((select id from l where k = 'clocks'), pg_temp.u(12), '2027-10-24 23:30:00+00', null, 2000),
+  -- Joined at 23:30 BST on Sunday 24 Oct (22:30 UTC): before the week began, counts.
+  ((select id from l where k = 'clocks'), pg_temp.u(13), '2027-10-24 22:30:00+00', null, 2000);
+set role authenticated;
+do $$ declare r record; begin
+  perform pg_temp.as_player(9);
+  assert pg_temp.uk('2027-03-28 23:30') = '2027-03-28 22:30:00+00', 'test clock: BST on 28 Mar';
+  assert pg_temp.uk('2027-10-25 00:30') = '2027-10-24 23:30:00+00', 'test clock: BST on 25 Oct';
+  select * into r from public.league_player_of_week((select id from l where k = 'clocks'), 100) where week_end = '2027-03-28';
+  assert r.winners = array['Jo'] and r.pct = 30.00, '28 Mar: Jo counts, Kit doesn''t ' || r::text;
+  select * into r from public.league_player_of_week((select id from l where k = 'clocks'), 100) where week_end = '2027-10-31';
+  assert r.winners = array['Mo'] and r.pct = 20.00, '31 Oct: Mo counts, Lou doesn''t ' || r::text;
+end $$;
+
 -- ---------- Classic table ----------
+-- The table shows only once the season has started, so move the season
+-- start (and league One's stints with it) into the past.
+reset role;
+do $$ declare v_shift interval := (now() - interval '60 days') - '2027-01-02T12:00:00Z'::timestamptz; begin
+  update public.site_settings set value = jsonb_build_object('start', '2027-01-02T12:00:00Z'::timestamptz + v_shift)
+    where key = 'season';
+  update public.league_members set joined_at = joined_at + v_shift, left_at = left_at + v_shift
+    where league_id = (select id from l where k = 'one');
+end $$;
+set role authenticated;
 
 do $$ declare r record; n int := 0; begin
   perform pg_temp.as_player(5);
@@ -170,6 +239,16 @@ do $$ declare r record; n int := 0; begin
     assert r.member_id is not null, 'member id';
   end loop;
   assert n = 4, 'current members only: ' || n;
+end $$;
+
+-- A season start recorded for the future: nothing to show yet.
+reset role;
+update public.site_settings set value = jsonb_build_object('start', now() + interval '1 day') where key = 'season';
+set role authenticated;
+do $$ begin
+  perform pg_temp.as_player(5);
+  assert (select count(*) from public.league_classic_table((select id from l where k = 'one'))) = 0,
+    'classic table empty before the season starts';
 end $$;
 
 -- ---------- Members only ----------

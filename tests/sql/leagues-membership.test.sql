@@ -248,8 +248,10 @@ reset role;
 do $$ declare v_id bigint := (select id from l where k = 'ult'); begin
   assert (select join_value from public.league_members where league_id = v_id and user_id = pg_temp.u(5) and left_at is null) = 2000,
     'same-season rejoin keeps the first stint''s join value';
-  assert (select join_value from public.league_members where league_id = v_id and user_id = pg_temp.u(7) and left_at is null) = 2600,
-    'rejoin after a stint from before the season uses the live value';
+  -- The first stint was running when the season started, so the season's
+  -- join value is 2000 (as the Classic table counts it), not the live 2600.
+  assert (select join_value from public.league_members where league_id = v_id and user_id = pg_temp.u(7) and left_at is null) = 2000,
+    'rejoin after a stint that spanned the season start keeps 2000';
 end $$;
 set role authenticated;
 
