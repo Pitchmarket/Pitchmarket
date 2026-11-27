@@ -1,6 +1,6 @@
 # PitchMarket status
 
-_Last updated: 26 Nov 2026_
+_Last updated: 27 Nov 2026_
 
 Where the project stands before public launch. Update this file in the same pull request as the work it describes. Keep it under 10 KB: when something is done, delete it here instead of marking it done.
 
@@ -13,8 +13,10 @@ Launch blockers, roughly in the order to tackle them.
 - **Switch on the error log.** Run `supabase-error-log.sql` in the Supabase SQL Editor. Errors players hit then show in admin under **Errors**.
 - **Run `supabase-names-and-leaderboard.sql`** in the Supabase SQL Editor. It makes display names unique and hides the organiser's accounts (admin and 27hufferdinea) from the leaderboard. Its last line lists the hidden accounts; check they're the right ones.
 - **Then run `supabase-pro-1.sql`** in the Supabase SQL Editor. It adds Pro and Ultimate plans, the new watchlist caps and nightly portfolio snapshots, and turns any old hand-given Pro or Ultimate into a grant. Safe to run twice.
-- **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql` after `supabase-pro-1.sql` (it stops with "Run supabase-pro-1.sql first." otherwise): it clears `holdings`, `trades` and portfolio snapshots, sets every balance to 2,000 and records the season start. Prices and price history stay, so the charts keep their data.
+- **Then run `supabase-leagues-1.sql`** in the Supabase SQL Editor. It adds private leagues: the Classic table and Player of the week, scored by the nightly backup job. Needs `supabase-pro-1.sql` first. Safe to run twice.
+- **Reset the world before Christmas** (hard deadline). Run `supabase-season-reset.sql` after `supabase-pro-1.sql` and `supabase-leagues-1.sql` (it stops with "Run supabase-pro-1.sql first." otherwise): it clears `holdings`, `trades` and portfolio snapshots, sets every balance to 2,000 and records the season start. Prices and price history stay, so the charts keep their data.
 - **Set up Stripe test mode** by following [docs/stripe-setup.md](docs/stripe-setup.md), then make a test purchase with card 4242 4242 4242 4242.
+- **Keep the nightly backup running.** GitHub switches off scheduled workflows after 60 days without activity in the repo. If the backup (which also saves portfolio snapshots and closes league weeks) ever stops, re-enable **Back up PitchMarket data** from the Actions tab.
 - **The organiser runs the competition and doesn't play.** The admin and 27hufferdinea accounts are hidden from the leaderboard. To hide another account, set `hidden_from_leaderboard` to true on its row in `profiles`.
 
 ### Platform

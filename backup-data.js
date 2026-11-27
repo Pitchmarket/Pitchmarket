@@ -127,17 +127,46 @@ To restore an older night, open this branch's commit history, pick the date, and
 `;
 }
 
+// An error's message on one line, for the log and a GitHub warning (shown
+// on the run's summary page).
+function errorText(err){
+  return String(err && err.message ? err.message : err).replace(/\s*[\r\n]+\s*/g, ' ');
+}
+
 // Record tonight's portfolio value for every player (Pro portfolio history).
 // The database function saves nothing until the Christmas reset records a
 // season start. A failure here is logged and the backup carries on.
+// Returns whether the snapshots were saved (true also before the season).
 async function takePortfolioSnapshots(supabase){
   try{
     const { data, error } = await supabase.rpc('take_portfolio_snapshots');
     if(error) throw new Error(error.message);
     const saved = Number(data) || 0;
     console.log(`Portfolio snapshots: ${saved} saved${saved === 0 ? ' (0 until the season starts)' : ''}.`);
+    return true;
   }catch(err){
-    console.error('Portfolio snapshots failed (backup continues):', err && err.message ? err.message : err);
+    const msg = errorText(err);
+    console.error('Portfolio snapshots failed (backup continues):', msg);
+    console.log(`::warning::Portfolio snapshots failed: ${msg}`);
+    return false;
+  }
+}
+
+// Close finished league matchweeks. Monday's run closes the week that
+// ended on Sunday, right after saving Sunday's snapshot. Weeks missed on
+// earlier nights are closed too, as void if a Sunday's snapshots are
+// missing. Only called when tonight's snapshots were saved, so a failed
+// save never voids a week. A failure here is logged and the backup carries
+// on.
+async function closeMatchweeks(supabase){
+  try{
+    const { data, error } = await supabase.rpc('close_matchweeks');
+    if(error) throw new Error(error.message);
+    console.log(`Matchweeks closed: ${Number(data) || 0}.`);
+  }catch(err){
+    const msg = errorText(err);
+    console.error('Closing matchweeks failed (backup continues):', msg);
+    console.log(`::warning::Closing matchweeks failed: ${msg}`);
   }
 }
 
@@ -151,7 +180,11 @@ async function main(){
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  await takePortfolioSnapshots(supabase);
+  if(await takePortfolioSnapshots(supabase)){
+    await closeMatchweeks(supabase);
+  }else{
+    console.log('Matchweeks not closed tonight (snapshots failed).');
+  }
 
   const data = {};
   for(const t of TABLES){
