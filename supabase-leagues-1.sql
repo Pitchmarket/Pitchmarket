@@ -49,13 +49,16 @@ alter table public.leagues enable row level security;
 -- One row per stint: leaving and rejoining adds a new row.
 create table if not exists public.league_members (
   id          bigserial primary key,
-  league_id   bigint references public.leagues(id) on delete cascade,
-  user_id     uuid references auth.users(id) on delete cascade,
+  league_id   bigint not null references public.leagues(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
   joined_at   timestamptz not null default now(),
   left_at     timestamptz,
   join_value  numeric not null,
   kicked      boolean not null default false
 );
+-- For databases that loaded an earlier draft without NOT NULL.
+alter table public.league_members alter column league_id set not null;
+alter table public.league_members alter column user_id set not null;
 create unique index if not exists league_members_current
   on public.league_members (league_id, user_id) where left_at is null;
 create index if not exists league_members_user on public.league_members (user_id) where left_at is null;
@@ -322,19 +325,24 @@ begin
 
   -- The owner left: the league passes to the earliest current member who
   -- owns fewer than 3 leagues, or failing that to the earliest current
-  -- member. Each candidate's player lock is taken after the league row
-  -- lock (the order join_league uses) and the count re-checked under it.
+  -- member. Every current member's player lock is taken first, in user_id
+  -- order (after the league row lock, the order join_league uses), so two
+  -- hand-overs can't deadlock; the counts are then read under those locks.
+  for v_cand in
+    select user_id from league_members
+    where league_id = p_league and left_at is null
+    order by user_id
+  loop
+    perform pg_advisory_xact_lock(hashtextextended('league-player:' || v_cand::text, 0));
+  end loop;
   for v_cand in
     select user_id from league_members
     where league_id = p_league and left_at is null
     order by joined_at, id
   loop
     if (select count(*) from leagues where owner_id = v_cand) < 3 then
-      perform pg_advisory_xact_lock(hashtextextended('league-player:' || v_cand::text, 0));
-      if (select count(*) from leagues where owner_id = v_cand) < 3 then
-        v_next := v_cand;
-        exit;
-      end if;
+      v_next := v_cand;
+      exit;
     end if;
   end loop;
   update leagues set owner_id = coalesce(v_next, v_first) where id = p_league;
@@ -527,7 +535,6 @@ as $function$
 declare
   v_start timestamptz := season_start();
   v_now timestamptz := coalesce(p_now, now());
-  v_trading_day date := ((v_now at time zone 'Europe/London') - interval '6 hours')::date;
   v_calendar_day date := (v_now at time zone 'Europe/London')::date;
   v_first date;
   v_week date;
@@ -544,11 +551,12 @@ begin
   v_first := v_first + (7 - extract(isodow from v_first)::integer) % 7;
 
   for v_week in
-    -- Sundays <= the trading day and < the calendar day. <= is safe: the
-    -- backup calls this only after this run's snapshots (stamped with
-    -- this trading day) were saved.
+    -- Sundays before today (UK time). That is never later than the
+    -- trading day, so a Sunday's snapshots (stamped with that trading day)
+    -- were saved by the time it closes: the backup calls this only after
+    -- this run's snapshots.
     select d::date
-    from generate_series(v_first, least(v_trading_day, v_calendar_day - 1), interval '7 days') d
+    from generate_series(v_first, v_calendar_day - 1, interval '7 days') d
     where not exists (select 1 from matchweeks w where w.week_end = d::date)
     order by 1
   loop
