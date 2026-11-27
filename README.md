@@ -123,6 +123,17 @@ Pro ($1.99 a month or $20 a year) and Ultimate ($4.99 a month or $50 a year) are
 
 Tests: the webhook's logic in `tests/stripe-plan.test.mjs`, the database side in the SQL tests, and the plan pages in `tests/browser/plans.mjs`, `admin-plans.mjs` and `skins.mjs`. How to run them is under Tests below.
 
+## Private leagues
+
+Pro and Ultimate members can create private leagues (up to 3 each); anyone can join with the league's code (up to 10 leagues each, 20 players per league). The owner can kick a player, which also gives the league a new code, and Ultimate owners can brand their league. Everything is under the **My leagues** tab.
+
+- **Classic** leagues rank members by the percentage they have gained since joining. **Player of the week** is whoever gained the highest percentage that week. Weeks run Monday to Sunday, UK time.
+- Results are stored by the nightly backup job (03:23 UTC), after it has saved a good snapshot, so a week's result appears on Monday morning. A week with no Sunday snapshot (the job failed, or ran after 06:00 UK time on Monday) has no result.
+- Scoring starts with the first full week after the Christmas reset records the season start. Don't record the next season's start by hand: doing so early stops the current season's remaining weeks closing. Only run the reset.
+- Head-to-head leagues are coming in part 2b.
+
+**Setting it up:** run `supabase-leagues-1.sql` in the SQL Editor after `supabase-pro-1.sql` (and before the reset). Safe to run twice.
+
 ## Backups
 
 **Code.** Every version is in the git history. After each major change, a branch named `backup/vX.Y-YYYY-MM-DD` keeps a snapshot of the site at that point; open it on GitHub and use **Code → Download ZIP** to get it.
