@@ -27577,6 +27577,28 @@
   "changed_at": "2026-11-23T20:00:00+00:00"
  },
  {
+  "id": "72ce1438-b990-4c1d-8b31-a90e4669db8e",
+  "team_id": "f6413d11-5aeb-42e1-a82b-f8f8c2be2882",
+  "price": 72.07,
+  "delta_pct": 11.2,
+  "source": "match",
+  "match_event_id": "031f4c98-3926-4f33-a85e-efe9e0857880",
+  "label": "@ SC Internacional 5-2",
+  "result": "W",
+  "changed_at": "2026-11-23T22:30:00+00:00"
+ },
+ {
+  "id": "e08a2bb7-3e02-4d26-a89b-0c9e62485e52",
+  "team_id": "a19aacdd-4afa-48b5-856f-119f4acac0dd",
+  "price": 63.55,
+  "delta_pct": -9.8,
+  "source": "match",
+  "match_event_id": "031f4c98-3926-4f33-a85e-efe9e0857880",
+  "label": "v EC Vitória 2-5",
+  "result": "L",
+  "changed_at": "2026-11-23T22:30:00+00:00"
+ },
+ {
   "id": "2a183af0-8833-4951-982d-e6e887eda174",
   "team_id": "30a2aca5-7afc-4f13-aeee-802262709016",
   "price": 64.93,
@@ -27830,6 +27852,17 @@
   "changed_at": "2026-11-24T19:45:00+00:00"
  },
  {
+  "id": "9f964510-f4d6-4d92-b568-3c577ecaad30",
+  "team_id": "50bad139-350b-4b5a-9709-818d96ba935d",
+  "price": 23.52,
+  "delta_pct": -8.5,
+  "source": "match",
+  "match_event_id": "5e3ecb55-6514-4835-af53-7d817570218d",
+  "label": "v Preston North End FC 0-4",
+  "result": "L",
+  "changed_at": "2026-11-24T19:45:00+00:00"
+ },
+ {
   "id": "b0580955-c3dd-4307-9957-603c3c1a31f7",
   "team_id": "a339310c-61a4-4202-a729-03f792d72a48",
   "price": 65.81,
@@ -27871,6 +27904,17 @@
   "match_event_id": "6e1a0083-fc9b-481c-afd0-354cad3a6ac8",
   "label": "v Queens Park Rangers FC 1-1",
   "result": "D",
+  "changed_at": "2026-11-24T19:45:00+00:00"
+ },
+ {
+  "id": "e5289d42-609d-4225-8505-77a7ab100b8f",
+  "team_id": "6b6584e2-452c-4aca-ae10-f5d6285255ab",
+  "price": 20.3,
+  "delta_pct": 11,
+  "source": "match",
+  "match_event_id": "5e3ecb55-6514-4835-af53-7d817570218d",
+  "label": "@ Cardiff City FC 4-0",
+  "result": "W",
   "changed_at": "2026-11-24T19:45:00+00:00"
  },
  {
@@ -28081,6 +28125,28 @@
   "label": "@ Manchester City FC 2-2",
   "result": "D",
   "changed_at": "2026-11-24T20:00:00+00:00"
+ },
+ {
+  "id": "083fa8b4-8a05-4d40-b4a4-860c9f615176",
+  "team_id": "46f3aec9-004a-4b62-aaf4-b6695444df65",
+  "price": 184.56,
+  "delta_pct": -8.5,
+  "source": "match",
+  "match_event_id": "8c727999-8fe3-4e50-bf45-2d61a167c539",
+  "label": "@ Chapecoense AF 0-3",
+  "result": "L",
+  "changed_at": "2026-11-24T21:00:00+00:00"
+ },
+ {
+  "id": "486068fd-bdfb-475d-95cd-f1a6e6edf5b5",
+  "team_id": "b142da62-d022-40c7-9433-e05d39d561b1",
+  "price": 34.87,
+  "delta_pct": 14.5,
+  "source": "match",
+  "match_event_id": "8c727999-8fe3-4e50-bf45-2d61a167c539",
+  "label": "v SE Palmeiras 3-0",
+  "result": "W",
+  "changed_at": "2026-11-24T21:00:00+00:00"
  },
  {
   "id": "08470db0-c105-4a66-88f4-b7e11792e332",
@@ -28600,6 +28666,17 @@
   "changed_at": "2026-11-25T20:00:00+00:00"
  },
  {
+  "id": "6b782c5a-6324-4299-ad99-534ecf1d2848",
+  "team_id": "8cbd90ea-2843-42db-bd7e-8d0853a1711e",
+  "price": 98.68,
+  "delta_pct": -7.2,
+  "source": "match",
+  "match_event_id": "cfed5a85-8bd7-436f-96bf-d2d02fb7831a",
+  "label": "@ Lille OSC 1-2",
+  "result": "L",
+  "changed_at": "2026-11-25T20:00:00+00:00"
+ },
+ {
   "id": "80b6b9e4-3a5c-4f10-acb0-d5fd3c4d22c0",
   "team_id": "da09a630-92aa-4615-acce-b58c3dec6300",
   "price": 145.32,
@@ -28961,5 +29038,126 @@
   "label": "Manual adjustment",
   "result": null,
   "changed_at": "2026-11-26T04:59:10.597831+00:00"
+ },
+ {
+  "id": "c75ce7af-7529-467a-877e-e76bf4c39a7d",
+  "team_id": "8cbd90ea-2843-42db-bd7e-8d0853a1711e",
+  "price": 98.68,
+  "delta_pct": -7.2,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:28.756794+00:00"
+ },
+ {
+  "id": "85c9610c-bae2-4307-bc7a-ee97527c8452",
+  "team_id": "46f3aec9-004a-4b62-aaf4-b6695444df65",
+  "price": 184.56,
+  "delta_pct": -8.5,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:29.705186+00:00"
+ },
+ {
+  "id": "cc8aaeed-532c-429c-9771-e973474270f9",
+  "team_id": "b142da62-d022-40c7-9433-e05d39d561b1",
+  "price": 34.87,
+  "delta_pct": 14.5,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:29.705186+00:00"
+ },
+ {
+  "id": "9dfe21bd-c93b-4b9c-a843-ecb843951c32",
+  "team_id": "50bad139-350b-4b5a-9709-818d96ba935d",
+  "price": 23.52,
+  "delta_pct": -8.5,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:31.222427+00:00"
+ },
+ {
+  "id": "9f0a528f-78df-4a0d-8b33-621236a8c2d0",
+  "team_id": "6b6584e2-452c-4aca-ae10-f5d6285255ab",
+  "price": 20.3,
+  "delta_pct": 11,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:31.222427+00:00"
+ },
+ {
+  "id": "4286f29b-4221-4820-b49c-7bdd0ef9ddad",
+  "team_id": "a19aacdd-4afa-48b5-856f-119f4acac0dd",
+  "price": 63.55,
+  "delta_pct": -9.8,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:32.525743+00:00"
+ },
+ {
+  "id": "5b898b10-d782-4d06-813f-6133893f6759",
+  "team_id": "f6413d11-5aeb-42e1-a82b-f8f8c2be2882",
+  "price": 72.07,
+  "delta_pct": 11.2,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-26T18:43:32.525743+00:00"
+ },
+ {
+  "id": "1201e9d8-a4c9-49f4-b112-829c4f46d5f0",
+  "team_id": "e7d48ea7-9dc5-46a7-a89e-a3d072600ae6",
+  "price": 76.21,
+  "delta_pct": 1.8,
+  "source": "match",
+  "match_event_id": "c02d4f09-251f-44b2-89d8-a8e2db60a8f8",
+  "label": "v Clube do Remo 3-1",
+  "result": "W",
+  "changed_at": "2026-11-26T23:00:00+00:00"
+ },
+ {
+  "id": "22e1407a-dcff-449a-bc92-8e7d38c6227e",
+  "team_id": "50964038-bb28-4dde-aa2a-64551ef6de31",
+  "price": 44.68,
+  "delta_pct": -3.2,
+  "source": "match",
+  "match_event_id": "c02d4f09-251f-44b2-89d8-a8e2db60a8f8",
+  "label": "@ São Paulo FC 1-3",
+  "result": "L",
+  "changed_at": "2026-11-26T23:00:00+00:00"
+ },
+ {
+  "id": "1075189f-8d36-4873-a5c7-a72828dbee0b",
+  "team_id": "e7d48ea7-9dc5-46a7-a89e-a3d072600ae6",
+  "price": 76.21,
+  "delta_pct": 1.8,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-27T08:14:59.341911+00:00"
+ },
+ {
+  "id": "6799c5c6-1d3e-45ba-8f79-b60324f8414c",
+  "team_id": "50964038-bb28-4dde-aa2a-64551ef6de31",
+  "price": 44.68,
+  "delta_pct": -3.2,
+  "source": "admin",
+  "match_event_id": null,
+  "label": "Manual adjustment",
+  "result": null,
+  "changed_at": "2026-11-27T08:14:59.341911+00:00"
  }
 ]

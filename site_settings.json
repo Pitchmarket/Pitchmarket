@@ -172,6 +172,15 @@
   "updated_at": "2026-09-28T13:35:33.99+00:00"
  },
  {
+  "key": "payments",
+  "value": {
+   "mode": "test",
+   "links": {},
+   "portal_url": ""
+  },
+  "updated_at": "2026-11-26T18:38:56.373263+00:00"
+ },
+ {
   "key": "pro",
   "value": {
    "desc": "Every tier competes on identical terms. Pro and Ultimate add tools, data, customization and comfort — never an edge in trading or the leaderboard.",
