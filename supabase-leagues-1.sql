@@ -505,14 +505,19 @@ $function$;
 
 -- Closes every finished matchweek not yet closed, oldest first, and returns
 -- how many it closed. Run by the nightly backup (~03:23 UTC) after the
--- snapshot step succeeds. "Today" is the trading day the snapshots use
--- (the UK date 6 hours ago), and weeks up to and including that day's
--- Sunday close, so Monday's run (trading day Sunday) closes the week just
--- after saving Sunday's snapshot. A week counts if its previous Sunday is on or after the season start
--- date; it's scored if both its Sunday and the previous Sunday have
--- snapshots, otherwise void. Does nothing before a season start. p_today
--- (a trading day) is for tests only.
-create or replace function public.close_matchweeks(p_today date default null)
+-- snapshot step succeeds. A week closes once its Sunday is both on or
+-- before the trading day the snapshots use (the UK date 6 hours ago) and
+-- over on the UK calendar: Monday's run (trading day Sunday) closes the
+-- week just after saving Sunday's snapshot, and a run by hand on Sunday
+-- (even after 06:00) closes nothing. A run after 06:00 UK on Monday can't
+-- save Sunday's value (it stamps Monday), so if Monday's early run was
+-- missed, a late Monday run voids that week. A week counts if its previous
+-- Sunday is on or after the season start date; it's scored if both its
+-- Sunday and the previous Sunday have snapshots, otherwise void. Does
+-- nothing before a season start. p_now (the time of the run) is for tests
+-- only.
+drop function if exists public.close_matchweeks(date);   -- an earlier draft
+create or replace function public.close_matchweeks(p_now timestamptz default null)
  returns integer
  language plpgsql
  volatile
@@ -521,7 +526,9 @@ create or replace function public.close_matchweeks(p_today date default null)
 as $function$
 declare
   v_start timestamptz := season_start();
-  v_today date := coalesce(p_today, ((now() at time zone 'Europe/London') - interval '6 hours')::date);
+  v_now timestamptz := coalesce(p_now, now());
+  v_trading_day date := ((v_now at time zone 'Europe/London') - interval '6 hours')::date;
+  v_calendar_day date := (v_now at time zone 'Europe/London')::date;
   v_first date;
   v_week date;
   v_closed integer := 0;
@@ -537,9 +544,11 @@ begin
   v_first := v_first + (7 - extract(isodow from v_first)::integer) % 7;
 
   for v_week in
-    -- <= is safe: the backup calls this only after this run's snapshots
-    -- (stamped with this trading day) were saved.
-    select d::date from generate_series(v_first, v_today, interval '7 days') d
+    -- Sundays <= the trading day and < the calendar day. <= is safe: the
+    -- backup calls this only after this run's snapshots (stamped with
+    -- this trading day) were saved.
+    select d::date
+    from generate_series(v_first, least(v_trading_day, v_calendar_day - 1), interval '7 days') d
     where not exists (select 1 from matchweeks w where w.week_end = d::date)
     order by 1
   loop
@@ -680,8 +689,8 @@ grant execute on function public.my_leagues() to authenticated;
 grant execute on function public.league_detail(bigint) to authenticated;
 
 revoke execute on function public.league_season_join_value(bigint, uuid, timestamptz) from public, anon, authenticated;
-revoke execute on function public.close_matchweeks(date) from public, anon, authenticated;
-grant execute on function public.close_matchweeks(date) to service_role;
+revoke execute on function public.close_matchweeks(timestamptz) from public, anon, authenticated;
+grant execute on function public.close_matchweeks(timestamptz) to service_role;
 revoke execute on function public.league_classic_table(bigint) from public, anon;
 revoke execute on function public.league_player_of_week(bigint, integer) from public, anon;
 grant execute on function public.league_classic_table(bigint) to authenticated;

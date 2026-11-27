@@ -30,7 +30,7 @@ $$ select p::timestamp at time zone 'Europe/London' $$;
 
 delete from public.site_settings where key = 'season';
 do $$ begin
-  assert public.close_matchweeks('2027-01-11') = 0, 'no season row closes nothing';
+  assert public.close_matchweeks(pg_temp.uk('2027-01-11 03:23')) = 0, 'no season row closes nothing';
   assert (select count(*) from public.matchweeks) = 0, 'no matchweeks without a season';
 end $$;
 
@@ -56,7 +56,7 @@ insert into public.portfolio_snapshots (user_id, day, value) values
 -- ---------- close_matchweeks ----------
 
 do $$ begin
-  assert public.close_matchweeks('2027-01-11') = 1, 'Monday 11 Jan closes one week';
+  assert public.close_matchweeks(pg_temp.uk('2027-01-11 03:23')) = 1, 'Monday 11 Jan closes one week';
   assert (select status from public.matchweeks where week_end = '2027-01-10') = 'scored', 'week to 10 Jan scored';
   assert (select season_start from public.matchweeks where week_end = '2027-01-10') = '2027-01-02T12:00:00Z'::timestamptz,
     'matchweek records its season';
@@ -68,14 +68,14 @@ do $$ begin
   assert (select pct from public.player_week_scores where week_end = '2027-01-10' and user_id = pg_temp.u(6)) = 0, 'start value 0 scores 0';
   assert not exists (select 1 from public.player_week_scores where week_end = '2027-01-10' and user_id = pg_temp.u(3)),
     'no score without the previous Sunday';
-  assert public.close_matchweeks('2027-01-11') = 0, 'second call closes nothing';
+  assert public.close_matchweeks(pg_temp.uk('2027-01-11 03:23')) = 0, 'second call closes nothing';
   assert (select count(*) from public.player_week_scores) = 4, 'nothing scored twice';
 end $$;
 
 -- Missed Mondays: Monday 8 Feb catches up four weeks. 24 Jan has no
 -- snapshots, so the weeks to 24 Jan and to 31 Jan are void; 7 Feb scores.
 do $$ begin
-  assert public.close_matchweeks('2027-02-08') = 4, 'catch-up closes four weeks';
+  assert public.close_matchweeks(pg_temp.uk('2027-02-08 03:23')) = 4, 'catch-up closes four weeks';
   assert (select status from public.matchweeks where week_end = '2027-01-17') = 'scored', '17 Jan scored';
   assert (select status from public.matchweeks where week_end = '2027-01-24') = 'void', '24 Jan void (no Sunday snapshots)';
   assert (select status from public.matchweeks where week_end = '2027-01-31') = 'void', '31 Jan void (no previous Sunday)';
@@ -83,10 +83,9 @@ do $$ begin
   assert not exists (select 1 from public.player_week_scores where week_end in ('2027-01-24', '2027-01-31')),
     'void weeks have no scores';
   assert (select pct from public.player_week_scores where week_end = '2027-02-07' and user_id = pg_temp.u(3)) = 20.00, 'C +20';
-  assert public.close_matchweeks('2027-02-08') = 0, 'catch-up is idempotent';
-  -- p_today is a trading day: on trading day Saturday 13 Feb the week to
-  -- 14 Feb isn't over, so it isn't closed.
-  assert public.close_matchweeks('2027-02-13') = 0, 'a week doesn''t close before its Sunday''s trading day';
+  assert public.close_matchweeks(pg_temp.uk('2027-02-08 03:23')) = 0, 'catch-up is idempotent';
+  -- A run by hand on Sunday evening: the week isn't over, nothing closes.
+  assert public.close_matchweeks(pg_temp.uk('2027-02-14 20:00')) = 0, 'Sunday 20:00 closes nothing';
   assert (select count(*) from public.matchweeks) = 5, 'five weeks in all';
 end $$;
 
@@ -182,11 +181,15 @@ insert into public.portfolio_snapshots (user_id, day, value) values
   (pg_temp.u(12), '2027-10-24', 1000), (pg_temp.u(12), '2027-10-31', 1500),
   (pg_temp.u(13), '2027-10-24', 1000), (pg_temp.u(13), '2027-10-31', 1200);
 do $$ begin
-  -- Trading day Sunday 14 Feb (Monday's run, after saving Sunday's
-  -- snapshot): the week to 14 Feb closes (void here: no snapshots).
-  assert public.close_matchweeks('2027-02-14') = 1, 'week to 14 Feb closes on its Sunday''s trading day';
+  -- Monday's 03:23 run (just after saving Sunday's snapshot) closes the
+  -- week to 14 Feb (void here: no snapshots).
+  assert public.close_matchweeks(pg_temp.uk('2027-02-15 03:23')) = 1, 'Monday 03:23 closes the week';
   assert (select status from public.matchweeks where week_end = '2027-02-14') = 'void', '14 Feb void';
-  perform public.close_matchweeks('2027-11-01');
+  -- A late Monday run (07:00) also closes the week; it couldn't save
+  -- Sunday's value, so with Sunday's snapshot missing the week is void.
+  assert public.close_matchweeks(pg_temp.uk('2027-02-22 07:00')) = 1, 'late Monday run closes the week';
+  assert (select status from public.matchweeks where week_end = '2027-02-21') = 'void', '21 Feb void';
+  perform public.close_matchweeks(pg_temp.uk('2027-11-01 03:23'));
   assert (select status from public.matchweeks where week_end = '2027-03-28') = 'scored', '28 Mar scored';
   assert (select status from public.matchweeks where week_end = '2027-10-31') = 'scored', '31 Oct scored';
 end $$;
@@ -299,9 +302,9 @@ end $$;
 reset role;
 
 do $$ begin
-  assert not has_function_privilege('authenticated', 'public.close_matchweeks(date)', 'execute'), 'players cannot close weeks';
-  assert not has_function_privilege('anon', 'public.close_matchweeks(date)', 'execute'), 'anon cannot close weeks';
-  assert has_function_privilege('service_role', 'public.close_matchweeks(date)', 'execute'), 'the nightly job can';
+  assert not has_function_privilege('authenticated', 'public.close_matchweeks(timestamptz)', 'execute'), 'players cannot close weeks';
+  assert not has_function_privilege('anon', 'public.close_matchweeks(timestamptz)', 'execute'), 'anon cannot close weeks';
+  assert has_function_privilege('service_role', 'public.close_matchweeks(timestamptz)', 'execute'), 'the nightly job can';
   assert has_function_privilege('authenticated', 'public.league_classic_table(bigint)', 'execute'), 'players read tables';
   assert has_function_privilege('authenticated', 'public.league_player_of_week(bigint,integer)', 'execute'), 'players read potw';
   assert not has_function_privilege('anon', 'public.league_classic_table(bigint)', 'execute'), 'anon cannot read tables';
