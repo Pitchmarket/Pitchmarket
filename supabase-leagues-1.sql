@@ -1,0 +1,458 @@
+-- PitchMarket private leagues, part 2a: tables and membership, 27 Nov 2026.
+-- Run once in the Supabase SQL Editor (paste all of it, click Run), after
+-- supabase-pro-1.sql. Safe to run more than once. supabase-schema.sql
+-- already includes it.
+--
+-- What changes:
+--   * New private table leagues: name, type (classic or h2h; only classic
+--     can be created for now), owner, 6-character invite code and the
+--     Ultimate owner's branding (colour and emblem keys).
+--   * New private table league_members: one row per stint (joined_at to
+--     left_at), with the player's value when the stint began (join_value)
+--     and whether it ended with a kick. Rejoining in the same season reuses
+--     the join value of that season's first stint.
+--   * Neither table can be read or written directly by players; everything
+--     goes through the functions below, which check membership and
+--     ownership.
+--   * create_league (Pro or Ultimate), join_league (anyone, by code),
+--     leave_league, kick_member, delete_league, rename_league,
+--     regenerate_league_code, set_league_branding (Ultimate owners),
+--     my_leagues and league_detail.
+--   * Limits: own up to 3 leagues, be in up to 10, 20 players per league.
+--     If the owner leaves, the longest-standing current member takes over;
+--     the last member leaving deletes the league.
+
+begin;
+
+-- ---------- Tables ----------
+
+create table if not exists public.leagues (
+  id           bigserial primary key,
+  name         text not null,
+  type         text not null check (type in ('classic', 'h2h')),
+  owner_id     uuid not null references auth.users(id) on delete cascade,
+  invite_code  text not null unique,
+  colour       text,                -- a key from set_league_branding's list
+  emblem       text,                -- likewise
+  created_at   timestamptz default now()
+);
+create index if not exists leagues_owner on public.leagues (owner_id);
+alter table public.leagues enable row level security;
+
+-- One row per stint: leaving and rejoining adds a new row.
+create table if not exists public.league_members (
+  id          bigserial primary key,
+  league_id   bigint references public.leagues(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
+  joined_at   timestamptz not null default now(),
+  left_at     timestamptz,
+  join_value  numeric not null,
+  kicked      boolean not null default false
+);
+create unique index if not exists league_members_current
+  on public.league_members (league_id, user_id) where left_at is null;
+create index if not exists league_members_user on public.league_members (user_id) where left_at is null;
+alter table public.league_members enable row level security;
+
+-- No policies: only the functions below read or write these tables.
+revoke all on public.leagues, public.league_members from anon, authenticated;
+revoke all on sequence public.leagues_id_seq, public.league_members_id_seq from anon, authenticated;
+
+-- ---------- Helpers (not callable by players) ----------
+
+-- A player's value: coins plus holdings at current prices, as on the
+-- leaderboard.
+create or replace function public.player_value(p_user uuid)
+ returns numeric
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select p.coin_balance + coalesce(sum(h.shares * t.price), 0)
+  from profiles p
+  left join holdings h on h.user_id = p.id
+  left join teams t on t.id = h.team_id
+  where p.id = p_user
+  group by p.id, p.coin_balance;
+$function$;
+
+-- A fresh, unused invite code: 6 characters from an alphabet without
+-- look-alikes (no 0/O, 1/I). Random bytes come from gen_random_uuid, whose
+-- first 6 bytes are fully random; 256 is a multiple of 32, so every
+-- character is equally likely.
+create or replace function public.new_league_code()
+ returns text
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_alphabet constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  v_bytes bytea;
+  v_code text;
+begin
+  loop
+    v_bytes := uuid_send(gen_random_uuid());
+    v_code := '';
+    for i in 0..5 loop
+      v_code := v_code || substr(v_alphabet, get_byte(v_bytes, i) % 32 + 1, 1);
+    end loop;
+    exit when not exists (select 1 from leagues where invite_code = v_code);
+  end loop;
+  return v_code;
+end;
+$function$;
+
+-- The caller's league, locked, for an owner-only action.
+create or replace function public.league_for_owner(p_league bigint)
+ returns public.leagues
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_uid uuid := auth.uid();
+  v_league leagues;
+begin
+  if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
+  select * into v_league from leagues where id = p_league for update;
+  if not found or not exists (select 1 from league_members
+      where league_id = p_league and user_id = v_uid and left_at is null) then
+    raise exception 'You''re not in this league.';
+  end if;
+  if v_league.owner_id <> v_uid then raise exception 'Only the owner can do that.'; end if;
+  return v_league;
+end;
+$function$;
+
+-- A trimmed league name, or an error if it isn't 1–40 characters.
+create or replace function public.league_name_ok(p_name text)
+ returns text
+ language plpgsql
+ immutable
+ set search_path = public
+as $function$
+declare
+  v_name text := btrim(coalesce(p_name, ''));
+begin
+  if char_length(v_name) not between 1 and 40 then
+    raise exception 'League names are 1–40 characters.';
+  end if;
+  return v_name;
+end;
+$function$;
+
+-- ---------- Membership ----------
+
+create or replace function public.create_league(p_name text, p_type text)
+ returns bigint
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_uid uuid := auth.uid();
+  v_name text;
+  v_id bigint;
+begin
+  if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
+  if user_tier(v_uid) not in ('pro', 'ultimate') then
+    raise exception 'Create leagues with Pro or Ultimate.';
+  end if;
+  if p_type is distinct from 'classic' then
+    raise exception 'Only Classic leagues can be created for now.';
+  end if;
+  v_name := league_name_ok(p_name);
+  -- One league action at a time per player, so limits can't be raced.
+  perform pg_advisory_xact_lock(hashtextextended('league-player:' || v_uid::text, 0));
+  if (select count(*) from leagues where owner_id = v_uid) >= 3 then
+    raise exception 'You can own up to 3 leagues.';
+  end if;
+  if (select count(*) from league_members where user_id = v_uid and left_at is null) >= 10 then
+    raise exception 'You can be in up to 10 leagues.';
+  end if;
+
+  insert into leagues (name, type, owner_id, invite_code)
+  values (v_name, 'classic', v_uid, new_league_code())
+  returning id into v_id;
+  insert into league_members (league_id, user_id, join_value)
+  values (v_id, v_uid, coalesce(player_value(v_uid), 0));
+  return v_id;
+end;
+$function$;
+
+create or replace function public.join_league(p_code text)
+ returns bigint
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_uid uuid := auth.uid();
+  v_league leagues;
+  v_start timestamptz := season_start();
+  v_value numeric;
+begin
+  if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
+  -- Lock the league row first: two players taking the last place at the
+  -- same moment are counted one after the other.
+  select * into v_league from leagues
+    where invite_code = upper(btrim(coalesce(p_code, ''), E' \t\r\n'))
+    for update;
+  if not found then raise exception 'No league with that code.'; end if;
+  if exists (select 1 from league_members
+             where league_id = v_league.id and user_id = v_uid and left_at is null) then
+    raise exception 'You''re already in this league.';
+  end if;
+  if (select count(*) from league_members where league_id = v_league.id and left_at is null) >= 20 then
+    raise exception 'This league is full (20 players).';
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended('league-player:' || v_uid::text, 0));
+  if (select count(*) from league_members where user_id = v_uid and left_at is null) >= 10 then
+    raise exception 'You can be in up to 10 leagues.';
+  end if;
+
+  -- Rejoining in the same season keeps that season's first join value.
+  -- Same season: both stints began on/after the season start, or both
+  -- before it; with no season start, any earlier stint counts.
+  select join_value into v_value
+  from league_members
+  where league_id = v_league.id and user_id = v_uid
+    and (v_start is null or (joined_at >= v_start) = (now() >= v_start))
+  order by joined_at, id
+  limit 1;
+  if v_value is null then v_value := coalesce(player_value(v_uid), 0); end if;
+
+  insert into league_members (league_id, user_id, join_value)
+  values (v_league.id, v_uid, v_value);
+  return v_league.id;
+end;
+$function$;
+
+create or replace function public.leave_league(p_league bigint)
+ returns void
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_uid uuid := auth.uid();
+  v_league leagues;
+  v_next uuid;
+begin
+  if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
+  select * into v_league from leagues where id = p_league for update;
+  if not found then raise exception 'You''re not in this league.'; end if;
+  update league_members set left_at = now()
+    where league_id = p_league and user_id = v_uid and left_at is null;
+  if not found then raise exception 'You''re not in this league.'; end if;
+
+  -- The owner leaving hands the league to the earliest current stint; the
+  -- last member leaving deletes it.
+  select user_id into v_next from league_members
+    where league_id = p_league and left_at is null
+    order by joined_at, id
+    limit 1;
+  if v_next is null then
+    delete from leagues where id = p_league;
+  elsif v_league.owner_id = v_uid then
+    update leagues set owner_id = v_next where id = p_league;
+  end if;
+end;
+$function$;
+
+-- p_member is a league_members id (from league_detail).
+create or replace function public.kick_member(p_league bigint, p_member bigint)
+ returns void
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_league leagues := league_for_owner(p_league);
+  v_user uuid;
+begin
+  select user_id into v_user from league_members
+    where id = p_member and league_id = p_league and left_at is null;
+  if not found then raise exception 'That player isn''t in this league.'; end if;
+  if v_user = v_league.owner_id then raise exception 'Use Leave or Delete for yourself.'; end if;
+  update league_members set left_at = now(), kicked = true where id = p_member;
+  -- A new code, so the kicked player can't simply rejoin.
+  update leagues set invite_code = new_league_code() where id = p_league;
+end;
+$function$;
+
+create or replace function public.delete_league(p_league bigint)
+ returns void
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+begin
+  perform league_for_owner(p_league);
+  delete from leagues where id = p_league;
+end;
+$function$;
+
+create or replace function public.rename_league(p_league bigint, p_name text)
+ returns void
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_name text;
+begin
+  perform league_for_owner(p_league);
+  v_name := league_name_ok(p_name);
+  update leagues set name = v_name where id = p_league;
+end;
+$function$;
+
+create or replace function public.regenerate_league_code(p_league bigint)
+ returns text
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_code text;
+begin
+  perform league_for_owner(p_league);
+  v_code := new_league_code();
+  update leagues set invite_code = v_code where id = p_league;
+  return v_code;
+end;
+$function$;
+
+-- Colour and emblem keys; the page maps them to colours and icons. Nulls
+-- clear them.
+create or replace function public.set_league_branding(p_league bigint, p_colour text, p_emblem text)
+ returns void
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_league leagues := league_for_owner(p_league);
+begin
+  if user_tier(v_league.owner_id) <> 'ultimate' then
+    raise exception 'League branding comes with Ultimate.';
+  end if;
+  if (p_colour is not null and p_colour not in
+        ('claret', 'sky', 'emerald', 'gold', 'crimson', 'navy', 'orange', 'purple'))
+     or (p_emblem is not null and p_emblem not in
+        ('ball', 'boot', 'whistle', 'trophy', 'net', 'cones', 'flag', 'gloves', 'shirt', 'star', 'crown', 'bolt')) then
+    raise exception 'Pick a colour and emblem from the list.';
+  end if;
+  update leagues set colour = p_colour, emblem = p_emblem where id = p_league;
+end;
+$function$;
+
+-- ---------- Reading ----------
+
+-- The caller's current leagues. Branding shows only while the owner is on
+-- Ultimate.
+create or replace function public.my_leagues()
+ returns table(league_id bigint, name text, type text, is_owner boolean, member_count integer,
+               colour text, emblem text)
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select l.id, l.name, l.type, l.owner_id = m.user_id,
+         (select count(*)::integer from league_members c where c.league_id = l.id and c.left_at is null),
+         case when b.branded then l.colour end,
+         case when b.branded then l.emblem end
+  from league_members m
+  join leagues l on l.id = m.league_id
+  cross join lateral (select user_tier(l.owner_id) = 'ultimate' as branded) b
+  where m.user_id = auth.uid() and m.left_at is null
+  order by m.joined_at, m.id;
+$function$;
+
+-- One league for a member: its settings (the invite code only for the
+-- owner) and current members. No emails or user ids.
+create or replace function public.league_detail(p_league bigint)
+ returns jsonb
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_uid uuid := auth.uid();
+  v_league leagues;
+  v_branded boolean;
+  v_start timestamptz := season_start();
+begin
+  select * into v_league from leagues where id = p_league;
+  if v_uid is null or not found or not exists (select 1 from league_members
+      where league_id = p_league and user_id = v_uid and left_at is null) then
+    raise exception 'You''re not in this league.';
+  end if;
+  v_branded := user_tier(v_league.owner_id) = 'ultimate';
+  return jsonb_build_object(
+    'id', v_league.id,
+    'name', v_league.name,
+    'type', v_league.type,
+    'is_owner', v_league.owner_id = v_uid,
+    'invite_code', case when v_league.owner_id = v_uid then v_league.invite_code end,
+    'colour', case when v_branded then v_league.colour end,
+    'emblem', case when v_branded then v_league.emblem end,
+    'season_started', v_start is not null and v_start <= now(),
+    'members', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'member_id', m.id,
+               'display_name', coalesce(p.display_name, 'Trader'),
+               'tier', user_tier(m.user_id),
+               'is_owner', m.user_id = v_league.owner_id,
+               'joined_at', m.joined_at)
+             order by m.joined_at, m.id)
+      from league_members m
+      left join profiles p on p.id = m.user_id
+      where m.league_id = p_league and m.left_at is null), '[]'::jsonb));
+end;
+$function$;
+
+-- ---------- Who can call what ----------
+
+revoke execute on function public.player_value(uuid) from public, anon, authenticated;
+revoke execute on function public.new_league_code() from public, anon, authenticated;
+revoke execute on function public.league_for_owner(bigint) from public, anon, authenticated;
+revoke execute on function public.league_name_ok(text) from public, anon, authenticated;
+
+revoke execute on function public.create_league(text, text) from public, anon;
+revoke execute on function public.join_league(text) from public, anon;
+revoke execute on function public.leave_league(bigint) from public, anon;
+revoke execute on function public.kick_member(bigint, bigint) from public, anon;
+revoke execute on function public.delete_league(bigint) from public, anon;
+revoke execute on function public.rename_league(bigint, text) from public, anon;
+revoke execute on function public.regenerate_league_code(bigint) from public, anon;
+revoke execute on function public.set_league_branding(bigint, text, text) from public, anon;
+revoke execute on function public.my_leagues() from public, anon;
+revoke execute on function public.league_detail(bigint) from public, anon;
+grant execute on function public.create_league(text, text) to authenticated;
+grant execute on function public.join_league(text) to authenticated;
+grant execute on function public.leave_league(bigint) to authenticated;
+grant execute on function public.kick_member(bigint, bigint) to authenticated;
+grant execute on function public.delete_league(bigint) to authenticated;
+grant execute on function public.rename_league(bigint, text) to authenticated;
+grant execute on function public.regenerate_league_code(bigint) to authenticated;
+grant execute on function public.set_league_branding(bigint, text, text) to authenticated;
+grant execute on function public.my_leagues() to authenticated;
+grant execute on function public.league_detail(bigint) to authenticated;
+
+commit;
