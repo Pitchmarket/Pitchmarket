@@ -2362,10 +2362,9 @@ $function$;
 -- Closes every finished matchweek not yet closed, oldest first, and returns
 -- how many it closed. Run by the nightly backup (~03:23 UTC) after the
 -- snapshot step succeeds. "Today" is the trading day the snapshots use
--- (the UK date 6 hours ago), so a week closes only once the trading day
--- after its Sunday has begun: Tuesday's run closes the week, after
--- Monday's run has saved (and could still re-save) Sunday's snapshot. A
--- week counts if its previous Sunday is on or after the season start
+-- (the UK date 6 hours ago), and weeks up to and including that day's
+-- Sunday close, so Monday's run (trading day Sunday) closes the week just
+-- after saving Sunday's snapshot. A week counts if its previous Sunday is on or after the season start
 -- date; it's scored if both its Sunday and the previous Sunday have
 -- snapshots, otherwise void. Does nothing before a season start. p_today
 -- (a trading day) is for tests only.
@@ -2394,7 +2393,9 @@ begin
   v_first := v_first + (7 - extract(isodow from v_first)::integer) % 7;
 
   for v_week in
-    select d::date from generate_series(v_first, v_today - 1, interval '7 days') d
+    -- <= is safe: the backup calls this only after this run's snapshots
+    -- (stamped with this trading day) were saved.
+    select d::date from generate_series(v_first, v_today, interval '7 days') d
     where not exists (select 1 from matchweeks w where w.week_end = d::date)
     order by 1
   loop

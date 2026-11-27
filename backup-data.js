@@ -144,8 +144,8 @@ async function takePortfolioSnapshots(supabase){
   }
 }
 
-// Close finished league matchweeks. Tuesday's run closes the week that
-// ended on Sunday (Monday's run saved Sunday's snapshot). Weeks missed on
+// Close finished league matchweeks. Monday's run closes the week that
+// ended on Sunday, right after saving Sunday's snapshot. Weeks missed on
 // earlier nights are closed too, as void if a Sunday's snapshots are
 // missing. Only called when tonight's snapshots were saved, so a failed
 // save never voids a week. A failure here is logged and the backup carries

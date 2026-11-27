@@ -84,9 +84,9 @@ do $$ begin
     'void weeks have no scores';
   assert (select pct from public.player_week_scores where week_end = '2027-02-07' and user_id = pg_temp.u(3)) = 20.00, 'C +20';
   assert public.close_matchweeks('2027-02-08') = 0, 'catch-up is idempotent';
-  -- p_today is a trading day: on trading day Sunday 14 Feb (which, run
-  -- without p_today, lasts until 06:00 UK on Monday) that week isn't closed.
-  assert public.close_matchweeks('2027-02-14') = 0, 'a week closes only after its Sunday''s trading day';
+  -- p_today is a trading day: on trading day Saturday 13 Feb the week to
+  -- 14 Feb isn't over, so it isn't closed.
+  assert public.close_matchweeks('2027-02-13') = 0, 'a week doesn''t close before its Sunday''s trading day';
   assert (select count(*) from public.matchweeks) = 5, 'five weeks in all';
 end $$;
 
@@ -182,8 +182,9 @@ insert into public.portfolio_snapshots (user_id, day, value) values
   (pg_temp.u(12), '2027-10-24', 1000), (pg_temp.u(12), '2027-10-31', 1500),
   (pg_temp.u(13), '2027-10-24', 1000), (pg_temp.u(13), '2027-10-31', 1200);
 do $$ begin
-  -- Trading day Monday 15 Feb: the week to 14 Feb closes (void: no snapshots).
-  assert public.close_matchweeks('2027-02-15') = 1, 'week to 14 Feb closes the day after';
+  -- Trading day Sunday 14 Feb (Monday's run, after saving Sunday's
+  -- snapshot): the week to 14 Feb closes (void here: no snapshots).
+  assert public.close_matchweeks('2027-02-14') = 1, 'week to 14 Feb closes on its Sunday''s trading day';
   assert (select status from public.matchweeks where week_end = '2027-02-14') = 'void', '14 Feb void';
   perform public.close_matchweeks('2027-11-01');
   assert (select status from public.matchweeks where week_end = '2027-03-28') = 'scored', '28 Mar scored';
