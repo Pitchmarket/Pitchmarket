@@ -3773,7 +3773,7 @@ function lgRenderView(){
         '<div class="lg-card"><div class="lg-h">Player of the week</div><div id="lgPotw">'+lgPotwHtml(potw, L)+'</div></div>'+
         (owner ? lgCodeHtml(L) + lgSettingsHtml(L) : '')+
         '<div class="lg-card"><button type="button" class="lg-btn ghost" id="lgLeave">Leave league</button>'+
-          (owner && members.length > 1 ? '<p class="lg-note" style="margin-top:10px">If you leave, the member who\'s been in the league longest becomes the owner.</p>' : '')+
+          (owner && members.length > 1 ? '<p class="lg-note" style="margin-top:10px">If you leave, another member becomes the owner, usually the member who\'s been in the league longest.</p>' : '')+
           lgMsg('lgLeaveMsg')+'</div>'+
       '</div>'+
     '</div>';
@@ -3788,7 +3788,7 @@ function lgTableHtml(rows, L){
 }
 function lgPotwHtml(weeks, L){
   if(weeks === null) return '<p class="lg-note">Couldn\'t load Player of the week. Try again later.</p>';
-  if(!weeks.length) return '<p class="lg-note">'+(L.season_started ? 'The first results appear on Monday morning.' : 'Scoring starts when the new season starts.')+'</p>';
+  if(!weeks.length) return '<p class="lg-note">'+(L.season_started ? 'The first result appears the Monday after the first full Monday–Sunday week of the season.' : 'Scoring starts when the new season starts.')+'</p>';
   return '<ul class="lg-lines">'+weeks.map((w)=>{
     const winners = Array.isArray(w.winners) ? w.winners : [];
     let body;
@@ -3888,7 +3888,7 @@ document.getElementById('lgPanel').addEventListener('click', async (e)=>{
     if(r.ok) lgClose('Deleted '+L.name+'.');
   } else if(t.id === 'lgLeave'){
     const alone = (L.members || []).length <= 1;
-    const q = 'Leave '+L.name+'?' + (L.is_owner ? (alone ? " You're the only member, so the league will be deleted." : ' The member who\'s been in it longest becomes the owner.') : '');
+    const q = 'Leave '+L.name+'?' + (L.is_owner ? (alone ? " You're the only member, so the league will be deleted." : ' Another member becomes the owner, usually the member who\'s been in the league longest.') : '');
     if(!confirm(q)) return;
     const r = await lgCall('leave_league', { p_league:id }, 'lgLeaveMsg', t);
     if(r.ok) lgClose('You left '+L.name+'.');

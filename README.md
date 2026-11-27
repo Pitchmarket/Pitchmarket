@@ -125,7 +125,7 @@ Tests: the webhook's logic in `tests/stripe-plan.test.mjs`, the database side in
 
 ## Private leagues
 
-Pro and Ultimate members can create private leagues (up to 3 each); anyone can join with the league's code (up to 10 leagues each, 20 players per league). The owner can kick a player, which also gives the league a new code, and Ultimate owners can brand their league. Everything is under the **My leagues** tab.
+Pro and Ultimate members can create private leagues (up to 3 each); anyone can join with the league's code (up to 10 leagues each, 20 players per league). The owner can kick a player, which also gives the league a new code, and Ultimate owners can brand their league. Everything is under the **My leagues** tab in the Leaderboard section.
 
 - **Classic** leagues rank members by the percentage they have gained since joining. **Player of the week** is whoever gained the highest percentage that week. Weeks run Monday to Sunday, UK time.
 - Results are stored by the nightly backup job (03:23 UTC), after it has saved a good snapshot, so a week's result appears on Monday morning. A week with no Sunday snapshot (the job failed, or ran after 06:00 UK time on Monday) has no result.
@@ -138,7 +138,7 @@ Pro and Ultimate members can create private leagues (up to 3 each); anyone can j
 
 **Code.** Every version is in the git history. After each major change, a branch named `backup/vX.Y-YYYY-MM-DD` keeps a snapshot of the site at that point; open it on GitHub and use **Code → Download ZIP** to get it.
 
-**Data.** `.github/workflows/backup-data.yml` runs `backup-data.js` every night at 03:23 UTC and saves `teams`, `price_history` and `site_settings` to the `data-backups` branch, with a `restore.sql` that puts them back. Each night with changes is a commit on that branch, so older backups stay in its history. No player data is included (no emails, balances, holdings or trades), because the repo is public. Restore steps are in that branch's README. Run it by hand from the Actions tab (**Back up PitchMarket data → Run workflow**). Before saving, it calls `take_portfolio_snapshots()` to record each player's portfolio value for the night (it saves nothing until a season start is recorded); if that fails, the log says so and the backup still runs.
+**Data.** `.github/workflows/backup-data.yml` runs `backup-data.js` every night at 03:23 UTC and saves `teams`, `price_history` and `site_settings` to the `data-backups` branch, with a `restore.sql` that puts them back. Each night with changes is a commit on that branch, so older backups stay in its history. No player data is included (no emails, balances, holdings or trades), because the repo is public. Restore steps are in that branch's README. Run it by hand from the Actions tab (**Back up PitchMarket data → Run workflow**). Before saving, it calls `take_portfolio_snapshots()` to record each player's portfolio value for the night (it saves nothing until a season start is recorded); if that fails, the log says so and the backup still runs. When the snapshots were saved, the same nightly run then closes finished league weeks with `close_matchweeks()`.
 
 ## Tests
 

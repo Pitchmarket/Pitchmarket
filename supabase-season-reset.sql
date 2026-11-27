@@ -10,8 +10,8 @@
 --
 -- Kept as they are: club prices, price history (so every chart keeps
 -- its data), match events, site content, accounts, display names,
--- Pro and Ultimate plans (subscriptions and grants), watchlists and
--- price alerts.
+-- Pro and Ultimate plans (subscriptions and grants), watchlists, price
+-- alerts, and private leagues, their members and past weekly results.
 --
 -- This can't be undone. To keep a record of the old season first,
 -- export the holdings, trades and profiles tables as CSV from the Table

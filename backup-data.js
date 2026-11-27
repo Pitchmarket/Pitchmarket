@@ -127,6 +127,12 @@ To restore an older night, open this branch's commit history, pick the date, and
 `;
 }
 
+// An error's message on one line, for the log and a GitHub warning (shown
+// on the run's summary page).
+function errorText(err){
+  return String(err && err.message ? err.message : err).replace(/\s*[\r\n]+\s*/g, ' ');
+}
+
 // Record tonight's portfolio value for every player (Pro portfolio history).
 // The database function saves nothing until the Christmas reset records a
 // season start. A failure here is logged and the backup carries on.
@@ -139,7 +145,9 @@ async function takePortfolioSnapshots(supabase){
     console.log(`Portfolio snapshots: ${saved} saved${saved === 0 ? ' (0 until the season starts)' : ''}.`);
     return true;
   }catch(err){
-    console.error('Portfolio snapshots failed (backup continues):', err && err.message ? err.message : err);
+    const msg = errorText(err);
+    console.error('Portfolio snapshots failed (backup continues):', msg);
+    console.log(`::warning::Portfolio snapshots failed: ${msg}`);
     return false;
   }
 }
@@ -156,7 +164,9 @@ async function closeMatchweeks(supabase){
     if(error) throw new Error(error.message);
     console.log(`Matchweeks closed: ${Number(data) || 0}.`);
   }catch(err){
-    console.error('Closing matchweeks failed (backup continues):', err && err.message ? err.message : err);
+    const msg = errorText(err);
+    console.error('Closing matchweeks failed (backup continues):', msg);
+    console.log(`::warning::Closing matchweeks failed: ${msg}`);
   }
 }
 

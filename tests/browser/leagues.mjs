@@ -295,7 +295,7 @@ await run('signed out', {}, async (page) => {
   await run('season started, no weeks', { session: USER, routes: routes('pro', log2, { 'rpc/league_player_of_week': [] }) }, async (page) => {
     await openLeagues(page);
     await openLeague(page, 1);
-    assert.match(await page.textContent('#lgPotw'), /The first results appear on Monday morning\./);
+    assert.match(await page.textContent('#lgPotw'), /The first result appears the Monday after the first full Monday–Sunday week of the season\./);
   });
 }
 
