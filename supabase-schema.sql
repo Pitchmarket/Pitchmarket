@@ -1881,8 +1881,9 @@ grant execute on function public.take_portfolio_snapshots() to service_role;
 
 -- ===================================================================
 -- Private leagues (supabase-leagues-1.sql): leagues and their members
--- (one row per stint), create/join/leave/kick, invite codes, limits and
--- Ultimate branding. Players reach the tables only through these
+-- (one row per stint), create/join/leave/kick, invite codes, limits,
+-- Ultimate branding, weekly scores (closed nightly), the Classic table and
+-- Player of the week. Players reach the tables only through these
 -- functions.
 -- ===================================================================
 
@@ -1916,8 +1917,29 @@ create unique index if not exists league_members_current
 create index if not exists league_members_user on public.league_members (user_id) where left_at is null;
 alter table public.league_members enable row level security;
 
+-- One row per closed matchweek (Monday to Sunday, UK time), keyed by its
+-- Sunday. void: a Sunday's snapshots were missing, so nobody scored.
+create table if not exists public.matchweeks (
+  week_end      date primary key,
+  season_start  timestamptz not null,
+  status        text not null check (status in ('scored', 'void')),
+  closed_at     timestamptz not null default now()
+);
+alter table public.matchweeks enable row level security;
+
+-- Each player's week score (% change in value over the week), stored once
+-- when the week closes.
+create table if not exists public.player_week_scores (
+  week_end  date references public.matchweeks(week_end) on delete cascade,
+  user_id   uuid references auth.users(id) on delete cascade,
+  pct       numeric(10,2) not null,
+  primary key (week_end, user_id)
+);
+alter table public.player_week_scores enable row level security;
+
 -- No policies: only the functions below read or write these tables.
-revoke all on public.leagues, public.league_members from anon, authenticated;
+revoke all on public.leagues, public.league_members, public.matchweeks, public.player_week_scores
+  from anon, authenticated;
 revoke all on sequence public.leagues_id_seq, public.league_members_id_seq from anon, authenticated;
 
 -- ---------- Helpers (not callable by players) ----------
@@ -2313,6 +2335,166 @@ begin
 end;
 $function$;
 
+-- ---------- Weekly scores ----------
+
+-- A stint's join value for the Classic table: the join value of the
+-- player's first stint in this league this season, where a stint that was
+-- running when the season started counts as 2000 (the reset puts everyone
+-- on 2000). So leaving and rejoining never resets a player's percentage.
+create or replace function public.league_season_join_value(p_league bigint, p_user uuid, p_start timestamptz)
+ returns numeric
+ language sql
+ stable
+ security definer
+ set search_path = public
+as $function$
+  select case when m.joined_at < p_start then 2000 else m.join_value end
+  from league_members m
+  where m.league_id = p_league and m.user_id = p_user
+    and (m.left_at is null or m.left_at > p_start)
+  order by m.joined_at, m.id
+  limit 1;
+$function$;
+
+-- Closes every finished matchweek not yet closed, oldest first, and returns
+-- how many it closed. Run by the nightly backup (Monday ~03:23 UTC, just
+-- after Sunday's snapshot is taken). A week counts if its previous Sunday
+-- is on or after the season start date; it's scored if both its Sunday
+-- and the previous Sunday have snapshots, otherwise void. Does nothing
+-- before a season start. p_today (the UK date) is for tests only.
+create or replace function public.close_matchweeks(p_today date default null)
+ returns integer
+ language plpgsql
+ volatile
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_start timestamptz := season_start();
+  v_today date := coalesce(p_today, (now() at time zone 'Europe/London')::date);
+  v_first date;
+  v_week date;
+  v_closed integer := 0;
+begin
+  if v_start is null then return 0; end if;
+  -- One run at a time.
+  perform pg_advisory_xact_lock(hashtextextended('close-matchweeks', 0));
+  -- The first Sunday at least 7 days after the season start date.
+  v_first := (v_start at time zone 'Europe/London')::date + 7;
+  v_first := v_first + (7 - extract(isodow from v_first)::integer) % 7;
+
+  for v_week in
+    select d::date from generate_series(v_first, v_today - 1, interval '7 days') d
+    where not exists (select 1 from matchweeks w where w.week_end = d::date)
+    order by 1
+  loop
+    if exists (select 1 from portfolio_snapshots where day = v_week)
+       and exists (select 1 from portfolio_snapshots where day = v_week - 7) then
+      insert into matchweeks (week_end, season_start, status) values (v_week, v_start, 'scored');
+      insert into player_week_scores (week_end, user_id, pct)
+      select v_week, e.user_id,
+             case when b.value = 0 then 0
+                  -- Kept within numeric(10,2), so one odd value can't stop
+                  -- every later week from closing.
+                  else least(greatest(round((e.value / b.value - 1) * 100, 2), -99999999.99), 99999999.99)
+             end
+      from portfolio_snapshots b
+      join portfolio_snapshots e on e.user_id = b.user_id and e.day = v_week
+      where b.day = v_week - 7;
+    else
+      insert into matchweeks (week_end, season_start, status) values (v_week, v_start, 'void');
+    end if;
+    v_closed := v_closed + 1;
+  end loop;
+  return v_closed;
+end;
+$function$;
+
+-- A league's Classic table: current members ranked by % gained since they
+-- joined (this season); ties share a rank. Empty before a season start.
+create or replace function public.league_classic_table(p_league bigint)
+ returns table(rank integer, member_id bigint, display_name text, tier text, pct numeric)
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+#variable_conflict use_column
+declare
+  v_uid uuid := auth.uid();
+  v_start timestamptz := season_start();
+begin
+  if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
+  if not exists (select 1 from league_members
+      where league_id = p_league and user_id = v_uid and left_at is null) then
+    raise exception 'You''re not in this league.';
+  end if;
+  if v_start is null then return; end if;
+  return query
+  select (rank() over (order by x.pct desc))::integer, x.id, x.display_name, x.tier, x.pct
+  from (
+    select m.id, coalesce(p.display_name, 'Trader') as display_name, user_tier(m.user_id) as tier,
+           case when coalesce(j.v, 0) = 0 then 0::numeric
+                else round((coalesce(player_value(m.user_id), 0) / j.v - 1) * 100, 2) end as pct
+    from league_members m
+    left join profiles p on p.id = m.user_id
+    cross join lateral (select league_season_join_value(p_league, m.user_id, v_start) as v) j
+    where m.league_id = p_league and m.left_at is null
+  ) x
+  order by x.pct desc, x.display_name, x.id;
+end;
+$function$;
+
+-- A league's Player of the week for its latest p_limit closed weeks this
+-- season, newest first: the highest week score among members who count
+-- that week (in the league from before its Monday 00:00 to after its Sunday
+-- 23:59:59, UK time). Ties share it. A void week has no winners.
+create or replace function public.league_player_of_week(p_league bigint, p_limit integer default 5)
+ returns table(week_end date, status text, winners text[], pct numeric)
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+#variable_conflict use_column
+declare
+  v_uid uuid := auth.uid();
+  v_start timestamptz := season_start();
+begin
+  if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
+  if not exists (select 1 from league_members
+      where league_id = p_league and user_id = v_uid and left_at is null) then
+    raise exception 'You''re not in this league.';
+  end if;
+  if v_start is null then return; end if;
+  return query
+  with w as (
+    select mw.week_end, mw.status
+    from matchweeks mw
+    where mw.season_start = v_start
+    order by mw.week_end desc
+    limit greatest(coalesce(p_limit, 5), 0)
+  ), s as (
+    select w.week_end, coalesce(p.display_name, 'Trader') as name, sc.pct,
+           rank() over (partition by w.week_end order by sc.pct desc) as r
+    from w
+    join player_week_scores sc on sc.week_end = w.week_end
+    join league_members m on m.league_id = p_league and m.user_id = sc.user_id
+      and m.joined_at < ((w.week_end - 6) + time '00:00') at time zone 'Europe/London'
+      and (m.left_at is null
+           or m.left_at > (w.week_end + time '23:59:59.999') at time zone 'Europe/London')
+    left join profiles p on p.id = m.user_id
+  )
+  select w.week_end, w.status,
+         coalesce(array_agg(s.name order by s.name) filter (where s.r = 1), '{}'::text[]),
+         max(s.pct) filter (where s.r = 1)
+  from w
+  left join s on s.week_end = w.week_end
+  group by w.week_end, w.status
+  order by w.week_end desc;
+end;
+$function$;
+
 -- ---------- Who can call what ----------
 
 revoke execute on function public.player_value(uuid) from public, anon, authenticated;
@@ -2340,4 +2522,12 @@ grant execute on function public.regenerate_league_code(bigint) to authenticated
 grant execute on function public.set_league_branding(bigint, text, text) to authenticated;
 grant execute on function public.my_leagues() to authenticated;
 grant execute on function public.league_detail(bigint) to authenticated;
+
+revoke execute on function public.league_season_join_value(bigint, uuid, timestamptz) from public, anon, authenticated;
+revoke execute on function public.close_matchweeks(date) from public, anon, authenticated;
+grant execute on function public.close_matchweeks(date) to service_role;
+revoke execute on function public.league_classic_table(bigint) from public, anon;
+revoke execute on function public.league_player_of_week(bigint, integer) from public, anon;
+grant execute on function public.league_classic_table(bigint) to authenticated;
+grant execute on function public.league_player_of_week(bigint, integer) to authenticated;
 

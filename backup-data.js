@@ -141,6 +141,20 @@ async function takePortfolioSnapshots(supabase){
   }
 }
 
+// Close finished league matchweeks (Monday's run closes the week that ended
+// on Sunday, using the snapshot just taken). Weeks missed on earlier nights
+// are closed too, as void if their snapshots are missing. A failure here is
+// logged and the backup carries on.
+async function closeMatchweeks(supabase){
+  try{
+    const { data, error } = await supabase.rpc('close_matchweeks');
+    if(error) throw new Error(error.message);
+    console.log(`Matchweeks closed: ${Number(data) || 0}.`);
+  }catch(err){
+    console.error('Closing matchweeks failed (backup continues):', err && err.message ? err.message : err);
+  }
+}
+
 async function main(){
   const outDir = process.argv[2];
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
@@ -152,6 +166,7 @@ async function main(){
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   await takePortfolioSnapshots(supabase);
+  await closeMatchweeks(supabase);
 
   const data = {};
   for(const t of TABLES){
