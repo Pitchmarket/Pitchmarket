@@ -3585,6 +3585,9 @@ function lgShow(){
   const signedIn = !!(sb && currentSession);
   document.getElementById('lgHome').hidden = signedIn && lgOpenId != null;
   document.getElementById('lgView').hidden = !(signedIn && lgOpenId != null);
+  // The plan may have changed while the tab was closed.
+  lgPlanKey = planStatus + '|' + planTier();
+  if(signedIn && lgOpenId != null && lgData) lgRenderView();
   if(signedIn && lgRows === null && lgListState !== 'loading') lgLoadList();
 }
 // Sign-in / sign-out: forget the last player's leagues.
@@ -3594,10 +3597,16 @@ function lgAuthChanged(){
   if(lgTabOpen) lgShow();
 }
 // The plan decides whether Create and the branding picker are offered.
+// my_plan is re-read after every trade, so act only on a real change, and
+// redraw only those parts (a half-typed rename and focus are kept).
+let lgPlanKey = '';
 function lgPlanChanged(){
-  if(!lgTabOpen) return;
+  const key = planStatus + '|' + planTier();
+  if(!lgTabOpen || key === lgPlanKey) return;
+  lgPlanKey = key;
   lgRenderCreate();
-  if(lgOpenId != null && lgData) lgRenderView();
+  const brand = document.getElementById('lgBrand');
+  if(brand && lgData) brand.innerHTML = lgBrandHtml(lgData.detail);
 }
 
 // ----- My leagues: list, create, join -----
@@ -3805,7 +3814,8 @@ function lgCodeHtml(L){
     '<p class="lg-note" style="margin-top:10px">Share it with your mates. A new code stops the old one working.</p>'+
     lgMsg('lgCodeMsg')+'</div>';
 }
-function lgSettingsHtml(L){
+// The branding part of the owner's settings (it depends on the plan).
+function lgBrandHtml(L){
   let brand;
   if(planStatus === 'ok' && planTier() === 'ultimate'){
     brand = '<div class="lg-swatches" role="group" aria-label="Colour">'+Object.entries(LG_COLOURS).map(([k, hex])=>
@@ -3820,11 +3830,14 @@ function lgSettingsHtml(L){
   } else {
     brand = '<p class="lg-lock" id="lgBrandLock" style="margin-top:0"><a href="#pro">League branding comes with Ultimate</a></p>';
   }
+  return '<span class="lg-label">Branding</span>'+brand;
+}
+function lgSettingsHtml(L){
   return '<div class="lg-card" id="lgSettings"><div class="lg-h">League settings</div>'+
     '<form class="lg-set" id="lgRename" autocomplete="off"><label class="lg-label" for="lgRenameInput">Name</label>'+
       '<div class="lg-row"><input class="lg-input" id="lgRenameInput" maxlength="40" value="'+escapeHtml(L.name)+'">'+
       '<button type="submit" class="lg-btn ghost" id="lgRenameBtn">Rename</button></div>'+lgMsg('lgRenameMsg')+'</form>'+
-    '<div class="lg-set"><span class="lg-label">Branding</span>'+brand+'</div>'+
+    '<div class="lg-set" id="lgBrand">'+lgBrandHtml(L)+'</div>'+
     '<div class="lg-set"><button type="button" class="lg-btn danger" id="lgDelete">Delete league</button>'+lgMsg('lgDeleteMsg')+'</div>'+
   '</div>';
 }
@@ -3890,12 +3903,12 @@ document.getElementById('lgPanel').addEventListener('submit', async (e)=>{
     const type = (f.querySelector('input[name="lgType"]:checked') || {}).value || 'classic';
     const r = await lgCall('create_league', { p_name:name, p_type:type }, 'lgCreateMsg', document.getElementById('lgCreateBtn'));
     lgRenderCreate();
-    if(r.ok){ document.getElementById('lgCreateName').value = ''; lgLoadList(); lgOpen(Number(r.data)); }
+    if(r.ok){ document.getElementById('lgCreateName').value = ''; lgLoadList(); if(r.data != null) lgOpen(Number(r.data)); }
   } else if(f.id === 'lgJoin'){
     const code = document.getElementById('lgJoinCode').value.trim();
     if(!code) return lgSetMsg('lgJoinMsg', 'Type the invite code.');
     const r = await lgCall('join_league', { p_code:code }, 'lgJoinMsg', document.getElementById('lgJoinBtn'));
-    if(r.ok){ document.getElementById('lgJoinCode').value = ''; lgLoadList(); lgOpen(Number(r.data)); }
+    if(r.ok){ document.getElementById('lgJoinCode').value = ''; lgLoadList(); if(r.data != null) lgOpen(Number(r.data)); }
   } else if(f.id === 'lgRename' && lgData){
     const name = document.getElementById('lgRenameInput').value.trim();
     if(!name) return lgSetMsg('lgRenameMsg', 'League names are 1–40 characters.');

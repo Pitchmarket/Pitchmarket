@@ -59,6 +59,12 @@ async function run(name, opts, fn, { allow500 = false } = {}) {
 }
 const texts = (page, sel) => page.$$eval(sel, (els) => els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
 const count = (log, n) => log.filter((c) => c.name === n).length;
+// Waits (in Node) until the request log satisfies fn.
+async function until(fn, what, ms = 8000) {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 25))) if (fn()) return;
+  throw new Error('timed out waiting for ' + what);
+}
+const msgIs = (page, id, re) => page.waitForFunction(([id, src]) => new RegExp(src).test(document.getElementById(id)?.textContent || ''), [id, re.source], { timeout: 8000 });
 async function openLeagues(page) {
   await page.click('#lbTabLeagues');
   assert.ok(await page.isVisible('#lgPanel'), 'leagues panel shown');
@@ -87,7 +93,7 @@ await run('signed out', {}, async (page) => {
 {
   const log = [];
   await run('free player', { session: USER, routes: routes('free', log, { 'rpc/league_detail': detail({ id: 2, name: 'Office', is_owner: false, invite_code: null }) }) }, async (page) => {
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => document.getElementById('wlPlanTag').textContent === 'FREE', null, { timeout: 8000 });
     assert.equal(count(log, 'my_leagues'), 0, 'nothing loaded before the tab opens');
     await openLeagues(page);
     await page.waitForSelector('.lg-item', { timeout: 8000 });
@@ -167,29 +173,100 @@ await run('signed out', {}, async (page) => {
     assert.equal(await page.locator('.lg-kick').count(), 2, 'kick on the two other members');
     assert.equal(await page.locator('.lg-kick[data-member="11"]').count(), 0);
     // Kick asks first; dismissing does nothing
-    let asked = '';
-    page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
+    const asked = new Promise((res) => page.once('dialog', (d) => { res(d.message()); d.dismiss(); }));
     await page.click('.lg-kick[data-member="13"]');
-    await page.waitForTimeout(200);
-    assert.equal(asked, "Remove Sam from Sunday <i>League</i>? They'll need a new code to rejoin.");
+    assert.equal(await asked, "Remove Sam from Sunday <i>League</i>? They'll need a new code to rejoin.");
     assert.equal(count(log, 'kick_member'), 0, 'dismissed: no kick');
     const before = count(log, 'league_detail');
     page.once('dialog', (d) => d.accept());
     await page.click('.lg-kick[data-member="13"]');
-    await page.waitForTimeout(400);
+    await msgIs(page, 'lgMembersMsg', /^Removed Sam\. The invite code has changed\.$/);
+    await until(() => count(log, 'league_detail') > before, 'view re-fetched after kick');
+    assert.equal(count(log, 'kick_member'), 1, 'only the accepted kick was sent');
     assert.deepEqual(log.find((c) => c.name === 'kick_member').body, { p_league: 1, p_member: 13 });
-    assert.ok(count(log, 'league_detail') > before, 'view re-fetched after kick');
+    await page.waitForSelector('#lgMembersMsg.ok', { timeout: 8000 });   // kept after the re-fetch
     // Branding picker for an Ultimate owner
     assert.equal(await page.locator('.lg-colour').count(), 8);
     assert.equal(await page.locator('.lg-emblem').count(), 12);
     await page.click('.lg-colour[data-colour="sky"]');
     await page.click('.lg-emblem[data-emblem="bolt"]');
     await page.click('#lgBrandSave');
-    await page.waitForTimeout(400);
+    await msgIs(page, 'lgBrandMsg', /Branding saved\./);
     assert.deepEqual(log.find((c) => c.name === 'set_league_branding').body, { p_league: 1, p_colour: 'sky', p_emblem: 'bolt' });
     // Back to the list
     await page.click('#lgBack');
     assert.ok(await page.isVisible('#lgList'));
+  });
+}
+
+// 4b. Owner settings: rename (trimmed; view and list updated), a typed
+// rename survives a plan re-check, Copy, Delete.
+{
+  const log = [];
+  const state = { name: 'Sunday <i>League</i>' };
+  await run('owner settings', { session: USER, routes: routes('ultimate', log, {
+    'rpc/my_plan': plan('ultimate'),
+    'rpc/my_leagues': () => [{ ...LIST[0], name: state.name }, LIST[1]],
+    'rpc/league_detail': () => detail({ name: state.name }),
+    'rpc/rename_league': (b) => { state.name = b.p_name; return null; },
+    'rpc/delete_league': null,
+  }) }, async (page) => {
+    await openLeagues(page);
+    await openLeague(page, 1);
+    // A plan re-check with the same tier keeps a half-typed rename and focus.
+    await page.waitForSelector('.lg-colour', { timeout: 8000 });
+    await page.fill('#lgRenameInput', 'Half typ');
+    await page.focus('#lgRenameInput');
+    const plans = count(log, 'my_plan');
+    await page.evaluate(() => loadPlan());   // resolves once the plan is applied
+    await until(() => count(log, 'my_plan') > plans, 'my_plan re-read');
+    assert.equal(await page.inputValue('#lgRenameInput'), 'Half typ', 'typed text kept');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'lgRenameInput', 'focus kept');
+    // Rename
+    await page.fill('#lgRenameInput', '  Five-a-side  ');
+    await page.click('#lgRenameBtn');
+    await msgIs(page, 'lgRenameMsg', /Renamed\./);
+    assert.deepEqual(log.find((c) => c.name === 'rename_league').body, { p_league: 1, p_name: 'Five-a-side' });
+    await page.waitForFunction(() => document.getElementById('lgViewName')?.textContent === 'Five-a-side', null, { timeout: 8000 });
+    // Copy: copied, or a fallback message when the clipboard is blocked.
+    await page.click('#lgCopy');
+    await msgIs(page, 'lgCodeMsg', /Copied ABC234\.|Couldn't copy\. Select the code and copy it yourself\./);
+    // Back: the list shows the new name.
+    await page.click('#lgBack');
+    await page.waitForFunction(() => /Five-a-side/.test(document.querySelector('.lg-item[data-league="1"]')?.textContent || ''), null, { timeout: 8000 });
+    // Delete: dismiss does nothing; accept deletes and returns to the list.
+    await page.click('.lg-item[data-league="1"]');
+    await page.waitForSelector('#lgDelete', { timeout: 8000 });
+    const q1 = new Promise((res) => page.once('dialog', (d) => { res(d.message()); d.dismiss(); }));
+    await page.click('#lgDelete');
+    assert.equal(await q1, "Delete Five-a-side for everyone? This can't be undone.");
+    const q2 = new Promise((res) => page.once('dialog', (d) => { res(d.message()); d.accept(); }));
+    await page.click('#lgDelete');
+    await q2;
+    await msgIs(page, 'lgListMsg', /^Deleted Five-a-side\.$/);
+    assert.equal(count(log, 'delete_league'), 1, 'only the accepted delete was sent');
+    assert.deepEqual(log.find((c) => c.name === 'delete_league').body, { p_league: 1 });
+    assert.ok(await page.isVisible('#lgList'), 'back on the list');
+    assert.ok(!(await page.isVisible('#lgView')), 'view closed');
+  });
+}
+
+// 4c. A member leaves: confirm, leave_league, back to the list.
+{
+  const log = [];
+  await run('member leaves', { session: USER, routes: routes('free', log, {
+    'rpc/league_detail': detail({ id: 2, name: 'Office', is_owner: false, invite_code: null }),
+    'rpc/leave_league': null,
+  }) }, async (page) => {
+    await openLeagues(page);
+    await openLeague(page, 2);
+    const q = new Promise((res) => page.once('dialog', (d) => { res(d.message()); d.accept(); }));
+    await page.click('#lgLeave');
+    assert.equal(await q, 'Leave Office?');
+    await msgIs(page, 'lgListMsg', /^You left Office\.$/);
+    assert.deepEqual(log.find((c) => c.name === 'leave_league').body, { p_league: 2 });
+    assert.ok(await page.isVisible('#lgList'), 'back on the list');
+    assert.ok(!(await page.isVisible('#lgView')), 'view closed');
   });
 }
 
@@ -208,6 +285,9 @@ await run('signed out', {}, async (page) => {
     await page.waitForSelector('.lg-item[data-league="1"]', { timeout: 8000 });
     await page.click('.lg-item[data-league="1"]');
     await page.waitForFunction(() => /Scoring starts when the new season starts\./.test(document.getElementById('lgPotw')?.textContent || ''), null, { timeout: 8000 });
+    const tableCard = await page.textContent('#lgView .lg-grid > .lg-side:first-child > .lg-card:first-child');
+    assert.match(tableCard, /Scoring starts when the new season starts\./, 'pre-season table text');
+    assert.equal(await page.locator('#lgTable').count(), 0, 'no table before the season');
     await page.click('#lgNewCode');
     await page.waitForFunction(() => /Only the owner can do that\./.test(document.getElementById('lgCodeMsg').textContent), null, { timeout: 8000 });
     }, { allow500: true });
@@ -250,10 +330,9 @@ for (const width of [320, 390]) {
   }) }, async (page) => {
     await openLeagues(page);
     await page.waitForSelector('.lg-item[data-league="1"]', { timeout: 8000 });
-    await page.waitForTimeout(300);
     assert.deepEqual(await wide(page), [], 'list not wider than the screen');
     await openLeague(page, 1);
-    await page.waitForTimeout(300);
+    await page.waitForSelector('.lg-colour', { timeout: 8000 });
     assert.deepEqual(await wide(page), [], 'league view not wider than the screen');
   });
 }
