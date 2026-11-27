@@ -1990,7 +1990,8 @@ begin
 end;
 $function$;
 
--- A trimmed league name, or an error if it isn't 1–40 characters.
+-- A league name with control characters (newlines, tabs, ...) removed and
+-- spaces trimmed, or an error if that isn't 1–40 characters.
 create or replace function public.league_name_ok(p_name text)
  returns text
  language plpgsql
@@ -1998,7 +1999,7 @@ create or replace function public.league_name_ok(p_name text)
  set search_path = public
 as $function$
 declare
-  v_name text := btrim(coalesce(p_name, ''));
+  v_name text := btrim(regexp_replace(coalesce(p_name, ''), '[[:cntrl:]]', '', 'g'));
 begin
   if char_length(v_name) not between 1 and 40 then
     raise exception 'League names are 1–40 characters.';
@@ -2082,6 +2083,9 @@ begin
   -- Rejoining in the same season keeps that season's first join value.
   -- Same season: both stints began on/after the season start, or both
   -- before it; with no season start, any earlier stint counts.
+  -- A stint that began before the season start keeps its live join_value
+  -- here, but the Classic table must count it as 2000 (the season-start
+  -- value).
   select join_value into v_value
   from league_members
   where league_id = v_league.id and user_id = v_uid
@@ -2106,6 +2110,8 @@ as $function$
 declare
   v_uid uuid := auth.uid();
   v_league leagues;
+  v_cand uuid;
+  v_first uuid;
   v_next uuid;
 begin
   if v_uid is null then raise exception 'Sign in to use leagues.'; end if;
@@ -2115,17 +2121,35 @@ begin
     where league_id = p_league and user_id = v_uid and left_at is null;
   if not found then raise exception 'You''re not in this league.'; end if;
 
-  -- The owner leaving hands the league to the earliest current stint; the
-  -- last member leaving deletes it.
-  select user_id into v_next from league_members
+  select user_id into v_first from league_members
     where league_id = p_league and left_at is null
     order by joined_at, id
     limit 1;
-  if v_next is null then
+  if v_first is null then
+    -- The last member left.
     delete from leagues where id = p_league;
-  elsif v_league.owner_id = v_uid then
-    update leagues set owner_id = v_next where id = p_league;
+    return;
   end if;
+  if v_league.owner_id <> v_uid then return; end if;
+
+  -- The owner left: the league passes to the earliest current member who
+  -- owns fewer than 3 leagues, or failing that to the earliest current
+  -- member. Each candidate's player lock is taken after the league row
+  -- lock (the order join_league uses) and the count re-checked under it.
+  for v_cand in
+    select user_id from league_members
+    where league_id = p_league and left_at is null
+    order by joined_at, id
+  loop
+    if (select count(*) from leagues where owner_id = v_cand) < 3 then
+      perform pg_advisory_xact_lock(hashtextextended('league-player:' || v_cand::text, 0));
+      if (select count(*) from leagues where owner_id = v_cand) < 3 then
+        v_next := v_cand;
+        exit;
+      end if;
+    end if;
+  end loop;
+  update leagues set owner_id = coalesce(v_next, v_first) where id = p_league;
 end;
 $function$;
 

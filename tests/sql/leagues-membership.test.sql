@@ -45,6 +45,8 @@ do $$ declare v_id bigint; e text; begin
   assert e = 'League names are 1–40 characters.', 'blank name: ' || e;
   e := pg_temp.err($q$ select public.create_league(repeat('x', 41), 'classic') $q$);
   assert e = 'League names are 1–40 characters.', 'long name: ' || e;
+  e := pg_temp.err(format('select public.create_league(%L, %L)', E'\n\t', 'classic'));
+  assert e = 'League names are 1–40 characters.', 'control characters only: ' || e;
   perform public.create_league('Two', 'classic');
   perform public.create_league(repeat('y', 40), 'classic');
   e := pg_temp.err($q$ select public.create_league('Four', 'classic') $q$);
@@ -182,7 +184,7 @@ do $$ declare v_id bigint := (select id from l where k = 'friends'); v_m bigint;
   assert v_new <> v_old, 'kicking changes the code';
   assert jsonb_array_length(public.league_detail(v_id) -> 'members') = 19, '19 after the kick';
   e := pg_temp.err(format('select public.kick_member(%s, %s)', v_id, v_m));
-  assert e <> '(none)', 'kicking a former stint again is refused';
+  assert e = 'That player isn''t in this league.', 'kicking a former stint again: ' || e;
 
   perform pg_temp.as_player(3);
   e := pg_temp.err(format('select public.league_detail(%s)', v_id));
@@ -321,11 +323,61 @@ do $$ declare e text; v_id bigint; begin
   perform pg_temp.as_player(25);
   e := pg_temp.err(format('select public.leave_league(%s)', (select id from l where k = 'friends')));
   assert e = 'You''re not in this league.', 'non-member leaves: ' || e;
+  -- Control characters are stripped from names.
+  perform pg_temp.as_player(21);
+  v_id := (select league_id from public.my_leagues() where name = 'L21-2');
+  perform public.rename_league(v_id, E'Tab\tName\n');
+  assert public.league_detail(v_id) ->> 'name' = 'TabName', 'control characters stripped';
+  perform public.rename_league(v_id, 'L21-2');
   -- The owner can delete their league.
   perform pg_temp.as_player(21);
   v_id := (select league_id from public.my_leagues() where name = 'L21-1');
   perform public.delete_league(v_id);
   assert not exists (select 1 from public.my_leagues() where league_id = v_id), 'deleted league gone';
+end $$;
+
+-- Hand-over skips members who already own 3 leagues. Players 22 and 23
+-- own 3 each; player 21 owns 2 (after deleting one above); 26 and 27 are free.
+do $$ declare v_id bigint; v_code text; e text; begin
+  -- Earliest member (22) owns 3: the next one (21) takes over.
+  perform pg_temp.as_player(2);
+  v_id := public.create_league('Handover A', 'classic');
+  v_code := public.league_detail(v_id) ->> 'invite_code';
+  perform pg_temp.as_player(22);  perform public.join_league(v_code);
+  perform pg_temp.as_player(21);  perform public.join_league(v_code);
+  perform pg_temp.as_player(2);   perform public.leave_league(v_id);
+  perform pg_temp.as_player(21);
+  assert (public.league_detail(v_id) ->> 'is_owner')::boolean, 'owner of 3 skipped for the next member';
+  perform pg_temp.as_player(22);
+  assert not (public.league_detail(v_id) ->> 'is_owner')::boolean, 'owner of 3 not given it';
+
+  -- Every member owns 3: the earliest (22) still gets it.
+  perform pg_temp.as_player(2);
+  v_id := public.create_league('Handover B', 'classic');
+  v_code := public.league_detail(v_id) ->> 'invite_code';
+  perform pg_temp.as_player(22);  perform public.join_league(v_code);
+  perform pg_temp.as_player(23);  perform public.join_league(v_code);
+  perform pg_temp.as_player(2);   perform public.leave_league(v_id);
+  perform pg_temp.as_player(22);
+  assert (public.league_detail(v_id) ->> 'is_owner')::boolean, 'all own 3: earliest member still takes over';
+
+  -- A free member can become owner and the league keeps working.
+  perform pg_temp.as_player(2);
+  v_id := public.create_league('Handover C', 'classic');
+  v_code := public.league_detail(v_id) ->> 'invite_code';
+  perform pg_temp.as_player(26);  perform public.join_league(v_code);
+  perform pg_temp.as_player(27);  perform public.join_league(v_code);
+  perform pg_temp.as_player(2);   perform public.leave_league(v_id);
+  perform pg_temp.as_player(26);
+  assert (public.league_detail(v_id) ->> 'is_owner')::boolean, 'free member takes over';
+  perform public.rename_league(v_id, 'Handover C2');
+  v_code := public.regenerate_league_code(v_id);
+  perform pg_temp.as_player(28);
+  assert public.join_league(v_code) = v_id, 'joining still works under a free owner';
+  perform pg_temp.as_player(26);
+  e := pg_temp.err(format('select public.set_league_branding(%s, %L, %L)', v_id, 'sky', 'ball'));
+  assert e = 'League branding comes with Ultimate.', 'free owner brands: ' || e;
+  assert (select member_count = 3 and is_owner from public.my_leagues() where league_id = v_id), 'my_leagues for the free owner';
 end $$;
 
 -- ---------- league_detail ----------
@@ -381,6 +433,10 @@ do $$ begin
   assert has_function_privilege('authenticated', 'public.create_league(text,text)', 'execute'), 'players can create';
   assert not has_function_privilege('authenticated', 'public.player_value(uuid)', 'execute'), 'player_value is internal';
   assert not has_function_privilege('anon', 'public.player_value(uuid)', 'execute'), 'player_value is internal (anon)';
+  assert not has_function_privilege('anon', 'public.new_league_code()', 'execute'), 'new_league_code is internal (anon)';
+  assert not has_function_privilege('authenticated', 'public.new_league_code()', 'execute'), 'new_league_code is internal';
+  assert not has_function_privilege('anon', 'public.league_for_owner(bigint)', 'execute'), 'league_for_owner is internal (anon)';
+  assert not has_function_privilege('authenticated', 'public.league_for_owner(bigint)', 'execute'), 'league_for_owner is internal';
   assert not has_function_privilege('anon', 'public.join_league(text)', 'execute'), 'anon cannot join';
   assert not has_function_privilege('anon', 'public.league_detail(bigint)', 'execute'), 'anon cannot read a league';
   assert not has_function_privilege('anon', 'public.my_leagues()', 'execute'), 'anon cannot list leagues';
