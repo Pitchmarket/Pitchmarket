@@ -24,22 +24,26 @@ const PENDING = [
   ev('e-semis', { home_team_name: 'Arsenal FC', away_team_name: 'Real Madrid CF',
     home_stage: 'semis', away_stage: 'out', home_ai_pct: 10, away_ai_pct: -6, home_multiplier: 2, away_multiplier: null,
     home_delta_pct: 20, away_delta_pct: -100 }),
-  ev('e-final', { home_team_name: 'FC Internazionale Milano', away_team_name: 'PSG',
+  ev('e-final', { home_team_name: 'FC Internazionale Milano', away_team_name: 'PSG', home_team_id: 't-int',
     home_stage: 'winners', away_stage: 'out', home_ai_pct: 8, away_ai_pct: -5, home_multiplier: 3,
     home_delta_pct: 24, away_delta_pct: -100 }),
   ev('e-play', { home_team_name: 'Celtic FC', away_team_name: 'Club Brugge',
     home_stage: 'playoff', away_stage: 'playoff', home_ai_pct: 9, away_ai_pct: -9, home_delta_pct: 9, away_delta_pct: -9 }),
   ev('e-norm', { competition: 'PL', home_team_name: 'Chelsea FC', away_team_name: 'Fulham FC', home_delta_pct: 9, away_delta_pct: -9 }),
+  ev('e-note', { home_team_name: 'Bayern', away_team_name: 'Benfica', home_delta_pct: 3, away_delta_pct: -3,
+    stage_note: 'cannot find both legs of this <b>tie</b> in the feed' }),
 ];
 const HISTORY = [
   ev('h-rej', { status: 'approved', home_team_name: 'Arsenal FC', away_team_name: 'Bayern', home_stage: 'quarters', away_stage: 'out',
     home_ai_pct: 4, away_ai_pct: -3, home_multiplier: 1.5, home_delta_pct: 6, away_delta_pct: -100, stage_rejected: true }),
+  ev('h-note', { status: 'approved', home_team_name: 'Celtic FC', away_team_name: 'Porto', home_delta_pct: 2, away_delta_pct: -2,
+    stage_note: 'final has no score' }),
 ];
 
 function setup(state, { migrated = true } = {}) {
   const rpc = (name, result) => (req) => { state.rpcs.push({ name, body: req.postDataJSON() }); return result; };
   const strip = (rows) => rows.map(({ closed, ucl_stage, home_stage, away_stage, home_ai_pct, away_ai_pct,
-    home_multiplier, away_multiplier, stage_rejected, ...r }) => r);
+    home_multiplier, away_multiplier, stage_rejected, stage_note, ...r }) => r);
   return {
     teams: () => migrated ? TEAMS : strip(TEAMS),
     match_events: (req) => {
@@ -70,7 +74,7 @@ async function run(name, fn, opts = {}) {
   });
   try {
     await page.waitForFunction(() => document.querySelectorAll('#teamRows tr').length === 4, null, { timeout: 8000 });
-    await page.waitForFunction(() => document.querySelectorAll('#pendingEventsList .event-card').length === 4, null, { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelectorAll('#pendingEventsList .event-card').length === 5, null, { timeout: 8000 });
     await fn(page, state);
     const failed = errors.filter((e) => e.includes('Failed to load resource'));
     assert.equal(failed.length, opts.failedLoads || 0, 'failed loads');
@@ -95,6 +99,17 @@ await run('stage cards', async (page, state) => {
 
   const fin = await card(page, 'e-final').locator('.stage-banner').first().textContent();
   assert.equal(fin.trim(), 'FC Internazionale Milano win the Champions League: AI +8% ×3 = +24%, holders cashed out, Champions League closes');
+  // The winners card warns about the other club still open (Arsenal; Dortmund is out, Inter is the winner).
+  assert.match(await text(card(page, 'e-final').locator('.stage-warn')),
+    /^1 other Champions League club is still open: Arsenal \(UCL\)\. Crowning closes it with no payout/);
+  assert.equal(await card(page, 'e-semis').locator('.stage-warn').count(), 0, 'no warning on a non-winners card');
+
+  // A stage the job couldn't work out: the note shows, escaped.
+  const note = card(page, 'e-note');
+  assert.equal(await text(note.locator('.stage-note')),
+    'Stage not worked out: cannot find both legs of this <b>tie</b> in the feed. Check the result and use Knock out / Crown winners on the Teams tab if needed.');
+  assert.equal(await note.locator('.stage-note b').count(), 0, 'note escaped');
+  assert.equal(await card(page, 'e-norm').locator('.stage-note').count(), 0);
 
   // Play-off: banner, but an ordinary card.
   const play = card(page, 'e-play');
@@ -112,6 +127,13 @@ await run('stage cards', async (page, state) => {
   await hist.first().waitFor({ timeout: 8000 });
   assert.match(await text(hist.first()), /stage rejected/i);
   assert.match(await text(hist.first()), /Arsenal FC: \+4%/, 'history shows the move applied');
+  // A rejected stage's banners are struck through and say they were not applied.
+  const rej = await hist.first().locator('.stage-banner').evaluateAll((els) => els.map((e) => [e.className, e.textContent.trim()]));
+  assert.deepEqual(rej, [
+    ['stage-banner not-applied', 'Arsenal FC through to the quarters: AI +4% ×1.5 = +6% (not applied)'],
+    ['stage-banner not-applied', 'Bayern out: price to 0 (not applied)'],
+  ]);
+  assert.match(await text(page.locator('#historyEventsList .event-card[data-id="h-note"] .stage-note')), /^Stage not worked out: final has no score\./);
 
   // Reject stage calls approve_match_event with p_approve false.
   await semis.locator('.reject-btn').click();
@@ -142,6 +164,8 @@ await run('teams tab', async (page, state) => {
   await row('Inter <b>(UCL)</b>').locator('.ucl-crown').click();
   await page.waitForTimeout(200);
   assert.match(state.dialogs[1], /^Crown Inter <b>\(UCL\)<\/b> Champions League winners\?/);
+  assert.match(state.dialogs[1], /\n\n1 other Champions League club is still open: Arsenal \(UCL\)\. Crowning closes it with no payout, so its holders keep frozen shares\./);
+  assert.ok(!state.dialogs[1].includes('Dortmund'), 'a club already out is not listed');
   assert.deepEqual(state.rpcs.at(-1), { name: 'admin_ucl_crown', body: { p_team_id: 't-int' } });
   assert.equal(state.dialogs[2], 'Done: 3 holders paid.');
 
@@ -170,6 +194,7 @@ await run('teams tab', async (page, state) => {
 // 3. Before the migration: no stage columns, no Champions League functions.
 await run('before migration', async (page) => {
   assert.equal(await page.locator('.stage-banner').count(), 0);
+  assert.equal(await page.locator('.stage-note, .stage-warn').count(), 0);
   assert.equal(await page.locator('.ucl-btn').count(), 0, 'no Champions League buttons');
   assert.equal(await page.locator('.stage-banner').count(), 0);
   await page.click('.filter-btn[data-l="championsleague"]');

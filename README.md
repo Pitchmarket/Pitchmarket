@@ -143,20 +143,20 @@ Champions League clubs are traded on a run through the competition. When a match
 - **Winners:** the boosted move is applied, every holder is paid out at the new price, and the whole Champions League closes for the season.
 - **9th to 24th** (the play-off) gets no boost, and the match is priced like any other.
 
-If the feed can't settle a result for certain (missing extra-time or shootout numbers, say), no stage is proposed: the match is priced normally and the run log says why.
+If the feed can't settle a result for certain (missing extra-time or shootout numbers, say), no stage is proposed: the match is priced as a normal one, but it never applies on its own. It waits in **Price Approvals** with a note saying why ("Stage not worked out: …"); check the result and use **Knock out** or **Crown winners** on the Teams tab if needed. On the last league-phase matchday the job also waits until the league table has counted every match before it proposes anything.
 
 Stage results never apply on their own under the 8% rule. They wait in admin → **Price Approvals** with a banner per club (e.g. "Arsenal (UCL) through to the semis: AI +10% ×2 = +20%"). **Approve** applies the stage. **Reject stage (apply as a normal match)** applies the AI's own moves with no boost, no 0, no close and no pay-out. Anything you haven't reviewed applies itself, as proposed, 12 hours after it was found, whether or not `AUTO_APPLY` is on.
 
 On the Teams tab, Champions League clubs have buttons for when the feed gets it wrong or a new season starts:
 
 - **Knock out** sets an open club to 0 and closes trading.
-- **Crown winners** pays every holder of that club at its current price and closes the whole Champions League.
+- **Crown winners** pays every holder of that club at its current price and closes the whole Champions League. Any other club still open then closes with no payout, and its holders keep frozen shares, so the confirm (and a winners card in Price Approvals) lists them: knock out the beaten finalist, and use **Close and refund** on any club that never entered, before you crown.
 - **Reopen** puts a closed club back on sale at the price you enter, for the new competition. Any shares still held in it are removed.
 - With the Champions League filter selected, **Not in this season's competition** lists open clubs with no fixture and no Champions League match since 1 July. **Close and refund** pays each holder back at the current price and closes the club.
 
 Each button asks you to confirm first, in a plain sentence of what will happen.
 
-**Setting it up:** run `supabase-ucl-stages.sql` in the SQL Editor after `supabase-leagues-1.sql`. Safe to run twice. The site and admin still load before it has run; the stage parts just don't show.
+**Setting it up:** run `supabase-ucl-stages.sql` in the SQL Editor after `supabase-leagues-1.sql`. Safe to run twice. The site and admin still load before it has run; the stage parts just don't show. It must be run before the last league-phase matchday (late January 2027): until then the matches that decide a stage can't be saved, so they stay out of Price Approvals.
 
 Tests: the stage rules in `tests/ucl-stages.test.mjs` and `tests/ucl-updater.test.mjs`, the database side in the SQL tests, closed clubs on the site in `tests/browser/ucl-closed.mjs`, and the admin side in `tests/browser/admin-ucl.mjs`.
 
