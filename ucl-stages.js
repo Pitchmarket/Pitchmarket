@@ -111,7 +111,21 @@ function stageForPosition(position){
   return null;
 }
 
-// `table.get(feedTeamName)` returns `{ position }` or undefined.
+// How many league-phase matches each club has in the list, keyed by its
+// feed name.
+function leagueCounts(leagueMatches){
+  const counts = new Map();
+  for (const m of leagueMatches) {
+    for (const t of [m.homeTeam, m.awayTeam]) {
+      if (t && t.name) counts.set(t.name, (counts.get(t.name) || 0) + 1);
+    }
+  }
+  return counts;
+}
+
+// `table.get(feedTeamName)` returns `{ position, played }` or undefined.
+// The table can lag the match list, so positions are trusted only once
+// every club in it has every one of its league matches counted.
 export function leagueOutcome(match, leagueMatches, table){
   const days = (leagueMatches || []).map(m => m && m.matchday).filter(num);
   if (!match || !num(match.matchday) || !days.length) return { unclear: 'cannot tell the league-phase matchday' };
@@ -119,6 +133,10 @@ export function leagueOutcome(match, leagueMatches, table){
   if (match.matchday < lastDay) return { home: null, away: null };
   if (!leagueMatches.every(isDone)) return { pending: true };
   if (!table || typeof table.get !== 'function') return { unclear: 'no league-phase table' };
+  for (const [name, count] of leagueCounts(leagueMatches)) {
+    const row = table.get(name);
+    if (row && row.played !== count) return { pending: true };
+  }
   const out = {};
   for (const side of ['home', 'away']) {
     const name = match[`${side}Team`] && match[`${side}Team`].name;

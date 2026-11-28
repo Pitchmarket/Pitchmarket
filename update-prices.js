@@ -451,6 +451,15 @@ export function sideIsOpen(row){
 
 const isStageMatch = (match) => match.stage === 'LEAGUE_STAGE' || !!NEXT_STAGE[match.stage];
 
+// A Champions League stage match whose stage result couldn't be worked
+// out (the note says why) is saved as a normal match but never applied on
+// its own: a club that really went out must not reopen for trading before
+// the admin has looked. An earlier league matchday or a first leg has no
+// note, so it is priced as usual.
+export function holdForStageNote(code, match, note){
+  return code === 'CL' && !!match && isStageMatch(match) && !!note;
+}
+
 function ordinalSuffix(n){
   if(n % 100 >= 11 && n % 100 <= 13) return 'th';
   if(n % 10 === 1) return 'st';
@@ -1216,6 +1225,7 @@ async function main(){
         // Champions League stage result: out goes to 0, through gets the
         // AI's move boosted. The stored deltas become the boosted ones.
         let stage = {};
+        let stageNote = null;
         if(it.stageCtx){
           if(Number.isFinite(move.home) && Number.isFinite(move.away)){
             const sf = stageFields(it.match, {
@@ -1224,24 +1234,40 @@ async function main(){
               table: it.stageCtx.table,
             }, move.home, move.away);
             stage = sf.fields;
-            if(sf.note) console.log(`    No stage result: ${sf.note}.`);
+            stageNote = sf.note;
           } else {
-            console.log('    No stage result: the AI move is not a number.');
+            stageNote = 'the AI move is not a number';
           }
+          if(stageNote) console.log(`    No stage result: ${stageNote}.`);
         }
         const homePct = stage.home_delta_pct ?? move.home;
         const awayPct = stage.away_delta_pct ?? move.away;
 
-        const { data: inserted, error } = await supabase.from('match_events').insert({
+        // Only a row with a note carries stage_note, so normal rows still
+        // save before supabase-ucl-stages.sql has run.
+        const eventRow = {
           ...it.baseRow,
           home_delta_pct: move.home,
           away_delta_pct: move.away,
           ...stage,
+          ...(stageNote ? { stage_note: stageNote } : {}),
           ai_reason: move.reason,
           status: 'pending',
-        }).select('id').single();
+        };
+        let { data: inserted, error } = await supabase.from('match_events').insert(eventRow).select('id').single();
+        if(error && stageNote && isMissingColumnError(error, ['stage_note'])){
+          const { stage_note, ...plain } = eventRow;
+          ({ data: inserted, error } = await supabase.from('match_events').insert(plain).select('id').single());
+          if(!error) console.log('    Saved without the stage note — run supabase-ucl-stages.sql in Supabase.');
+        }
 
         if(error){ console.error('  Failed to log match event:', error.message); summary.dbFailed++; continue; }
+
+        if(holdForStageNote(code, it.match, stageNote)){
+          console.log('    Held for your approval: the stage result could not be worked out. Check it, and use Knock out / Crown winners on the Teams tab if needed.');
+          summary.held++;
+          continue;
+        }
 
         // Stage results (anything past the playoff round) always wait for
         // you; the database applies them as proposed after 12 hours.

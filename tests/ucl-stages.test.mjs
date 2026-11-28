@@ -146,7 +146,7 @@ function leagueSet(lastStatus = 'FINISHED') {
   all[all.length - 1].status = lastStatus;
   return all;
 }
-const table = (a, b) => new Map([[A.name, { position: a }], [B.name, { position: b }]]);
+const table = (a, b, playedA = 8, playedB = 8) => new Map([[A.name, { position: a, played: playedA }], [B.name, { position: b, played: playedB }]]);
 
 test('leagueOutcome: earlier matchdays have no stage', () => {
   const m = match({ stage: 'LEAGUE_STAGE', matchday: 7, score: ft(1, 0) });
@@ -164,8 +164,26 @@ test('leagueOutcome: last matchday maps positions to stages', () => {
   assert.deepEqual(leagueOutcome(m, leagueSet(), table(12, 24)), { home: 'playoff', away: 'playoff' });
   assert.deepEqual(leagueOutcome(m, leagueSet(), table(8, 25)), { home: 'last16', away: 'out' });
   assert.deepEqual(leagueOutcome(m, leagueSet(), table(9, 36)), { home: 'playoff', away: 'out' });
-  const missing = leagueOutcome(m, leagueSet(), new Map([[A.name, { position: 3 }]]));
+  const missing = leagueOutcome(m, leagueSet(), new Map([[A.name, { position: 3, played: 8 }]]));
   assert.equal(typeof missing.unclear, 'string');
+});
+
+test('leagueOutcome: waits while the table has not counted every league match', () => {
+  const m = match({ stage: 'LEAGUE_STAGE', matchday: 8, score: ft(1, 0) });
+  // Every match finished, but the table still shows 7 played for one side.
+  assert.deepEqual(leagueOutcome(m, leagueSet(), table(3, 30, 7, 8)), { pending: true });
+  assert.deepEqual(leagueOutcome(m, leagueSet(), table(3, 30, 8, 7)), { pending: true });
+  // Another club in the table lagging (E has played 8 league matches) holds it too.
+  const t = table(3, 30);
+  t.set('E', { position: 12, played: 7 });
+  assert.deepEqual(leagueOutcome(m, leagueSet(), t), { pending: true });
+  t.set('E', { position: 12, played: 8 });
+  assert.deepEqual(leagueOutcome(m, leagueSet(), t), { home: 'last16', away: 'out' });
+  // No played count at all is not trusted either.
+  assert.deepEqual(leagueOutcome(m, leagueSet(), new Map([[A.name, { position: 3 }], [B.name, { position: 30 }]])), { pending: true });
+  // And stageFields defers it.
+  assert.deepEqual(stageFields(m, { stageMatches: [], leagueMatches: leagueSet(), table: table(3, 30, 7, 8) }, 1, 1),
+    { fields: {}, defer: true, note: null });
 });
 
 test('stageFields: quarter-final leg 2 won by home', () => {

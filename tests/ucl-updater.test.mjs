@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sideIsOpen, clStageContext, isMissingColumnError } from '../update-prices.js';
+import { sideIsOpen, clStageContext, isMissingColumnError, holdForStageNote } from '../update-prices.js';
 
 test('sideIsOpen: missing or closed rows are not open', () => {
   assert.equal(sideIsOpen(null), false);
@@ -107,4 +107,21 @@ test('isMissingColumnError: spots a missing stage or leg column only', () => {
   assert.equal(isMissingColumnError({ code: '42P01', message: 'relation "public.fixtures" does not exist' }, names), false);
   assert.equal(isMissingColumnError({ code: '23505', message: 'duplicate key value violates unique constraint "stage_key"' }, names), false);
   assert.equal(isMissingColumnError(null, names), false);
+});
+
+test('holdForStageNote: a Champions League stage match with a note is held', () => {
+  const ko = { stage: 'QUARTER_FINALS' };
+  const fin = { stage: 'FINAL' };
+  const league = { stage: 'LEAGUE_STAGE', matchday: 8 };
+  assert.equal(holdForStageNote('CL', ko, 'cannot find both legs of this tie in the feed'), true);
+  assert.equal(holdForStageNote('CL', fin, 'final has no score'), true);
+  assert.equal(holdForStageNote('CL', league, 'Alpha FC not placed in the league-phase table'), true);
+  // No note: a normal match (leg 1, an earlier matchday) is not held.
+  assert.equal(holdForStageNote('CL', ko, null), false);
+  assert.equal(holdForStageNote('CL', league, ''), false);
+  // Not a stage match, or not the Champions League.
+  assert.equal(holdForStageNote('CL', { stage: 'GROUP_STAGE' }, 'x'), false);
+  assert.equal(holdForStageNote('PL', { stage: 'REGULAR_SEASON' }, 'x'), false);
+  assert.equal(holdForStageNote('PL', ko, 'x'), false);
+  assert.equal(holdForStageNote('CL', null, 'x'), false);
 });
