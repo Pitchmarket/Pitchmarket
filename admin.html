@@ -83,6 +83,12 @@ tbody tr:last-child td{ border-bottom:none; }
 .row-status{ font-size:11px; color:var(--steel-dim); margin-left:8px; }
 .row-status.ok{ color:var(--surge); }
 .row-status.err{ color:var(--drop); }
+.ucl-controls{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.ucl-btn{ font-size:11.5px; border:1px solid var(--gilt); color:var(--gilt); background:none; border-radius:3px; padding:6px 11px; cursor:pointer; }
+.ucl-btn:disabled{ opacity:0.4; cursor:default; }
+.ucl-state{ font-size:11.5px; color:var(--steel); }
+.ucl-price{ width:100px; }
+.ucl-entrant{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--border-soft); font-size:13px; }
 .filters{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
 .filter-btn{ font-family:'JetBrains Mono'; font-size:11.5px; padding:7px 12px; border:1px solid var(--border); border-radius:4px; color:var(--steel); background:var(--panel); cursor:pointer; }
 .filter-btn.active{ color:var(--gilt); border-color:var(--gilt); }
@@ -115,6 +121,12 @@ tbody tr:last-child td{ border-bottom:none; }
 .event-status-pill{ font-family:'JetBrains Mono'; font-size:10px; padding:3px 8px; border-radius:3px; text-transform:uppercase; }
 .event-status-pill.approved{ background:rgba(23,217,163,0.12); color:var(--surge); }
 .event-status-pill.rejected{ background:rgba(255,92,85,0.12); color:var(--drop); }
+.stage-banner{ font-size:13px; font-weight:600; padding:7px 10px; border-radius:4px; margin-bottom:8px; background:var(--panel2); color:var(--steel); }
+.stage-banner.up{ background:rgba(23,217,163,0.12); color:var(--surge); }
+.stage-banner.out{ background:rgba(255,92,85,0.12); color:var(--drop); }
+.stage-auto{ font-size:11.5px; color:var(--steel-dim); margin-top:8px; margin-bottom:6px; }
+.stage-banner.not-applied{ background:var(--panel2); color:var(--steel-dim); text-decoration:line-through; }
+.stage-note, .stage-warn{ font-size:12.5px; padding:7px 10px; border-radius:4px; margin-bottom:8px; background:rgba(255,184,0,0.12); color:var(--steel); }
 .event-status-pill.skipped{ background:var(--panel2); color:var(--steel-dim); }
 /* Skip reasons are colour-coded by what you'd actually have to do about
    them: amber = a club or alias is missing (your job), red = the AI or
@@ -346,6 +358,11 @@ tbody tr:last-child td{ border-bottom:none; }
       </div>
 
       <div class="filters" id="filters"></div>
+      <div class="add-card" id="uclNonEntrants" style="display:none;">
+        <h3>Not in this season's competition</h3>
+        <div class="sub">Open Champions League clubs with no fixture and no Champions League match since 1 July. Close and refund pays every holder back at the current price.</div>
+        <div id="uclNonEntrantsList"></div>
+      </div>
       <table>
         <thead>
           <tr><th>Team</th><th>Price</th><th>24h chg %</th><th></th></tr>
@@ -615,9 +632,9 @@ async function onAuthed(user){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('dash').style.display = 'block';
   document.getElementById('whoEmail').textContent = user.email;
-  loadTeams();
+  // Pending cards read the clubs (the winners warning), so they wait for them.
+  loadTeams().then(()=>loadPendingEvents());
   loadContentSettings();
-  loadPendingEvents();
   loadHistoryEvents();
   loadErrors();
   loadPlans();
@@ -640,6 +657,7 @@ async function loadTeams(){
   buildLeagueOrderList();
   buildFilters();
   renderRows();
+  loadNonEntrants();
 }
 
 let leagueOrderList = [];
@@ -698,7 +716,7 @@ function buildFilters(){
     '<button class="filter-btn'+(l===currentLeague?' active':'')+'" data-l="'+l+'">'+(l==='all'?'All':(allTeams.find(t=>t.league===l)||{}).league_label||l)+'</button>'
   ).join('');
   document.querySelectorAll('.filter-btn').forEach(b=>{
-    b.addEventListener('click', ()=>{ currentLeague = b.dataset.l; buildFilters(); renderRows(); });
+    b.addEventListener('click', ()=>{ currentLeague = b.dataset.l; buildFilters(); renderRows(); loadNonEntrants(); });
   });
 }
 
@@ -712,9 +730,12 @@ function renderRows(){
       '</td>'+
       '<td><input class="edit-input mono price-input" value="'+t.price+'" step="0.01"></td>'+
       '<td><input class="edit-input mono chg-input" value="'+t.chg+'" step="0.1"></td>'+
-      '<td><button class="save-btn">Save</button><button class="del-btn">Delete</button><span class="row-status"></span></td>'+
+      '<td><button class="save-btn">Save</button><button class="del-btn">Delete</button><span class="row-status"></span>'+uclControlsHTML(t)+'</td>'+
     '</tr>'
   ).join('');
+  document.querySelectorAll('#teamRows .ucl-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>uclAction(btn));
+  });
   document.querySelectorAll('.save-btn').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
       const tr = e.target.closest('tr');
@@ -744,6 +765,81 @@ function renderRows(){
       loadTeams();
     });
   });
+}
+
+// ----- Champions League clubs -----
+// Open clubs can be knocked out or crowned; closed ones reopened at a new
+// price. Before supabase-ucl-stages.sql has run, teams have no closed
+// column and these buttons don't show.
+const UCL_STATE = { out:'Out', winners:'Winners', refunded:'Refunded' };
+function isUclClub(t){ return t.league === 'championsleague' && 'closed' in t; }
+function uclControlsHTML(t){
+  if(!isUclClub(t)) return '';
+  if(!t.closed){
+    return '<div class="ucl-controls"><button class="ucl-btn ucl-knock" data-act="knock">Knock out</button>'+
+      '<button class="ucl-btn ucl-crown" data-act="crown">Crown winners</button></div>';
+  }
+  return '<div class="ucl-controls"><span class="ucl-state">'+escHtml(UCL_STATE[t.ucl_stage] || 'Closed')+' · trading closed</span>'+
+    '<input class="edit-input mono ucl-price" type="number" step="0.01" min="0.01" placeholder="New price">'+
+    '<button class="ucl-btn ucl-reopen" data-act="reopen">Reopen</button></div>';
+}
+
+function uclErrorText(error){
+  const m = (error && error.message) || '';
+  if((error && error.code === 'PGRST202') || /could not find the function/i.test(m))
+    return "The Champions League functions aren't set up yet: run supabase-ucl-stages.sql in the Supabase SQL Editor.";
+  return m || 'Something went wrong. Try again.';
+}
+
+async function uclAction(btn){
+  const id = btn.closest('tr') ? btn.closest('tr').dataset.id : btn.dataset.id;
+  const team = allTeams.find(t=>String(t.id)===String(id)) || { name: btn.dataset.name || '', price: 0 };
+  const name = team.name;
+  const act = btn.dataset.act;
+  let fn, args, question, done;
+  if(act === 'knock'){
+    fn = 'admin_ucl_knock_out'; args = { p_team_id: id };
+    question = 'Set '+name+' to 0 and close trading? Holders lose these shares.';
+  } else if(act === 'crown'){
+    fn = 'admin_ucl_crown'; args = { p_team_id: id };
+    const warn = openUclOthersWarning([id]);
+    question = 'Crown '+name+' Champions League winners? Every holder is paid at the current price ('+Number(team.price).toFixed(2)+') and the whole Champions League closes.'+(warn ? '\n\n'+warn : '');
+    done = (n)=>'Done: '+n+' holder'+(n===1?'':'s')+' paid.';
+  } else if(act === 'refund'){
+    fn = 'admin_ucl_close_refund'; args = { p_team_id: id };
+    question = 'Close '+name+' and refund every holder at the current price'+(team.price!=null?' ('+Number(team.price).toFixed(2)+')':'')+'? The club leaves the Champions League tab for this season.';
+    done = (n)=>'Done: '+n+' holder'+(n===1?'':'s')+' refunded.';
+  } else if(act === 'reopen'){
+    const price = parseFloat(btn.closest('tr').querySelector('.ucl-price').value);
+    if(!(price >= 0.01 && price <= 100000)){ alert('Enter a price between 0.01 and 100000 first.'); return; }
+    fn = 'admin_ucl_reopen'; args = { p_team_id: id, p_price: price };
+    question = 'Reopen '+name+' at '+price.toFixed(2)+' for the new Champions League? Any shares still held in it are removed.';
+  } else return;
+  if(!confirm(question)) return;
+  btn.disabled = true;
+  const { data, error } = await sb.rpc(fn, args);
+  btn.disabled = false;
+  if(error){ alert('Failed: ' + uclErrorText(error)); return; }
+  if(done) alert(done(data || 0));
+  loadTeams();
+  loadPendingEvents();
+  loadHistoryEvents();
+}
+
+// Shown only with the Champions League filter. Before the migration the
+// function doesn't exist, so the box stays hidden.
+async function loadNonEntrants(){
+  const box = document.getElementById('uclNonEntrants');
+  if(currentLeague !== 'championsleague'){ box.style.display = 'none'; return; }
+  const { data, error } = await sb.rpc('admin_ucl_non_entrants');
+  if(currentLeague !== 'championsleague' || error){ box.style.display = 'none'; return; }
+  const list = document.getElementById('uclNonEntrantsList');
+  list.innerHTML = (data && data.length)
+    ? data.map(r=>'<div class="ucl-entrant"><span>'+escHtml(r.name)+'</span>'+
+        '<button class="ucl-btn ucl-refund" data-act="refund" data-id="'+escAttr(r.team_id)+'" data-name="'+escAttr(r.name)+'">Close and refund</button></div>').join('')
+    : '<div style="color:var(--steel-dim); font-size:13px;">None: every open club has a fixture or a match this season.</div>';
+  list.querySelectorAll('.ucl-btn').forEach(btn=>btn.addEventListener('click', ()=>uclAction(btn)));
+  box.style.display = '';
 }
 
 document.getElementById('addTeamBtn').addEventListener('click', async ()=>{
@@ -1136,25 +1232,89 @@ function skipBlockHTML(ev){
          '<div class="skip-retry">Nothing is lost — the pipeline retries skipped matches on its next run.</div>';
 }
 
+// ----- Champions League stage results -----
+// A stage event says what the match decided for each side (through to the
+// next round, out, winners). Every stage but a play-off place waits for you
+// and applies itself 12 hours after it was found. Before
+// supabase-ucl-stages.sql has run these columns are simply absent.
+const STAGE_NAMES = { last16:'last 16', quarters:'quarters', semis:'semis', final:'final' };
+function fmtPct(v){ const n = Math.round(Number(v)*100)/100; return (n>=0?'+':'')+n+'%'; }
+function fmtWhen(ts){ return new Date(ts).toLocaleString(undefined, { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
+function stageMove(ai, mult, delta){
+  if(ai == null) return fmtPct(delta);
+  if(mult != null && Number(mult) > 1) return 'AI '+fmtPct(ai)+' ×'+Number(mult)+' = '+fmtPct(delta);
+  return 'AI '+fmtPct(ai)+', no boost on a fall';
+}
+function stageBannerText(name, stage, ai, mult, delta){
+  if(stage === 'out') return name+' out: price to 0';
+  if(stage === 'playoff') return name+' to the play-off (no boost)';
+  if(stage === 'winners') return name+' win the Champions League: '+stageMove(ai, mult, delta)+', holders cashed out, Champions League closes';
+  return name+' through to the '+(STAGE_NAMES[stage]||stage)+': '+stageMove(ai, mult, delta);
+}
+function stageBannersHTML(ev){
+  // A rejected stage was never applied: the banners stay, struck through.
+  const rejected = !!ev.stage_rejected;
+  return [['home', ev.home_team_name], ['away', ev.away_team_name]]
+    .filter(([side])=>ev[side+'_stage'])
+    .map(([side, name])=>{
+      const stage = ev[side+'_stage'];
+      const cls = rejected ? 'not-applied' : stage === 'out' ? 'out' : stage === 'playoff' ? 'playoff' : 'up';
+      const label = stageBannerText(name, stage, ev[side+'_ai_pct'], ev[side+'_multiplier'], ev[side+'_delta_pct']) + (rejected ? ' (not applied)' : '');
+      return '<div class="stage-banner '+cls+'">'+esc(label)+'</div>';
+    }).join('');
+}
+// The price job couldn't work out the stage result: the match is priced
+// as a normal one and waits for you. Before supabase-ucl-stages.sql has
+// run there is no stage_note column.
+function stageNoteHTML(ev){
+  if(!ev.stage_note) return '';
+  return '<div class="stage-note">'+esc('Stage not worked out: '+ev.stage_note+'. Check the result and use Knock out / Crown winners on the Teams tab if needed.')+'</div>';
+}
+// Crowning closes every Champions League club. Any club still open and not
+// out (other than those named) closes with no payout, so say so first.
+function openUclOthersWarning(excludeIds){
+  const others = allTeams.filter(t=>isUclClub(t) && !t.closed && t.ucl_stage !== 'out' && !excludeIds.some(id=>id != null && String(id) === String(t.id)));
+  if(!others.length) return '';
+  const n = others.length;
+  return n+' other Champions League club'+(n===1?' is':'s are')+' still open: '+others.map(t=>t.name).join(', ')+
+    '. Crowning closes '+(n===1?'it':'them')+' with no payout, so '+(n===1?'its':'their')+' holders keep frozen shares. '+
+    'Knock out any club that is out, and Close and refund any that never entered (Champions League filter on the Teams tab), before you crown.';
+}
+// Held for review: any stage other than a play-off place.
+function isHeldStage(ev){
+  return [ev.home_stage, ev.away_stage].some(s=>s != null && s !== 'playoff');
+}
+
 function eventCardHTML(ev, isPending){
   const hasDeltas = ev.home_delta_pct != null && ev.away_delta_pct != null;
-  const homeUp = hasDeltas && ev.home_delta_pct >= 0;
-  const awayUp = hasDeltas && ev.away_delta_pct >= 0;
+  // A rejected stage was applied as a normal match: the AI's own moves.
+  const homePct = ev.stage_rejected && ev.home_ai_pct != null ? ev.home_ai_pct : ev.home_delta_pct;
+  const awayPct = ev.stage_rejected && ev.away_ai_pct != null ? ev.away_ai_pct : ev.away_delta_pct;
+  const homeUp = hasDeltas && homePct >= 0;
+  const awayUp = hasDeltas && awayPct >= 0;
+  const held = isHeldStage(ev);
   const dateStr = ev.match_date ? new Date(ev.match_date).toLocaleDateString() : '';
   return '<div class="event-card" data-id="'+ev.id+'">'+
     '<div class="event-teams">'+esc(ev.home_team_name)+' '+ev.home_score+' - '+ev.away_score+' '+esc(ev.away_team_name)+
       (!isPending ? ' <span class="event-status-pill '+ev.status+'">'+ev.status+'</span>' : '')+
+      (!isPending && ev.stage_rejected ? ' <span class="event-status-pill rejected">stage rejected</span>' : '')+
     '</div>'+
     '<div class="event-meta">'+esc(ev.competition||'')+(dateStr?' · '+dateStr:'')+'</div>'+
+    stageBannersHTML(ev)+
+    stageNoteHTML(ev)+
+    (isPending && [ev.home_stage, ev.away_stage].includes('winners') && openUclOthersWarning([ev.home_team_id, ev.away_team_id])
+      ? '<div class="stage-warn">'+esc(openUclOthersWarning([ev.home_team_id, ev.away_team_id]))+'</div>' : '')+
+    (!isPending && ev.stage_rejected ? '<div class="stage-auto">Stage rejected: applied as a normal match, with the AI\'s moves and no stage effects.</div>' : '')+
     (hasDeltas
       ? '<div class="event-deltas">'+
-          '<span class="event-delta '+(homeUp?'up':'down')+'">'+esc(ev.home_team_name)+': '+(homeUp?'+':'')+ev.home_delta_pct+'%</span>'+
-          '<span class="event-delta '+(awayUp?'up':'down')+'">'+esc(ev.away_team_name)+': '+(awayUp?'+':'')+ev.away_delta_pct+'%</span>'+
+          '<span class="event-delta '+(homeUp?'up':'down')+'">'+esc(ev.home_team_name)+': '+fmtPct(homePct)+'</span>'+
+          '<span class="event-delta '+(awayUp?'up':'down')+'">'+esc(ev.away_team_name)+': '+fmtPct(awayPct)+'</span>'+
         '</div>'
       : skipBlockHTML(ev))+
     (ev.ai_reason ? '<div class="event-reason">"'+esc(ev.ai_reason)+'" — priced by '+esc(ev.ai_provider||'AI')+'</div>' : '')+
     (isPending && hasDeltas
-      ? '<div class="event-actions"><button class="approve-btn">Approve</button><button class="reject-btn">Reject</button></div>'
+      ? '<div class="event-actions"><button class="approve-btn">Approve</button><button class="reject-btn">'+(held ? 'Reject stage (apply as a normal match)' : 'Reject')+'</button></div>'+
+        (held && ev.created_at ? '<div class="stage-auto">Applies automatically 12 hours after it was found (at '+fmtWhen(Date.parse(ev.created_at) + 12*3600*1000)+')</div>' : '')
       : '')+
   '</div>';
 }

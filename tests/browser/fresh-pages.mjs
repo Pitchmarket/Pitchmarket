@@ -2,6 +2,7 @@
 // page: after an update, the next load shows it. The saved copy is only used
 // offline. Also checks the upgrade from the old worker (v1), which served
 // the saved page first: it must offer a refresh once the new worker is in.
+// The old worker is taken from the commit before the fix (342f3cd).
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { openPage } from './harness.mjs';
@@ -9,7 +10,7 @@ import { openPage } from './harness.mjs';
 const BASE = 'http://127.0.0.1:8765/index.html';
 const real = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const newSw = readFileSync(new URL('../../sw.js', import.meta.url), 'utf8');
-const oldSw = execSync('git show origin/main:sw.js', { cwd: new URL('../..', import.meta.url) }).toString();
+const oldSw = execSync('git show 342f3cd^:sw.js', { cwd: new URL('../..', import.meta.url) }).toString();
 const fail = (msg) => { console.error('FAIL:', msg); process.exit(1); };
 
 async function run({ startSw }) {

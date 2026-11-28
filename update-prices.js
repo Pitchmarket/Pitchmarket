@@ -36,6 +36,7 @@
 //                   match fails. That is what happened on 10 Oct 2026.
 
 import { createClient } from '@supabase/supabase-js';
+import { NEXT_STAGE, stageFields, needsReview, legOf } from './ucl-stages.js';
 
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -336,10 +337,15 @@ async function fetchFinishedMatches(code, dateFrom, dateTo){
 // matches to price, so a quiet league costs nothing. Returns a Map keyed by
 // the folded team name, or null if standings aren't available (some cup
 // formats have none, which is survivable — the run just loses this context).
-const standingsCache = new Map();
-async function fetchStandings(code){
+//
+// Cached per fetcher, so the run (always footballData) asks once per
+// competition, and a test's fake feed gets a cache of its own.
+const standingsCaches = new WeakMap();
+async function fetchStandings(code, fetchJson = footballData){
+  if(!standingsCaches.has(fetchJson)) standingsCaches.set(fetchJson, new Map());
+  const standingsCache = standingsCaches.get(fetchJson);
   if(standingsCache.has(code)) return standingsCache.get(code);
-  const data = await footballData(`competitions/${code}/standings`, `${code} standings`);
+  const data = await fetchJson(`competitions/${code}/standings`, `${code} standings`);
   if(!data || !Array.isArray(data.standings)){
     standingsCache.set(code, null);
     return null;
@@ -395,6 +401,63 @@ function buildTableRows(standings, teams, isUCL){
            ` ${String(r.played).padStart(2)}pl ${String(r.points).padStart(2)}pts ` +
            `GD ${gd.padStart(3)}  ${(r.form || '').padEnd(5)}  price ${price}`;
   });
+}
+
+// ============================================================
+// Champions League stages
+//
+// What ucl-stages.js needs to work out who goes out and who goes through:
+// every match of the stage (all statuses, not just finished ones: the
+// first leg of a tie, and whether the whole final league matchday has
+// been played, both depend on matches that may not be finished yet), the
+// league-phase list and the league-phase table. Each list is fetched at
+// most once per run. A list the feed couldn't send comes back as null.
+// ============================================================
+const clStageCaches = new WeakMap();
+function clStageList(fetchJson, stage){
+  if(!clStageCaches.has(fetchJson)) clStageCaches.set(fetchJson, new Map());
+  const cache = clStageCaches.get(fetchJson);
+  if(!cache.has(stage)){
+    // A thrown failure (network down) takes the same null path as an HTTP
+    // error, so a cached rejection can never stop the run later on.
+    cache.set(stage, Promise.resolve()
+      .then(() => fetchJson(`competitions/CL/matches?stage=${stage}`, `CL ${stage} matches`))
+      .then(data => (data ? data.matches || [] : null))
+      .catch(err => {
+        console.error(`  Could not fetch the CL ${stage} matches:`, err && err.message ? err.message : err);
+        return null;
+      }));
+  }
+  return cache.get(stage);
+}
+
+export async function clStageContext(fetchJson, stage){
+  if(stage === 'LEAGUE_STAGE'){
+    const leagueMatches = await clStageList(fetchJson, 'LEAGUE_STAGE');
+    let standings = null;
+    try{ standings = await fetchStandings('CL', fetchJson); }
+    catch(err){ console.error('  Could not fetch the CL standings:', err && err.message ? err.message : err); }
+    const table = standings ? { get: name => standings.get(fold(name)) } : null;
+    return { stageMatches: [], leagueMatches, table };
+  }
+  return { stageMatches: await clStageList(fetchJson, stage), leagueMatches: [], table: null };
+}
+
+// A side gets priced only if it's on the site and not closed (knocked
+// out, refunded, or the competition is over).
+export function sideIsOpen(row){
+  return !!(row && !row.closed);
+}
+
+const isStageMatch = (match) => match.stage === 'LEAGUE_STAGE' || !!NEXT_STAGE[match.stage];
+
+// A Champions League stage match whose stage result couldn't be worked
+// out (the note says why) is saved as a normal match but never applied on
+// its own: a club that really went out must not reopen for trading before
+// the admin has looked. An earlier league matchday or a first leg has no
+// note, so it is priced as usual.
+export function holdForStageNote(code, match, note){
+  return code === 'CL' && !!match && isStageMatch(match) && !!note;
 }
 
 function ordinalSuffix(n){
@@ -830,6 +893,18 @@ async function logSkip(baseRow, reason){
 // run carries on pricing as normal; locks just use the last fixtures
 // saved.
 // ============================================================
+// True when a PostgREST/Postgres error says one of these columns doesn't
+// exist. Both forms quote the column name:
+//   PGRST204: Could not find the 'stage' column of 'fixtures' in the schema cache
+//   42703:    column "stage" of relation "fixtures" does not exist
+export function isMissingColumnError(error, names){
+  if(!error) return false;
+  const code = String(error.code || '');
+  const message = String(error.message || '');
+  if(code !== 'PGRST204' && code !== '42703' && !/column/i.test(message)) return false;
+  return names.some(n => message.includes(`'${n}'`) || message.includes(`"${n}"`));
+}
+
 const FIXTURES_DAYS_BACK = 2;
 const FIXTURES_DAYS_AHEAD = 7;   // the feed allows at most 10 days per request
 
@@ -853,6 +928,11 @@ async function syncFixtures(){
     const home = m.homeTeam?.name ? findTeamRow(teams, m.homeTeam.name, isUCL) : null;
     const away = m.awayTeam?.name ? findTeamRow(teams, m.awayTeam.name, isUCL) : null;
     if(!home && !away) continue;   // neither club is on the site, nothing to lock
+    let leg = null;
+    if(isUCL && NEXT_STAGE[m.stage]){
+      const { stageMatches } = await clStageContext(footballData, m.stage);
+      leg = legOf(m, stageMatches || []);
+    }
     rows.push({
       source_match_id: String(m.id),
       competition: code,
@@ -862,12 +942,21 @@ async function syncFixtures(){
       away_team_name: m.awayTeam?.name || null,
       kickoff: m.utcDate,
       feed_status: m.status || null,
+      stage: m.stage || null,
+      leg,
       updated_at: new Date().toISOString(),
     });
   }
 
   if(rows.length){
-    const { error } = await supabase.from('fixtures').upsert(rows, { onConflict: 'source_match_id' });
+    let { error } = await supabase.from('fixtures').upsert(rows, { onConflict: 'source_match_id' });
+    // Before supabase-ucl-stages.sql has been run the table has no stage or
+    // leg columns. Save the rows without them rather than lose every lock.
+    if(error && isMissingColumnError(error, ['stage', 'leg'])){
+      const plain = rows.map(({ stage, leg, ...rest }) => rest);
+      ({ error } = await supabase.from('fixtures').upsert(plain, { onConflict: 'source_match_id' }));
+      if(!error) console.log('Fixtures saved without stage and leg — run supabase-ucl-stages.sql in Supabase.');
+    }
     if(error){
       console.error('Fixtures: could not save them —', error.message);
       console.error('  If this says the table does not exist, run supabase-price-lag-lock.sql in Supabase.');
@@ -878,6 +967,26 @@ async function syncFixtures(){
   const cutoff = new Date(Date.now() - 30 * day).toISOString();
   await supabase.from('fixtures').delete().lt('kickoff', cutoff);
   console.log(`Fixtures: ${rows.length} match(es) from ${from} to ${to} saved for trading locks.`);
+}
+
+// Open clubs on the Champions League tab that this season's competition
+// doesn't have. Only once the run has the CL table (it's fetched only when
+// there was something to price), and only as a pointer for the admin.
+async function logNonEntrants(){
+  const cache = standingsCaches.get(footballData);
+  const standings = cache && cache.get('CL');
+  if(!standings) return;
+  const teams = await getLeagueTeams(COMPETITIONS.CL);
+  if(!teams) return;
+  const entered = new Set();
+  for(const row of standings.values()){
+    const hit = findTeamRow(teams, row.name, true);
+    if(hit) entered.add(hit.id);
+  }
+  const missing = teams.filter(t => sideIsOpen(t) && !entered.has(t.id)).map(t => t.name).sort();
+  if(!missing.length) return;
+  console.log(`\nOn your Champions League tab but not in this season's competition: ${missing.join(' · ')}`);
+  console.log('  Use Close and refund in admin.');
 }
 
 async function main(){
@@ -902,6 +1011,16 @@ async function main(){
 
   try { await syncFixtures(); }
   catch(err){ console.error('Fixtures: failed —', err.message, '— carrying on with pricing.'); }
+
+  // Champions League stage results nobody approved or rejected within 12
+  // hours apply as proposed. Every run, whatever AUTO_APPLY says.
+  try{
+    const { data: overdue, error } = await supabase.rpc('apply_overdue_stage_events');
+    if(error) console.error('Stage results: could not apply the overdue ones —', error.message, '— carrying on.');
+    else console.log(`Stage results: ${overdue || 0} left waiting 12 hours applied as proposed.`);
+  } catch(err){
+    console.error('Stage results: could not apply the overdue ones —', err.message, '— carrying on.');
+  }
 
   const now = new Date();
   const dateTo = now.toISOString().slice(0,10);
@@ -940,8 +1059,12 @@ async function main(){
       summary.considered++;
       const isUCL = code === 'CL';
       const teams = await getLeagueTeams(leagueKey);
-      const homeTeam = findTeamRow(teams, match.homeTeam.name, isUCL);
-      const awayTeam = findTeamRow(teams, match.awayTeam.name, isUCL);
+      const homeFound = findTeamRow(teams, match.homeTeam.name, isUCL);
+      const awayFound = findTeamRow(teams, match.awayTeam.name, isUCL);
+      // A closed club is on the site but takes no more price moves, so it
+      // is left out of the event the same way an unmatched club is.
+      const homeTeam = sideIsOpen(homeFound) ? homeFound : null;
+      const awayTeam = sideIsOpen(awayFound) ? awayFound : null;
 
       const baseRow = {
         source_match_id: matchId,
@@ -974,9 +1097,15 @@ async function main(){
         // the two lists side by side instead of leaving you to guess.
         if(!leagueNames.has(code)) leagueNames.set(code, (teams || []).map(t => t.name).sort());
       };
-      if(!homeTeam) noteUnmatched('home', match.homeTeam.name);
-      if(!awayTeam) noteUnmatched('away', match.awayTeam.name);
+      if(homeFound && !homeTeam) console.log(`  ${homeFound.name} is closed, not priced.`);
+      if(awayFound && !awayTeam) console.log(`  ${awayFound.name} is closed, not priced.`);
+      if(!homeFound) noteUnmatched('home', match.homeTeam.name);
+      if(!awayFound) noteUnmatched('away', match.awayTeam.name);
 
+      if(!homeTeam && !awayTeam && (homeFound || awayFound)){
+        console.log(`  ${match.homeTeam.name} v ${match.awayTeam.name} — nothing open on the site to price, skipped.`);
+        continue;
+      }
       if(!homeTeam && !awayTeam){
         await logSkip(baseRow,
           `Neither "${match.homeTeam.name}" nor "${match.awayTeam.name}" matched a team in your ${leagueKey} tab — add the clubs, or add an alias for them.`);
@@ -984,8 +1113,34 @@ async function main(){
         continue;
       }
 
+      // Champions League: work out the stage context before pricing. If the
+      // stage result can't be settled yet, the match is left unwritten so
+      // its clubs stay locked and the next run tries again.
+      let stageCtx = null;
+      if(isUCL && isStageMatch(match)){
+        stageCtx = await clStageContext(footballData, match.stage);
+        const listMissing = match.stage === 'LEAGUE_STAGE'
+          ? stageCtx.leagueMatches === null
+          : stageCtx.stageMatches === null;
+        const check = stageFields(match, {
+          stageMatches: stageCtx.stageMatches || [],
+          leagueMatches: stageCtx.leagueMatches || [],
+          table: stageCtx.table,
+        }, 0, 0);
+        if(check.defer){
+          console.log(`  ${match.homeTeam.name} v ${match.awayTeam.name} — waiting for the rest of the final league matchday, left for the next run.`);
+          continue;
+        }
+        if(check.note && (listMissing || (match.stage === 'LEAGUE_STAGE' && !stageCtx.table))){
+          console.log(`  ${match.homeTeam.name} v ${match.awayTeam.name} — the feed did not send what the stage result needs (${check.note}), left for the next run.`);
+          continue;
+        }
+      }
+
       toPrice.push({
         baseRow,
+        match,
+        stageCtx,
         homeName: match.homeTeam.name,
         awayName: match.awayTeam.name,
         homeScore, awayScore,
@@ -1067,15 +1222,69 @@ async function main(){
 
         console.log(`  ${it.homeName} v ${it.awayName}: home ${move.home >= 0 ? '+' : ''}${move.home}% / away ${move.away >= 0 ? '+' : ''}${move.away}% — ${move.reason}`);
 
-        const { data: inserted, error } = await supabase.from('match_events').insert({
+        // Champions League stage result: out goes to 0, through gets the
+        // AI's move boosted. The stored deltas become the boosted ones.
+        let stage = {};
+        let stageNote = null;
+        if(it.stageCtx){
+          if(Number.isFinite(move.home) && Number.isFinite(move.away)){
+            const sf = stageFields(it.match, {
+              stageMatches: it.stageCtx.stageMatches || [],
+              leagueMatches: it.stageCtx.leagueMatches || [],
+              table: it.stageCtx.table,
+            }, move.home, move.away);
+            stage = sf.fields;
+            stageNote = sf.note;
+          } else {
+            stageNote = 'the AI move is not a number';
+          }
+          if(stageNote) console.log(`    No stage result: ${stageNote}.`);
+        }
+        const homePct = stage.home_delta_pct ?? move.home;
+        const awayPct = stage.away_delta_pct ?? move.away;
+
+        // Only a row with a note carries stage_note, so normal rows still
+        // save before supabase-ucl-stages.sql has run.
+        const eventRow = {
           ...it.baseRow,
           home_delta_pct: move.home,
           away_delta_pct: move.away,
+          ...stage,
+          ...(stageNote ? { stage_note: stageNote } : {}),
           ai_reason: move.reason,
           status: 'pending',
-        }).select('id').single();
+        };
+        let { data: inserted, error } = await supabase.from('match_events').insert(eventRow).select('id').single();
+        if(error && stageNote && isMissingColumnError(error, ['stage_note'])){
+          const { stage_note, ...plain } = eventRow;
+          ({ data: inserted, error } = await supabase.from('match_events').insert(plain).select('id').single());
+          if(!error) console.log('    Saved without the stage note — run supabase-ucl-stages.sql in Supabase.');
+        }
 
         if(error){ console.error('  Failed to log match event:', error.message); summary.dbFailed++; continue; }
+
+        if(holdForStageNote(code, it.match, stageNote)){
+          console.log('    Held for your approval: the stage result could not be worked out. Check it, and use Knock out / Crown winners on the Teams tab if needed.');
+          summary.held++;
+          continue;
+        }
+
+        // Stage results (anything past the playoff round) always wait for
+        // you; the database applies them as proposed after 12 hours.
+        if(needsReview(stage)){
+          for(const side of ['home', 'away']){
+            const s = stage[`${side}_stage`];
+            if(s == null || s === 'playoff') continue;
+            const club = it[`${side}Row`] ? it[`${side}Row`].name : it[`${side}Name`];
+            const ai = stage[`${side}_ai_pct`];
+            const detail = s === 'out'
+              ? `AI ${ai}%, price to 0`
+              : `AI ${ai}% ×${stage[`${side}_multiplier`]} = ${stage[`${side}_delta_pct`]}%`;
+            console.log(`    Stage result held for your approval: ${club} ${s} (${detail})`);
+          }
+          summary.held++;
+          continue;
+        }
 
         if(!AUTO_APPLY){
           console.log('    Logged for admin approval.');
@@ -1084,7 +1293,7 @@ async function main(){
         }
 
         // Only apply on our own if BOTH sides are within the safe band.
-        const biggest = Math.max(Math.abs(move.home), Math.abs(move.away));
+        const biggest = Math.max(Math.abs(homePct), Math.abs(awayPct));
         if(biggest > AUTO_APPLY_MAX_PCT){
           console.log(`    Held for review — ${biggest}% exceeds the ${AUTO_APPLY_MAX_PCT}% auto-apply limit.`);
           summary.held++;
@@ -1132,6 +1341,8 @@ async function main(){
       for(const n of [...names].sort()) console.log(`    '${n.replace(/'/g, "\\'")}': '<your site name>',`);
     }
   }
+
+  await logNonEntrants();
 
   if(summary.aiFailed > 0){
     console.log('\nNOTE: the AI-failed skips above are NOT a team-name problem. If they are');

@@ -1,6 +1,7 @@
 // Browser test harness: opens a page in headless Chromium with CDN scripts and
 // Supabase calls stubbed. Usage: const { page, errors, calls, browser } = await openPage(url, { routes, session, viewport, storage })
 // storage: localStorage items set before the page's own scripts run.
+// A route handler may return withStatus(code, body) to reply with another HTTP status.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
@@ -21,6 +22,9 @@ async function loadPlaywright() {
     return await import(pathToFileURL(g).href);
   }
 }
+
+const STATUS = Symbol('status');
+export const withStatus = (status, body) => ({ [STATUS]: status, body });
 
 const b64url = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 
@@ -71,6 +75,7 @@ export async function openPage(url, { routes = {}, session = null, viewport = { 
     if (h) {
       try {
         const body = await h(request);
+        if (body && body[STATUS]) return json(route, body.body, body[STATUS]);
         return json(route, body === undefined ? [] : body);
       } catch (e) { return json(route, { message: String(e) }, 500); }
     }

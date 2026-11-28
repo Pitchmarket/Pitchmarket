@@ -5,7 +5,8 @@
 -- supabase-trade-cooldown.sql, supabase-names-and-leaderboard.sql,
 -- supabase-daily-kickabout.sql, supabase-kickabout-2.sql and
 -- supabase-squads.sql applied, and later changes (supabase-error-log.sql,
--- supabase-pro-1.sql, supabase-leagues-1.sql) folded in.
+-- supabase-pro-1.sql, supabase-leagues-1.sql, supabase-ucl-stages.sql)
+-- folded in.
 -- Running this on an empty Supabase project rebuilds the backend:
 -- tables, access rules (RLS), functions and triggers. It creates no
 -- data (no teams or players) except the starting payments settings.
@@ -15,7 +16,7 @@
 -- request.
 --
 -- The admin account is identified by email in the policies and in
--- approve_match_event below. Search for pitchmarketadmin@gmail.com to
+-- is_admin() below. Search for pitchmarketadmin@gmail.com to
 -- change it.
 
 -- =====================================================================
@@ -31,7 +32,13 @@ create table public.teams (
   price         numeric not null default 10,
   chg           numeric not null default 0,
   updated_at    timestamptz not null default now(),
-  league_order  integer not null default 999
+  league_order  integer not null default 999,
+  -- No trading at all on a closed club (out of, or done with, the
+  -- Champions League until reopened).
+  closed        boolean not null default false,
+  -- How far a Champions League club has got this season.
+  ucl_stage     text check (ucl_stage in ('league', 'playoff', 'last16', 'quarters', 'semis',
+                                          'final', 'out', 'winners', 'refunded'))
 );
 
 create table public.profiles (
@@ -95,7 +102,21 @@ create table public.match_events (
   reviewed_by      text,
   reviewed_at      timestamptz,
   created_at       timestamptz not null default now(),
-  skip_reason      text
+  skip_reason      text,
+  -- Champions League stage result per side, the AI's own move and the
+  -- stage multiplier. For a stage event home_delta_pct / away_delta_pct
+  -- hold the move to apply (boosted, or -100 for out).
+  home_stage       text check (home_stage in ('playoff', 'last16', 'quarters', 'semis', 'final', 'winners', 'out')),
+  away_stage       text check (away_stage in ('playoff', 'last16', 'quarters', 'semis', 'final', 'winners', 'out')),
+  home_ai_pct      numeric,
+  away_ai_pct      numeric,
+  home_multiplier  numeric,
+  away_multiplier  numeric,
+  -- Admin rejected the stage result; the match was applied as a normal one.
+  stage_rejected   boolean not null default false,
+  -- Why the price job could not work out the stage result (the match was
+  -- held for the admin as a normal match).
+  stage_note       text
 );
 
 create table public.price_history (
@@ -124,7 +145,10 @@ create table public.notifications (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   team_id     uuid references public.teams(id) on delete cascade,
-  kind        text not null check (kind in ('below', 'above')),
+  -- For cashout and refund, threshold is the shares paid out and price
+  -- the price per share.
+  kind        text not null constraint notifications_kind_check
+              check (kind in ('below', 'above', 'cashout', 'refund')),
   threshold   numeric not null,
   price       numeric not null,
   team_name   text not null,
@@ -143,7 +167,9 @@ create table public.fixtures (
   away_team_name   text,
   kickoff          timestamptz not null,
   feed_status      text,
-  updated_at       timestamptz not null default now()
+  updated_at       timestamptz not null default now(),
+  stage            text,      -- Champions League stage of the match, if known
+  leg              smallint
 );
 create index fixtures_home_kickoff on public.fixtures (home_team_id, kickoff);
 create index fixtures_away_kickoff on public.fixtures (away_team_id, kickoff);
@@ -271,7 +297,8 @@ as $function$
 $function$;
 
 -- Buy or sell whole shares at the price stored in the database. Refuses
--- while the club is locked for a match (see team_lock_reason).
+-- closed clubs, and while the club is locked for a match (see
+-- team_lock_reason).
 create or replace function public.trade(p_team_id uuid, p_side text, p_qty numeric)
  returns void
  language plpgsql
@@ -284,6 +311,8 @@ declare
   v_cost numeric;
   v_shares numeric;
   v_lock text;
+  v_closed boolean;
+  v_stage text;
 begin
   if auth.uid() is null then
     raise exception 'Sign in required';
@@ -308,9 +337,22 @@ begin
     raise exception 'Please wait a few seconds between trades';
   end if;
 
-  select price into v_price from teams where id = p_team_id;
+  -- Shared lock: an approval committing a new price (or closing the club)
+  -- waits for this trade, and this trade waits for it, so a trade never
+  -- goes through at a price that is being replaced.
+  select price, closed, ucl_stage into v_price, v_closed, v_stage from teams where id = p_team_id for share;
   if v_price is null then
     raise exception 'Team not found';
+  end if;
+
+  if v_closed then
+    if v_stage = 'out' then
+      raise exception 'This club is out of the Champions League. Trading has closed.';
+    elsif v_stage = 'winners' then
+      raise exception 'The Champions League is over for this season. Trading has closed.';
+    else
+      raise exception 'Trading on this club has closed.';
+    end if;
   end if;
 
   v_lock := team_lock_reason(p_team_id);
@@ -387,7 +429,10 @@ as $function$
   delete from notifications where user_id = auth.uid() and read = true;
 $function$;
 
--- Admin approves or rejects a pending match price change.
+-- Admin approves or rejects a pending match price change. Rejecting a
+-- stage event still applies it, as a normal match (see
+-- apply_match_event_core); rejecting a normal or play-off-only event
+-- applies nothing.
 create or replace function public.approve_match_event(p_event_id uuid, p_approve boolean)
  returns void
  language plpgsql
@@ -396,67 +441,34 @@ create or replace function public.approve_match_event(p_event_id uuid, p_approve
 as $function$
 declare
   ev record;
-  v_new_price numeric;
-  v_result char(1);
 begin
-  if auth.jwt() ->> 'email' <> 'pitchmarketadmin@gmail.com' then
+  if not is_admin() then
     raise exception 'Not authorized';
   end if;
 
-  select * into ev from match_events where id = p_event_id and status = 'pending';
+  select * into ev from match_events where id = p_event_id and status = 'pending' for update;
   if ev is null then
     raise exception 'Event not found or already reviewed';
   end if;
 
   if p_approve then
-    -- Home team
-    if ev.home_team_id is not null then
-      update teams set
-        price = greatest(0.01, round((price * (1 + ev.home_delta_pct/100))::numeric, 2)),
-        chg = ev.home_delta_pct,
-        updated_at = now()
-      where id = ev.home_team_id
-      returning price into v_new_price;
-
-      v_result := case when ev.home_score > ev.away_score then 'W'
-                       when ev.home_score = ev.away_score then 'D'
-                       else 'L' end;
-
-      insert into price_history (team_id, price, delta_pct, source, match_event_id, label, result, changed_at)
-      values (ev.home_team_id, v_new_price, ev.home_delta_pct, 'match', ev.id,
-              'v ' || ev.away_team_name || ' ' || ev.home_score || '-' || ev.away_score,
-              v_result, coalesce(ev.match_date, now()));
-    end if;
-
-    -- Away team
-    if ev.away_team_id is not null then
-      update teams set
-        price = greatest(0.01, round((price * (1 + ev.away_delta_pct/100))::numeric, 2)),
-        chg = ev.away_delta_pct,
-        updated_at = now()
-      where id = ev.away_team_id
-      returning price into v_new_price;
-
-      v_result := case when ev.away_score > ev.home_score then 'W'
-                       when ev.away_score = ev.home_score then 'D'
-                       else 'L' end;
-
-      insert into price_history (team_id, price, delta_pct, source, match_event_id, label, result, changed_at)
-      values (ev.away_team_id, v_new_price, ev.away_delta_pct, 'match', ev.id,
-              '@ ' || ev.home_team_name || ' ' || ev.away_score || '-' || ev.home_score,
-              v_result, coalesce(ev.match_date, now()));
-    end if;
+    perform apply_match_event_core(p_event_id, true, auth.jwt() ->> 'email');
+  elsif coalesce(ev.home_stage, 'playoff') <> 'playoff' or coalesce(ev.away_stage, 'playoff') <> 'playoff' then
+    -- A real stage (not just a play-off place): apply the AI's own moves.
+    perform apply_match_event_core(p_event_id, false, auth.jwt() ->> 'email');
+    update match_events set stage_rejected = true where id = p_event_id;
+  else
+    update match_events set
+      status = 'rejected',
+      reviewed_by = auth.jwt() ->> 'email',
+      reviewed_at = now()
+    where id = p_event_id;
   end if;
-
-  update match_events set
-    status = case when p_approve then 'approved' else 'rejected' end,
-    reviewed_by = auth.jwt() ->> 'email',
-    reviewed_at = now()
-  where id = p_event_id;
 end;
 $function$;
 
--- Price updater applies a small move without review. Service role only.
+-- Price updater applies a small move without review. Stage results other
+-- than a play-off place wait for the admin. Service role only.
 create or replace function public.auto_apply_match_event(p_event_id uuid)
  returns void
  language plpgsql
@@ -465,63 +477,355 @@ create or replace function public.auto_apply_match_event(p_event_id uuid)
 as $function$
 declare
   ev record;
-  v_new_price numeric;
-  v_result char(1);
 begin
-  select * into ev from match_events where id = p_event_id and status = 'pending';
-  if ev is null then
-    raise exception 'Event not found or already reviewed';
-  end if;
-
-  if ev.home_team_id is not null then
-    update teams set
-      price = greatest(0.01, round((price * (1 + ev.home_delta_pct/100))::numeric, 2)),
-      chg = ev.home_delta_pct,
-      updated_at = now()
-    where id = ev.home_team_id
-    returning price into v_new_price;
-
-    v_result := case when ev.home_score > ev.away_score then 'W'
-                     when ev.home_score = ev.away_score then 'D'
-                     else 'L' end;
-
-    insert into price_history (team_id, price, delta_pct, source, match_event_id, label, result, changed_at)
-    values (ev.home_team_id, v_new_price, ev.home_delta_pct, 'match', ev.id,
-            'v ' || ev.away_team_name || ' ' || ev.home_score || '-' || ev.away_score,
-            v_result, coalesce(ev.match_date, now()));
-  end if;
-
-  if ev.away_team_id is not null then
-    update teams set
-      price = greatest(0.01, round((price * (1 + ev.away_delta_pct/100))::numeric, 2)),
-      chg = ev.away_delta_pct,
-      updated_at = now()
-    where id = ev.away_team_id
-    returning price into v_new_price;
-
-    v_result := case when ev.away_score > ev.home_score then 'W'
-                     when ev.away_score = ev.home_score then 'D'
-                     else 'L' end;
-
-    insert into price_history (team_id, price, delta_pct, source, match_event_id, label, result, changed_at)
-    values (ev.away_team_id, v_new_price, ev.away_delta_pct, 'match', ev.id,
-            '@ ' || ev.home_team_name || ' ' || ev.away_score || '-' || ev.home_score,
-            v_result, coalesce(ev.match_date, now()));
+  select * into ev from match_events where id = p_event_id;
+  if coalesce(ev.home_stage, 'playoff') <> 'playoff' or coalesce(ev.away_stage, 'playoff') <> 'playoff' then
+    raise exception 'Stage results need approval';
   end if;
 
   -- Marked approved so it shows in your history, but stamped so you can
   -- always tell at a glance which changes you made and which the
   -- pipeline made on its own.
-  update match_events set
-    status = 'approved',
-    reviewed_by = 'auto (' || coalesce(ai_provider, 'ai') || ')',
-    reviewed_at = now()
-  where id = p_event_id;
+  perform apply_match_event_core(p_event_id, true, 'auto (' || coalesce(ev.ai_provider, 'ai') || ')');
 end;
 $function$;
 
 revoke execute on function public.auto_apply_match_event(uuid) from public, anon, authenticated;
 grant execute on function public.auto_apply_match_event(uuid) to service_role;
+
+-- Turns every holder's shares in a club into coins at its current price,
+-- tells them (a notification of p_kind: cashout or refund), and removes
+-- the holdings. Returns how many players were paid. Internal.
+create or replace function public.ucl_cash_out(p_team_id uuid, p_kind text)
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_team record;
+  v_count integer;
+begin
+  select id, name, price into v_team from teams where id = p_team_id for update;
+  if v_team.id is null then
+    raise exception 'Team not found';
+  end if;
+
+  with paid as (
+    select user_id, shares from holdings
+    where team_id = p_team_id and shares > 0
+    for update
+  ), coins as (
+    update profiles p set coin_balance = p.coin_balance + round(paid.shares * v_team.price, 2)
+    from paid where p.id = paid.user_id
+    returning p.id
+  )
+  insert into notifications (user_id, team_id, kind, threshold, price, team_name)
+  select paid.user_id, p_team_id, p_kind, paid.shares, v_team.price, v_team.name from paid;
+  get diagnostics v_count = row_count;
+
+  delete from holdings where team_id = p_team_id;
+  return v_count;
+end;
+$function$;
+
+revoke execute on function public.ucl_cash_out(uuid, text) from public, anon, authenticated, service_role;
+
+-- Applies a pending match event: each side's price move, its history row
+-- and, with p_use_stage, its Champions League stage (out: price to 0 and
+-- closed; winners: holders cashed out and every Champions League club
+-- closed). Without p_use_stage a stage event is applied as a normal match
+-- with the AI's own move. Internal: approve_match_event,
+-- auto_apply_match_event and apply_overdue_stage_events call it.
+create or replace function public.apply_match_event_core(p_event_id uuid, p_use_stage boolean, p_reviewer text)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  ev record;
+  v_side int;
+  v_team uuid;
+  v_stage text;
+  v_pct numeric;
+  v_label text;
+  v_result char(1);
+  v_new_price numeric;
+  v_closed uuid[];
+begin
+  select * into ev from match_events where id = p_event_id and status = 'pending' for update;
+  if ev is null then
+    raise exception 'Event not found or already reviewed';
+  end if;
+
+  -- Clubs already closed (knocked out, crowned or refunded before this
+  -- event was approved) are left alone: no price, stage or history row.
+  -- Read before either side is applied, so the winners step closing every
+  -- club does not stop the final's loser going out.
+  perform 1 from teams where id in (ev.home_team_id, ev.away_team_id) order by id for update;
+  select coalesce(array_agg(id), '{}') into v_closed from teams
+  where id in (ev.home_team_id, ev.away_team_id) and closed;
+
+  for v_side in 1..2 loop
+    if v_side = 1 then
+      v_team := ev.home_team_id;
+      v_stage := ev.home_stage;
+      v_pct := case when p_use_stage then ev.home_delta_pct else coalesce(ev.home_ai_pct, ev.home_delta_pct) end;
+      v_label := 'v ' || ev.away_team_name || ' ' || ev.home_score || '-' || ev.away_score;
+      v_result := case when ev.home_score > ev.away_score then 'W'
+                       when ev.home_score = ev.away_score then 'D'
+                       else 'L' end;
+    else
+      v_team := ev.away_team_id;
+      v_stage := ev.away_stage;
+      v_pct := case when p_use_stage then ev.away_delta_pct else coalesce(ev.away_ai_pct, ev.away_delta_pct) end;
+      v_label := '@ ' || ev.home_team_name || ' ' || ev.away_score || '-' || ev.home_score;
+      v_result := case when ev.away_score > ev.home_score then 'W'
+                       when ev.away_score = ev.home_score then 'D'
+                       else 'L' end;
+    end if;
+    continue when v_team is null or v_team = any(v_closed);
+
+    if p_use_stage and v_stage = 'out' then
+      v_pct := -100;
+      v_new_price := 0;
+    else
+      select greatest(0.01, round((price * (1 + v_pct/100))::numeric, 2)) into v_new_price
+      from teams where id = v_team for update;
+    end if;
+
+    -- History first, then the update with pm.history_written on, so
+    -- log_manual_price_change doesn't add a "Manual adjustment" row for
+    -- the same move (the row is dated at kickoff, too old for its
+    -- 5-second check).
+    insert into price_history (team_id, price, delta_pct, source, match_event_id, label, result, changed_at)
+    values (v_team, v_new_price, v_pct, 'match', ev.id, v_label, v_result, coalesce(ev.match_date, now()));
+
+    perform set_config('pm.history_written', 'on', true);
+    update teams set
+      price = v_new_price,
+      chg = v_pct,
+      updated_at = now(),
+      ucl_stage = case when p_use_stage and v_stage is not null then v_stage else ucl_stage end,
+      closed = case when p_use_stage and v_stage = 'out' then true else closed end
+    where id = v_team;
+    perform set_config('pm.history_written', 'off', true);
+
+    if p_use_stage and v_stage = 'winners' then
+      perform ucl_cash_out(v_team, 'cashout');
+      update teams set closed = true where league = 'championsleague' and not closed;
+    end if;
+  end loop;
+
+  update match_events set
+    status = 'approved',
+    reviewed_by = p_reviewer,
+    reviewed_at = now()
+  where id = p_event_id;
+end;
+$function$;
+
+revoke execute on function public.apply_match_event_core(uuid, boolean, text) from public, anon, authenticated, service_role;
+
+-- Stage results nobody approved or rejected within 12 hours apply as
+-- proposed. Returns how many were applied. Service role only (the price
+-- updater calls it on every run).
+create or replace function public.apply_overdue_stage_events()
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_id uuid;
+  v_count integer := 0;
+begin
+  for v_id in
+    select id from match_events
+    where status = 'pending'
+      and created_at <= now() - interval '12 hours'
+      and (coalesce(home_stage, 'playoff') <> 'playoff' or coalesce(away_stage, 'playoff') <> 'playoff')
+    order by created_at
+    for update skip locked
+  loop
+    -- Each event in its own block, so one bad event is skipped (and
+    -- logged) instead of blocking every later one.
+    begin
+      perform apply_match_event_core(v_id, true, 'auto (12h)');
+      v_count := v_count + 1;
+    exception when others then
+      raise log 'apply_overdue_stage_events: event % skipped: %', v_id, sqlerrm;
+    end;
+  end loop;
+  return v_count;
+end;
+$function$;
+
+revoke execute on function public.apply_overdue_stage_events() from public, anon, authenticated;
+grant execute on function public.apply_overdue_stage_events() to service_role;
+
+-- ---------- Admin actions on Champions League clubs ----------
+
+-- Knocks a club out: price to 0, closed, stage out. Holders keep their
+-- shares (worth nothing) until the club is reopened.
+create or replace function public.admin_ucl_knock_out(p_team_id uuid)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and not closed for update;
+  if not found then
+    raise exception 'Not an open Champions League club';
+  end if;
+
+  insert into price_history (team_id, price, delta_pct, source, label)
+  values (p_team_id, 0, -100, 'admin', 'Knocked out of the Champions League');
+
+  perform set_config('pm.history_written', 'on', true);
+  update teams set price = 0, chg = -100, closed = true, ucl_stage = 'out', updated_at = now()
+  where id = p_team_id;
+  perform set_config('pm.history_written', 'off', true);
+end;
+$function$;
+
+-- Crowns a club the winner: every holder is paid at the current price,
+-- the club is marked winners, and every Champions League club closes.
+-- Returns how many players were paid.
+create or replace function public.admin_ucl_crown(p_team_id uuid)
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_paid integer;
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and not closed for update;
+  if not found then
+    raise exception 'Not an open Champions League club';
+  end if;
+
+  v_paid := ucl_cash_out(p_team_id, 'cashout');
+  update teams set ucl_stage = 'winners', updated_at = now() where id = p_team_id;
+  update teams set closed = true where league = 'championsleague' and not closed;
+  return v_paid;
+end;
+$function$;
+
+-- Closes a club and pays every holder back at the current price (for a
+-- club that will not play on, e.g. one that never entered). Returns how
+-- many players were refunded.
+create or replace function public.admin_ucl_close_refund(p_team_id uuid)
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_paid integer;
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and not closed for update;
+  if not found then
+    raise exception 'Not an open Champions League club';
+  end if;
+
+  v_paid := ucl_cash_out(p_team_id, 'refund');
+  update teams set closed = true, ucl_stage = 'refunded', updated_at = now() where id = p_team_id;
+  return v_paid;
+end;
+$function$;
+
+-- Reopens a closed club for the new competition at a fresh price. Any
+-- shares still held (e.g. in a knocked-out club) are removed.
+create or replace function public.admin_ucl_reopen(p_team_id uuid, p_price numeric)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and closed for update;
+  if not found then
+    raise exception 'Not a closed Champions League club';
+  end if;
+  if p_price is null or p_price <= 0 or p_price > 100000 then
+    raise exception 'Price must be between 0.01 and 100000';
+  end if;
+
+  delete from holdings where team_id = p_team_id;
+
+  insert into price_history (team_id, price, delta_pct, source, label)
+  values (p_team_id, p_price, 0, 'admin', 'Reopened for the new Champions League');
+
+  perform set_config('pm.history_written', 'on', true);
+  update teams set closed = false, ucl_stage = 'league', price = p_price, chg = 0, updated_at = now()
+  where id = p_team_id;
+  perform set_config('pm.history_written', 'off', true);
+end;
+$function$;
+
+-- Open Champions League clubs with no fixture and no Champions League
+-- match this season (the competition year starts on 1 July), so the
+-- admin can see who did not enter.
+create or replace function public.admin_ucl_non_entrants()
+ returns table(team_id uuid, name text)
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_from timestamptz;
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  v_from := make_date(
+    extract(year from now())::int - case when extract(month from now()) >= 7 then 0 else 1 end,
+    7, 1)::timestamptz;
+
+  return query
+  select t.id, t.name from teams t
+  where t.league = 'championsleague' and not t.closed
+    and not exists (select 1 from fixtures f where t.id in (f.home_team_id, f.away_team_id))
+    and not exists (
+      select 1 from match_events m
+      where m.competition = 'CL' and m.match_date >= v_from
+        and t.id in (m.home_team_id, m.away_team_id))
+  order by t.name;
+end;
+$function$;
+
+revoke execute on function public.admin_ucl_knock_out(uuid) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_crown(uuid) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_close_refund(uuid) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_reopen(uuid, numeric) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_non_entrants() from public, anon, authenticated;
+grant execute on function public.admin_ucl_knock_out(uuid) to authenticated;
+grant execute on function public.admin_ucl_crown(uuid) to authenticated;
+grant execute on function public.admin_ucl_close_refund(uuid) to authenticated;
+grant execute on function public.admin_ucl_reopen(uuid, numeric) to authenticated;
+grant execute on function public.admin_ucl_non_entrants() to authenticated;
+
 
 -- =====================================================================
 -- Trigger functions and triggers
@@ -581,9 +885,12 @@ create or replace function public.log_manual_price_change()
 as $function$
 begin
   if new.price is distinct from old.price then
-    -- Skip if the approval function already logged this change a moment
-    -- ago, so an approved match does not produce two history rows.
-    if not exists (
+    -- Skip if the caller has already logged this change: it sets
+    -- pm.history_written for the update (see apply_match_event_core), or
+    -- logged it a moment ago, so an approved match does not produce two
+    -- history rows.
+    if coalesce(current_setting('pm.history_written', true), '') <> 'on'
+       and not exists (
       select 1 from price_history
       where team_id = new.id and changed_at > now() - interval '5 seconds'
     ) then
