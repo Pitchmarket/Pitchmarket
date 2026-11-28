@@ -29,7 +29,13 @@
 --     left pending for 12 hours.
 --   * apply_overdue_stage_events skips (and logs) an event that fails
 --     instead of blocking the rest, and counts only those applied.
---   * trade() refuses closed clubs.
+--   * match_events gets stage_note: why the price job could not work out
+--     the stage result of a Champions League stage match (shown in admin).
+--   * trade() refuses closed clubs, and holds a shared lock on the club
+--     row while it trades.
+--   * apply_match_event_core leaves a club that is already closed alone
+--     (no price, stage or history row), e.g. an older event approved after
+--     Knock out or Crown winners.
 --   * Admin actions on Champions League clubs: admin_ucl_knock_out,
 --     admin_ucl_crown, admin_ucl_close_refund, admin_ucl_reopen and
 --     admin_ucl_non_entrants (admin only).
@@ -56,6 +62,7 @@ alter table public.match_events add column if not exists away_ai_pct numeric;
 alter table public.match_events add column if not exists home_multiplier numeric;
 alter table public.match_events add column if not exists away_multiplier numeric;
 alter table public.match_events add column if not exists stage_rejected boolean not null default false;
+alter table public.match_events add column if not exists stage_note text;
 
 alter table public.fixtures add column if not exists stage text;
 alter table public.fixtures add column if not exists leg smallint;
@@ -107,7 +114,10 @@ begin
     raise exception 'Please wait a few seconds between trades';
   end if;
 
-  select price, closed, ucl_stage into v_price, v_closed, v_stage from teams where id = p_team_id;
+  -- Shared lock: an approval committing a new price (or closing the club)
+  -- waits for this trade, and this trade waits for it, so a trade never
+  -- goes through at a price that is being replaced.
+  select price, closed, ucl_stage into v_price, v_closed, v_stage from teams where id = p_team_id for share;
   if v_price is null then
     raise exception 'Team not found';
   end if;
@@ -287,11 +297,20 @@ declare
   v_label text;
   v_result char(1);
   v_new_price numeric;
+  v_closed uuid[];
 begin
   select * into ev from match_events where id = p_event_id and status = 'pending' for update;
   if ev is null then
     raise exception 'Event not found or already reviewed';
   end if;
+
+  -- Clubs already closed (knocked out, crowned or refunded before this
+  -- event was approved) are left alone: no price, stage or history row.
+  -- Read before either side is applied, so the winners step closing every
+  -- club does not stop the final's loser going out.
+  perform 1 from teams where id in (ev.home_team_id, ev.away_team_id) order by id for update;
+  select coalesce(array_agg(id), '{}') into v_closed from teams
+  where id in (ev.home_team_id, ev.away_team_id) and closed;
 
   for v_side in 1..2 loop
     if v_side = 1 then
@@ -311,7 +330,7 @@ begin
                        when ev.away_score = ev.home_score then 'D'
                        else 'L' end;
     end if;
-    continue when v_team is null;
+    continue when v_team is null or v_team = any(v_closed);
 
     if p_use_stage and v_stage = 'out' then
       v_pct := -100;

@@ -91,6 +91,26 @@ do $$ declare v_ev uuid; r record; begin
     'shares in an out club remain';
 end $$;
 
+-- ---------- A closed club is never re-priced ----------
+
+-- An older pending normal event for a club that has since gone out:
+-- approving it moves nothing and leaves no history row.
+do $$ declare v_ev uuid; r record; begin
+  v_ev := pg_temp.event('late2', pg_temp.club(2), null, null, null, 8);
+  perform public.approve_match_event(v_ev, true);
+  select * into r from public.teams where id = pg_temp.club(2);
+  assert r.price = 0 and r.chg = -100, 'closed club keeps price 0: ' || r.price;
+  assert r.closed and r.ucl_stage = 'out', 'closed club stays out';
+  assert (select count(*) from public.price_history where match_event_id = v_ev) = 0, 'no history row for a closed club';
+  assert (select status from public.match_events where id = v_ev) = 'approved', 'event still marked approved';
+
+  -- A stage event for it is skipped the same way.
+  v_ev := pg_temp.event('late2s', pg_temp.club(2), 'semis', 10, 2, 20);
+  perform public.approve_match_event(v_ev, true);
+  select * into r from public.teams where id = pg_temp.club(2);
+  assert r.price = 0 and r.ucl_stage = 'out' and r.closed, 'stage event does not reopen or re-price: ' || r.ucl_stage;
+end $$;
+
 -- ---------- Rejecting a stage event applies it as a normal match ----------
 
 do $$ declare v_ev uuid; r record; begin
@@ -185,7 +205,13 @@ end $$;
 do $$ declare v_ev uuid; v_coins numeric; r record; begin
   select coin_balance into v_coins from public.profiles where id = pg_temp.holder();
   v_ev := pg_temp.event('w4', pg_temp.club(4), 'winners', 10, 3, 30);
+  -- The final's loser is on the site too: closing every club for the
+  -- winners must not stop the loser going out.
+  update public.match_events set away_team_id = pg_temp.club(3), away_team_name = 'UCL 3',
+    away_stage = 'out', away_ai_pct = -4, away_multiplier = null, away_delta_pct = -100 where id = v_ev;
   perform public.approve_match_event(v_ev, true);
+  select * into r from public.teams where id = pg_temp.club(3);
+  assert r.price = 0 and r.closed and r.ucl_stage = 'out', 'final loser goes out: ' || r.price || ' ' || coalesce(r.ucl_stage, 'null');
   select * into r from public.teams where id = pg_temp.club(4);
   assert r.price = 65.00, 'winners price: ' || r.price;
   assert r.ucl_stage = 'winners' and r.closed, 'winners closed';

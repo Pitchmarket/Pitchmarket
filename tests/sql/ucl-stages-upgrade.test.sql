@@ -16,6 +16,8 @@ values ('c2000000-0000-0000-0000-0000000000e1', 'upgrade-1', 'Upgrade FC', 'Visi
 \ir ../../supabase-ucl-stages.sql
 
 do $$ begin
+  assert exists (select 1 from information_schema.columns where table_schema = 'public'
+                 and table_name = 'match_events' and column_name = 'stage_note' and data_type = 'text'), 'stage_note column';
   assert (select not closed and ucl_stage is null from public.teams
           where id = 'c2000000-0000-0000-0000-0000000000c1'), 'existing club stays open';
   perform set_config('request.jwt.claims', '{"email":"pitchmarketadmin@gmail.com"}', true);
