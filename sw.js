@@ -1,9 +1,10 @@
-// PitchMarket service worker: makes repeat visits load from the browser
-// instead of the network.
+// PitchMarket service worker.
 //
-// - Pages (index.html, admin.html): shown from the saved copy straight away,
-//   then refreshed in the background (stale-while-revalidate). If the
-//   refreshed copy differs, open pages are told so they can offer a reload.
+// - Pages (index.html, admin.html): always fetched fresh from the site when
+//   online, so players never get stuck on an old version after an update.
+//   The browser revalidates with GitHub (a quick "not modified" reply when
+//   nothing changed). The last good copy is saved and only used when the
+//   network fails, so the site still opens offline.
 // - Code libraries and fonts from the CDNs: their addresses include a fixed
 //   version, so they never change and are kept after the first visit.
 // - Everything else, including every Supabase request, goes to the network
@@ -11,18 +12,30 @@
 //
 // Bump VERSION to throw away everything saved by an older version.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const PAGES = `pm-pages-${VERSION}`;
 const LIBS = `pm-libs-${VERSION}`;
 const LIB_HOSTS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+// How long to wait for the site before falling back to the saved page.
+const PAGE_TIMEOUT_MS = 8000;
 
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keep = new Set([PAGES, LIBS]);
-    for (const name of await caches.keys()) if (!keep.has(name)) await caches.delete(name);
+    let upgraded = false;
+    for (const name of await caches.keys()) {
+      if (!keep.has(name)) { await caches.delete(name); upgraded = true; }
+    }
     await self.clients.claim();
+    // Pages opened by an older version were served from its saved copy:
+    // offer them a refresh (they show the "PitchMarket has been updated" note).
+    if (upgraded) {
+      for (const client of await self.clients.matchAll({ type: 'window' })) {
+        client.postMessage({ type: 'pm-updated' });
+      }
+    }
   })());
 });
 
@@ -32,35 +45,29 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
 
   if (req.mode === 'navigate' && url.origin === self.location.origin) {
-    event.respondWith(pageFromCacheThenRefresh(event));
+    event.respondWith(pageFromNetworkThenCache(req));
   } else if (LIB_HOSTS.includes(url.hostname)) {
     event.respondWith(libFromCache(req));
   }
 });
 
-async function pageFromCacheThenRefresh(event) {
+async function pageFromNetworkThenCache(req) {
   const cache = await caches.open(PAGES);
   // The query string and #hash don't change the page.
-  const key = new URL(event.request.url);
+  const key = new URL(req.url);
   key.search = '';
-  const cached = await cache.match(key.href);
-  const refresh = fetch(event.request).then(async (res) => {
-    if (res.ok) {
-      const old = cached ? await cached.clone().text() : null;
-      const fresh = await res.clone().text();
-      await cache.put(key.href, res.clone());
-      if (old !== null && old !== fresh) {
-        const client = await self.clients.get(event.resultingClientId || event.clientId);
-        if (client) client.postMessage({ type: 'pm-updated' });
-      }
-    }
+  try {
+    const res = await Promise.race([
+      fetch(req, { cache: 'no-cache' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), PAGE_TIMEOUT_MS)),
+    ]);
+    if (res.ok) await cache.put(key.href, res.clone());
     return res;
-  });
-  if (cached) {
-    event.waitUntil(refresh.catch(() => {}));
-    return cached;
+  } catch (err) {
+    const cached = await cache.match(key.href);
+    if (cached) return cached;
+    throw err;
   }
-  return refresh;
 }
 
 async function libFromCache(req) {

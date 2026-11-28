@@ -24,7 +24,7 @@ football-data.org ──► update-prices.js (GitHub Actions, every 6h)
 |---|---|
 | `index.html` | The public site: markets, explorer, trading, portfolio, watchlist, price alerts, leaderboard, Pro tiers. One self-contained page (inline CSS and JS, Chart.js and supabase-js from a CDN). |
 | `admin.html` | Admin dashboard: manage teams and leagues, edit site content (stored in `site_settings`), and approve or reject AI-proposed price moves. |
-| `sw.js` | Service worker. Repeat visits show the saved page and libraries straight away and refresh them in the background; Supabase data is never served from it. Bump `VERSION` in it to throw away old saved copies. |
+| `sw.js` | Service worker. Pages are always fetched fresh when online, so an update shows on the next load; the last good copy is used only offline. Code libraries from the CDNs are kept after the first visit. Supabase data is never served from it. Bump `VERSION` in it to throw away old saved copies. |
 | `update-prices.js` | Node script that fetches finished matches, prices them with an AI and writes proposed moves to `match_events`. |
 | `.github/workflows/update-prices.yml` | Runs the updater every 6 hours (UTC) and on demand. |
 
@@ -156,6 +156,8 @@ Browser tests use Playwright with Supabase and CDN requests stubbed (`tests/brow
 python3 -m http.server 8765 --bind 127.0.0.1 &
 node tests/browser/smoke.mjs
 ```
+
+`tests/browser/fresh-pages.mjs` checks that an update shows on the next load (and that the page still opens offline), and that players on the old service worker are offered a refresh.
 
 The Stripe webhook's plan logic and the backup's restore script have Node tests:
 

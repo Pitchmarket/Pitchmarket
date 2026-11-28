@@ -55,10 +55,10 @@ export async function openPage(url, { routes = {}, session = null, viewport = { 
   const handlers = { 'rpc/kickabout_state': () => ({ game: 'scouted', day: '2026-11-26', signed_in: false, finished: false, won: false, coins: 0, max_guesses: 10, guesses: [] }), ...routes };
   const json = (route, body, status = 200) => route.fulfill({ status, headers: CORS, contentType: 'application/json', body: JSON.stringify(body) });
 
-  await page.route(/cdn\.jsdelivr\.net/, (r) => r.fulfill({ status: 200, headers: CORS, contentType: 'application/javascript', body: fs.readFileSync(SUPABASE_JS) }));
-  await page.route(/cdnjs\.cloudflare\.com/, (r) => r.fulfill({ status: 200, headers: CORS, contentType: 'application/javascript', body: CHART_STUB }));
-  await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, headers: CORS, contentType: 'text/css', body: '' }));
-  await page.route(/\.supabase\.co\//, async (route) => {
+  await context.route(/cdn\.jsdelivr\.net/, (r) => r.fulfill({ status: 200, headers: CORS, contentType: 'application/javascript', body: fs.readFileSync(SUPABASE_JS) }));
+  await context.route(/cdnjs\.cloudflare\.com/, (r) => r.fulfill({ status: 200, headers: CORS, contentType: 'application/javascript', body: CHART_STUB }));
+  await context.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, headers: CORS, contentType: 'text/css', body: '' }));
+  await context.route(/\.supabase\.co\//, async (route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
     const u = new URL(request.url());
