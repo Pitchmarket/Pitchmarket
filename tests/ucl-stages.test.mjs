@@ -42,6 +42,38 @@ test('matchGoals never counts penalty kicks as goals', () => {
   assert.equal(matchGoals(match({ score: ft(null, null) })), null);
 });
 
+test('matchGoals gives null when extra time or a shootout is missing its numbers', () => {
+  // Shootout with no penalties pair: fullTime includes shootout goals, can't separate them.
+  const noPens = match({ score: { duration: 'PENALTY_SHOOTOUT', fullTime: { home: 5, away: 4 } } });
+  assert.equal(matchGoals(noPens), null);
+  // Extra time played but no extraTime pair: extra-time goals would be lost.
+  const noEt = match({ score: { duration: 'EXTRA_TIME', regularTime: { home: 1, away: 0 }, fullTime: { home: 1, away: 2 } } });
+  assert.equal(matchGoals(noEt), null);
+  const noEtShootout = match({ score: {
+    duration: 'PENALTY_SHOOTOUT', regularTime: { home: 1, away: 1 },
+    penalties: { home: 4, away: 3 }, fullTime: { home: 5, away: 4 },
+  } });
+  assert.equal(matchGoals(noEtShootout), null);
+  // Extra time with full numbers still works.
+  assert.deepEqual(matchGoals(match({ score: {
+    duration: 'EXTRA_TIME', regularTime: { home: 1, away: 0 }, extraTime: { home: 0, away: 2 }, fullTime: { home: 1, away: 2 },
+  } })), { home: 1, away: 2 });
+});
+
+test('tieOutcome is unclear when extra time or shootout data is missing', () => {
+  const fin = match({ stage: 'FINAL', score: { duration: 'PENALTY_SHOOTOUT', fullTime: { home: 5, away: 4 } } });
+  assert.equal(typeof tieOutcome(fin, [fin]).unclear, 'string');
+  // Home leads 2-0 on aggregate after 90' of leg 2 but extra-time goals are missing.
+  const leg1 = match({ home: B, away: A, date: '2027-04-08T19:00:00Z', score: ft(0, 1) });
+  const leg2 = match({ home: A, away: B, date: '2027-04-15T19:00:00Z', score: {
+    duration: 'EXTRA_TIME', regularTime: { home: 1, away: 0 }, fullTime: { home: 1, away: 3 },
+  } });
+  assert.equal(typeof tieOutcome(leg2, [leg1, leg2]).unclear, 'string');
+  const r = stageFields(leg2, { stageMatches: [leg1, leg2], leagueMatches: [], table: new Map() }, 5, -5);
+  assert.deepEqual(r.fields, {});
+  assert.equal(typeof r.note, 'string');
+});
+
 test('legOf orders the two legs by date and calls a final leg 1', () => {
   const leg1 = match({ home: B, away: A, date: '2027-04-08T19:00:00Z', score: ft(1, 1) });
   const leg2 = match({ home: A, away: B, date: '2027-04-15T19:00:00Z', score: ft(1, 0) });

@@ -19,8 +19,12 @@ function round2(x){
 export function matchGoals(match){
   const s = match && match.score;
   if (!s) return null;
+  // Incomplete feed data must give "no score", never a confident wrong one.
+  const wentLong = s.duration === 'EXTRA_TIME' || s.duration === 'PENALTY_SHOOTOUT';
+  if (s.duration === 'PENALTY_SHOOTOUT' && !pairOk(s.penalties)) return null;
   if (s.regularTime && (s.regularTime.home != null || s.regularTime.away != null)) {
     if (!pairOk(s.regularTime)) return null;
+    if (wentLong && !pairOk(s.extraTime)) return null;
     const et = s.extraTime || {};
     return {
       home: s.regularTime.home + (num(et.home) ? et.home : 0),
