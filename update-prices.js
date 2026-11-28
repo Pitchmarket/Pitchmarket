@@ -418,8 +418,15 @@ function clStageList(fetchJson, stage){
   if(!clStageCaches.has(fetchJson)) clStageCaches.set(fetchJson, new Map());
   const cache = clStageCaches.get(fetchJson);
   if(!cache.has(stage)){
-    cache.set(stage, fetchJson(`competitions/CL/matches?stage=${stage}`, `CL ${stage} matches`)
-      .then(data => (data ? data.matches || [] : null)));
+    // A thrown failure (network down) takes the same null path as an HTTP
+    // error, so a cached rejection can never stop the run later on.
+    cache.set(stage, Promise.resolve()
+      .then(() => fetchJson(`competitions/CL/matches?stage=${stage}`, `CL ${stage} matches`))
+      .then(data => (data ? data.matches || [] : null))
+      .catch(err => {
+        console.error(`  Could not fetch the CL ${stage} matches:`, err && err.message ? err.message : err);
+        return null;
+      }));
   }
   return cache.get(stage);
 }
@@ -427,7 +434,9 @@ function clStageList(fetchJson, stage){
 export async function clStageContext(fetchJson, stage){
   if(stage === 'LEAGUE_STAGE'){
     const leagueMatches = await clStageList(fetchJson, 'LEAGUE_STAGE');
-    const standings = await fetchStandings('CL', fetchJson);
+    let standings = null;
+    try{ standings = await fetchStandings('CL', fetchJson); }
+    catch(err){ console.error('  Could not fetch the CL standings:', err && err.message ? err.message : err); }
     const table = standings ? { get: name => standings.get(fold(name)) } : null;
     return { stageMatches: [], leagueMatches, table };
   }
@@ -875,6 +884,18 @@ async function logSkip(baseRow, reason){
 // run carries on pricing as normal; locks just use the last fixtures
 // saved.
 // ============================================================
+// True when a PostgREST/Postgres error says one of these columns doesn't
+// exist. Both forms quote the column name:
+//   PGRST204: Could not find the 'stage' column of 'fixtures' in the schema cache
+//   42703:    column "stage" of relation "fixtures" does not exist
+export function isMissingColumnError(error, names){
+  if(!error) return false;
+  const code = String(error.code || '');
+  const message = String(error.message || '');
+  if(code !== 'PGRST204' && code !== '42703' && !/column/i.test(message)) return false;
+  return names.some(n => message.includes(`'${n}'`) || message.includes(`"${n}"`));
+}
+
 const FIXTURES_DAYS_BACK = 2;
 const FIXTURES_DAYS_AHEAD = 7;   // the feed allows at most 10 days per request
 
@@ -919,7 +940,14 @@ async function syncFixtures(){
   }
 
   if(rows.length){
-    const { error } = await supabase.from('fixtures').upsert(rows, { onConflict: 'source_match_id' });
+    let { error } = await supabase.from('fixtures').upsert(rows, { onConflict: 'source_match_id' });
+    // Before supabase-ucl-stages.sql has been run the table has no stage or
+    // leg columns. Save the rows without them rather than lose every lock.
+    if(error && isMissingColumnError(error, ['stage', 'leg'])){
+      const plain = rows.map(({ stage, leg, ...rest }) => rest);
+      ({ error } = await supabase.from('fixtures').upsert(plain, { onConflict: 'source_match_id' }));
+      if(!error) console.log('Fixtures saved without stage and leg — run supabase-ucl-stages.sql in Supabase.');
+    }
     if(error){
       console.error('Fixtures: could not save them —', error.message);
       console.error('  If this says the table does not exist, run supabase-price-lag-lock.sql in Supabase.');

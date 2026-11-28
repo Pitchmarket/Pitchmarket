@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sideIsOpen, clStageContext } from '../update-prices.js';
+import { sideIsOpen, clStageContext, isMissingColumnError } from '../update-prices.js';
 
 test('sideIsOpen: missing or closed rows are not open', () => {
   assert.equal(sideIsOpen(null), false);
@@ -67,4 +67,44 @@ test('clStageContext: no standings gives a null table', async () => {
   const { fetchJson } = fakeFeed({ 'competitions/CL/matches?stage=LEAGUE_STAGE': { matches: [] } });
   const ctx = await clStageContext(fetchJson, 'LEAGUE_STAGE');
   assert.equal(ctx.table, null);
+});
+
+test('clStageContext: a fetcher that throws gives null lists and never re-throws', async () => {
+  let calls = 0;
+  const fetchJson = async () => { calls++; throw new Error('getaddrinfo ENOTFOUND'); };
+  const errors = [];
+  const orig = console.error;
+  console.error = (...a) => errors.push(a.join(' '));
+  try {
+    const a = await clStageContext(fetchJson, 'LAST_16');
+    const b = await clStageContext(fetchJson, 'LAST_16');
+    assert.equal(a.stageMatches, null);
+    assert.equal(b.stageMatches, null);
+    const c = await clStageContext(fetchJson, 'LEAGUE_STAGE');
+    assert.equal(c.leagueMatches, null);
+    assert.equal(c.table, null);
+  } finally { console.error = orig; }
+  assert.equal(calls, 3); // LAST_16 once, LEAGUE_STAGE once, standings once
+  assert.ok(errors.some(e => e.includes('ENOTFOUND')));
+});
+
+test('clStageContext: a fetcher that throws synchronously is handled too', async () => {
+  const fetchJson = () => { throw new Error('boom'); };
+  const orig = console.error;
+  console.error = () => {};
+  try {
+    const a = await clStageContext(fetchJson, 'SEMI_FINALS');
+    assert.equal(a.stageMatches, null);
+  } finally { console.error = orig; }
+});
+
+test('isMissingColumnError: spots a missing stage or leg column only', () => {
+  const names = ['stage', 'leg'];
+  assert.equal(isMissingColumnError({ code: 'PGRST204', message: "Could not find the 'stage' column of 'fixtures' in the schema cache" }, names), true);
+  assert.equal(isMissingColumnError({ code: 'PGRST204', message: "Could not find the 'leg' column of 'fixtures' in the schema cache" }, names), true);
+  assert.equal(isMissingColumnError({ code: '42703', message: 'column "stage" of relation "fixtures" does not exist' }, names), true);
+  assert.equal(isMissingColumnError({ code: 'PGRST204', message: "Could not find the 'kickoff' column of 'fixtures' in the schema cache" }, names), false);
+  assert.equal(isMissingColumnError({ code: '42P01', message: 'relation "public.fixtures" does not exist' }, names), false);
+  assert.equal(isMissingColumnError({ code: '23505', message: 'duplicate key value violates unique constraint "stage_key"' }, names), false);
+  assert.equal(isMissingColumnError(null, names), false);
 });
