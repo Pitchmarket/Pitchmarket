@@ -113,6 +113,17 @@ do $$ declare v_ev uuid; begin
   assert (select price from public.teams where id = pg_temp.club(3)) = 55.00, 'price unchanged on normal reject';
 end $$;
 
+-- ---------- Rejecting a play-off-only event is a normal reject ----------
+
+do $$ declare v_ev uuid; begin
+  v_ev := pg_temp.event('pr3', pg_temp.club(3), 'playoff', 9, 1, 9);
+  perform public.approve_match_event(v_ev, false);
+  assert (select status = 'rejected' and not stage_rejected from public.match_events where id = v_ev),
+    'play-off-only reject is a normal reject';
+  assert (select price from public.teams where id = pg_temp.club(3)) = 55.00, 'price unchanged on play-off reject';
+  assert (select ucl_stage from public.teams where id = pg_temp.club(3)) is null, 'stage unchanged on play-off reject';
+end $$;
+
 -- ---------- Auto-apply ----------
 
 do $$ declare v_ev uuid; e text; begin

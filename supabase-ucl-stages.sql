@@ -166,7 +166,8 @@ $function$;
 
 -- Admin approves or rejects a pending match price change. Rejecting a
 -- stage event still applies it, as a normal match (see
--- apply_match_event_core); rejecting a normal event applies nothing.
+-- apply_match_event_core); rejecting a normal or play-off-only event
+-- applies nothing.
 create or replace function public.approve_match_event(p_event_id uuid, p_approve boolean)
  returns void
  language plpgsql
@@ -187,7 +188,8 @@ begin
 
   if p_approve then
     perform apply_match_event_core(p_event_id, true, auth.jwt() ->> 'email');
-  elsif ev.home_stage is not null or ev.away_stage is not null then
+  elsif coalesce(ev.home_stage, 'playoff') <> 'playoff' or coalesce(ev.away_stage, 'playoff') <> 'playoff' then
+    -- A real stage (not just a play-off place): apply the AI's own moves.
     perform apply_match_event_core(p_event_id, false, auth.jwt() ->> 'email');
     update match_events set stage_rejected = true where id = p_event_id;
   else
