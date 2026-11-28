@@ -148,6 +148,27 @@ do $$ declare v_old uuid; v_new uuid; e text; begin
   delete from public.match_events where id = v_new;
 end $$;
 
+-- ---------- One bad overdue event does not block the others ----------
+
+do $$ declare v_bad uuid; v_good uuid; v_before numeric; begin
+  select price into v_before from public.teams where id = pg_temp.club(1);
+  -- A club that can't go above 100 (a constraint, added only for this test),
+  -- so a +200% move on it raises when applied.
+  alter table public.teams add constraint pm_test_cap check (name <> 'UCL 3' or price < 100);
+  v_bad := pg_temp.event('bad', pg_temp.club(3), 'semis', 10, 2, 200);
+  v_good := pg_temp.event('good', pg_temp.club(1), 'semis', 10, 2, 10);
+  update public.match_events set created_at = now() - interval '14 hours' where id = v_bad;
+  update public.match_events set created_at = now() - interval '13 hours' where id = v_good;
+  assert public.apply_overdue_stage_events() = 1, 'only the good event counted';
+  assert (select status from public.match_events where id = v_bad) = 'pending', 'bad event skipped, still pending';
+  assert (select status = 'approved' from public.match_events where id = v_good), 'good event applied after the bad one';
+  assert (select price from public.teams where id = pg_temp.club(1)) = round(v_before * 1.10, 2), 'good move applied once';
+  assert (select price from public.teams where id = pg_temp.club(3)) = 56.10, 'bad event changed nothing';
+  assert (select count(*) from public.price_history where match_event_id = v_bad) = 0, 'bad event left no history row';
+  delete from public.match_events where id = v_bad;
+  alter table public.teams drop constraint pm_test_cap;
+end $$;
+
 -- ---------- Winners ----------
 
 do $$ declare v_ev uuid; v_coins numeric; r record; begin
@@ -181,6 +202,8 @@ do $$ declare e text; begin
   assert e = 'This club is out of the Champions League. Trading has closed.', 'sell out club: ' || e;
   e := pg_temp.err(format('select public.trade(%L, %L, 1)', pg_temp.club(4), 'buy'));
   assert e = 'The Champions League is over for this season. Trading has closed.', 'buy winners: ' || e;
+  e := pg_temp.err(format('select public.trade(%L, %L, 1)', pg_temp.club(4), 'sell'));
+  assert e = 'The Champions League is over for this season. Trading has closed.', 'sell winners: ' || e;
   e := pg_temp.err(format('select public.trade(%L, %L, 1000000)', pg_temp.club(1), 'buy'));
   assert e = 'Trading on this club has closed.', 'buy closed semi-finalist (before the cost check): ' || e;
 end $$;

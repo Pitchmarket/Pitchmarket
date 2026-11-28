@@ -27,7 +27,12 @@
 --   * auto_apply_match_event refuses stage events other than playoff.
 --   * apply_overdue_stage_events (service role only) applies stage events
 --     left pending for 12 hours.
+--   * apply_overdue_stage_events skips (and logs) an event that fails
+--     instead of blocking the rest, and counts only those applied.
 --   * trade() refuses closed clubs.
+--   * Admin actions on Champions League clubs: admin_ucl_knock_out,
+--     admin_ucl_crown, admin_ucl_close_refund, admin_ucl_reopen and
+--     admin_ucl_non_entrants (admin only).
 --   * approve_match_event checks the admin with is_admin(), so a call
 --     with no email claim is refused too.
 --   * log_manual_price_change skips its "Manual adjustment" row while
@@ -368,8 +373,14 @@ begin
     order by created_at
     for update skip locked
   loop
-    perform apply_match_event_core(v_id, true, 'auto (12h)');
-    v_count := v_count + 1;
+    -- Each event in its own block, so one bad event is skipped (and
+    -- logged) instead of blocking every later one.
+    begin
+      perform apply_match_event_core(v_id, true, 'auto (12h)');
+      v_count := v_count + 1;
+    exception when others then
+      raise log 'apply_overdue_stage_events: event % skipped: %', v_id, sqlerrm;
+    end;
   end loop;
   return v_count;
 end;
@@ -377,6 +388,168 @@ $function$;
 
 revoke execute on function public.apply_overdue_stage_events() from public, anon, authenticated;
 grant execute on function public.apply_overdue_stage_events() to service_role;
+
+-- ---------- Admin actions on Champions League clubs ----------
+
+-- Knocks a club out: price to 0, closed, stage out. Holders keep their
+-- shares (worth nothing) until the club is reopened.
+create or replace function public.admin_ucl_knock_out(p_team_id uuid)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and not closed for update;
+  if not found then
+    raise exception 'Not an open Champions League club';
+  end if;
+
+  insert into price_history (team_id, price, delta_pct, source, label)
+  values (p_team_id, 0, -100, 'admin', 'Knocked out of the Champions League');
+
+  perform set_config('pm.history_written', 'on', true);
+  update teams set price = 0, chg = -100, closed = true, ucl_stage = 'out', updated_at = now()
+  where id = p_team_id;
+  perform set_config('pm.history_written', 'off', true);
+end;
+$function$;
+
+-- Crowns a club the winner: every holder is paid at the current price,
+-- the club is marked winners, and every Champions League club closes.
+-- Returns how many players were paid.
+create or replace function public.admin_ucl_crown(p_team_id uuid)
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_paid integer;
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and not closed for update;
+  if not found then
+    raise exception 'Not an open Champions League club';
+  end if;
+
+  v_paid := ucl_cash_out(p_team_id, 'cashout');
+  update teams set ucl_stage = 'winners', updated_at = now() where id = p_team_id;
+  update teams set closed = true where league = 'championsleague' and not closed;
+  return v_paid;
+end;
+$function$;
+
+-- Closes a club and pays every holder back at the current price (for a
+-- club that will not play on, e.g. one that never entered). Returns how
+-- many players were refunded.
+create or replace function public.admin_ucl_close_refund(p_team_id uuid)
+ returns integer
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_paid integer;
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and not closed for update;
+  if not found then
+    raise exception 'Not an open Champions League club';
+  end if;
+
+  v_paid := ucl_cash_out(p_team_id, 'refund');
+  update teams set closed = true, ucl_stage = 'refunded', updated_at = now() where id = p_team_id;
+  return v_paid;
+end;
+$function$;
+
+-- Reopens a closed club for the new competition at a fresh price. Any
+-- shares still held (e.g. in a knocked-out club) are removed.
+create or replace function public.admin_ucl_reopen(p_team_id uuid, p_price numeric)
+ returns void
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  perform 1 from teams
+    where id = p_team_id and league = 'championsleague' and closed for update;
+  if not found then
+    raise exception 'Not a closed Champions League club';
+  end if;
+  if p_price is null or p_price <= 0 or p_price > 100000 then
+    raise exception 'Price must be between 0.01 and 100000';
+  end if;
+
+  delete from holdings where team_id = p_team_id;
+
+  insert into price_history (team_id, price, delta_pct, source, label)
+  values (p_team_id, p_price, 0, 'admin', 'Reopened for the new Champions League');
+
+  perform set_config('pm.history_written', 'on', true);
+  update teams set closed = false, ucl_stage = 'league', price = p_price, chg = 0, updated_at = now()
+  where id = p_team_id;
+  perform set_config('pm.history_written', 'off', true);
+end;
+$function$;
+
+-- Open Champions League clubs with no fixture and no Champions League
+-- match this season (the competition year starts on 1 July), so the
+-- admin can see who did not enter.
+create or replace function public.admin_ucl_non_entrants()
+ returns table(team_id uuid, name text)
+ language plpgsql
+ stable
+ security definer
+ set search_path = public
+as $function$
+declare
+  v_from timestamptz;
+begin
+  if not is_admin() then
+    raise exception 'Not authorized';
+  end if;
+  v_from := make_date(
+    extract(year from now())::int - case when extract(month from now()) >= 7 then 0 else 1 end,
+    7, 1)::timestamptz;
+
+  return query
+  select t.id, t.name from teams t
+  where t.league = 'championsleague' and not t.closed
+    and not exists (select 1 from fixtures f where t.id in (f.home_team_id, f.away_team_id))
+    and not exists (
+      select 1 from match_events m
+      where m.competition = 'CL' and m.match_date >= v_from
+        and t.id in (m.home_team_id, m.away_team_id))
+  order by t.name;
+end;
+$function$;
+
+revoke execute on function public.admin_ucl_knock_out(uuid) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_crown(uuid) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_close_refund(uuid) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_reopen(uuid, numeric) from public, anon, authenticated;
+revoke execute on function public.admin_ucl_non_entrants() from public, anon, authenticated;
+grant execute on function public.admin_ucl_knock_out(uuid) to authenticated;
+grant execute on function public.admin_ucl_crown(uuid) to authenticated;
+grant execute on function public.admin_ucl_close_refund(uuid) to authenticated;
+grant execute on function public.admin_ucl_reopen(uuid, numeric) to authenticated;
+grant execute on function public.admin_ucl_non_entrants() to authenticated;
+
 
 -- ---------- History ----------
 
