@@ -438,6 +438,8 @@ td.spark-cell{ width:100px; }
 .buy-btn{ background:none; cursor:pointer; font-family:var(--font-mono); font-size:11px; border:1px solid var(--border); color:var(--steel); padding:5px 12px; border-radius:var(--r-sm); }
 .buy-btn:hover{ border-color:var(--surge); color:var(--surge); }
 .buy-btn.paused, .buy-btn.paused:hover{ cursor:not-allowed; opacity:0.6; border-color:var(--border); color:var(--steel-dim); }
+.buy-btn.closed{ white-space:nowrap; }
+.closed-tag{ display:inline-block; margin-left:6px; padding:0 5px; border:1px solid var(--border); border-radius:var(--r-sm); font-family:var(--font-mono); font-size:10px; color:var(--steel); white-space:nowrap; vertical-align:middle; }
 
 /* ===== Wallet chip ===== */
 .wallet-chip{
@@ -1927,6 +1929,27 @@ let teamsLoaded = false;
 let priceHistory = {};   // team_id -> [{ t: ms, p: price }] oldest first
 let historyLoaded = false;
 let lockedTeams = new Set();   // clubs whose match has kicked off and isn't priced yet
+let teamById = new Map();      // String(id) -> club from the last teams load (closed, ucl_stage)
+const teamFor = (id)=> teamById.get(String(id));
+// Champions League clubs that are out, won it or were refunded are closed for
+// good. The database refuses their trades; these only label them.
+function closedLabel(t){
+  if(!t || !t.closed) return null;
+  if(t.ucl_stage === 'out') return 'Out';
+  if(t.ucl_stage === 'winners') return 'Winners 🏆';
+  return 'Closed';
+}
+function closedReason(t){
+  if(t.ucl_stage === 'out') return 'knocked out of the Champions League.';
+  if(t.ucl_stage === 'winners') return 'Champions League winners. Shares were paid out.';
+  if(t.ucl_stage === 'refunded') return "not in this season's Champions League. Shares were refunded.";
+  return 'this club is no longer traded.';
+}
+function closedTitle(t){ return 'Trading has closed: ' + closedReason(t); }
+function closedTag(t){
+  const label = closedLabel(t);
+  return label ? '<span class="closed-tag" title="'+escapeHtml(closedTitle(t))+'">'+escapeHtml(label)+'</span>' : '';
+}
 
 // Saved copies of slow-changing data. A repeat visit draws straight away
 // from the last copy while fresh data loads behind it (stale-while-
@@ -2630,12 +2653,14 @@ function renderTable(key){
     const series = teamSeries(t, 20);
     const color = series && series[series.length-1] < series[0] ? 'var(--drop)' : 'var(--surge)';
     return '<tr>'+
-      '<td><div class="team-name">'+escapeHtml(t.name)+'</div><div class="team-tier">'+escapeHtml(t.tier)+'</div></td>'+
+      '<td><div class="team-name">'+escapeHtml(t.name)+'</div><div class="team-tier">'+escapeHtml(t.tier)+closedTag(t)+'</div></td>'+
       '<td class="num mono">'+coin(t.price)+'</td>'+
       '<td class="num"><span class="chip '+(up(t.chg)?'up':'down')+'">'+fmtChg(t.chg)+'</span></td>'+
       '<td class="spark-cell">'+sparkSVG(series,color)+'</td>'+
       '<td style="white-space:nowrap;"><button class="star-btn" data-id="'+(t.id||'')+'" title="Add to watchlist">☆</button>'+
-        (lockedTeams.has(t.id)
+        (closedLabel(t)
+          ? '<button class="buy-btn paused closed" disabled title="'+escapeHtml(closedTitle(t))+'">'+escapeHtml(closedLabel(t))+'</button></td>'
+          : lockedTeams.has(t.id)
           ? '<button class="buy-btn paused" disabled title="Match in progress or result being priced. Trading reopens once the new price is set.">Paused</button></td>'
           : '<button class="buy-btn" data-id="'+escapeHtml(t.id||'')+'" data-name="'+escapeHtml(t.name)+'" data-price="'+escapeHtml(t.price)+'">Trade</button></td>')+
     '</tr>';
@@ -2821,7 +2846,7 @@ async function loadPortfolio(){
     holdingsValue += value;
     totalCost += cost;
     return { name:h.teams.name, meta:h.teams.league_label + ' · ' + h.teams.tier,
-             id:h.team_id, shares, avgCost, priceNow, value, pnl, pnlPct };
+             id:h.team_id, team:teamFor(h.team_id), shares, avgCost, priceNow, value, pnl, pnlPct };
   }).sort((a,b)=> b.value - a.value);
 
   if(rows.length === 0){
@@ -2835,7 +2860,9 @@ async function loadPortfolio(){
         '<td class="num mono" data-label="Price now">'+coin(r.priceNow)+'</td>'+
         '<td class="num mono">'+coin(r.value)+'</td>'+
         '<td class="num"><span class="chip '+(r.pnl>=0?'up':'down')+'">'+(r.pnl>=0?'▲ ':'▼ ')+Math.abs(r.pnlPct).toFixed(1)+'%</span></td>'+
-        '<td><button class="sell-btn" data-id="'+escapeHtml(r.id)+'" data-name="'+escapeHtml(r.name)+'" data-price="'+escapeHtml(r.priceNow)+'">Sell</button></td>'+
+        (closedLabel(r.team)
+          ? '<td>'+closedTag(r.team)+'</td>'
+          : '<td><button class="sell-btn" data-id="'+escapeHtml(r.id)+'" data-name="'+escapeHtml(r.name)+'" data-price="'+escapeHtml(r.priceNow)+'">Sell</button></td>')+
       '</tr>'
     ).join('');
   }
@@ -2961,6 +2988,7 @@ function renderWatchlistCards(byTeam){
         '<div class="wl-price-row">'+
           '<span class="wl-price">'+coin(t.price)+'</span>'+
           '<span class="chip '+(up?'up':'down')+'">'+fmtChg(t.chg)+'</span>'+
+          closedTag(teamFor(r.team_id))+
         '</div>'+
         (formStrip ? '<div class="wl-form-strip">'+formStrip+'</div>' : '')+
         (currentIsPro
@@ -3038,6 +3066,14 @@ function timeAgo(iso){
   return Math.floor(secs/86400) + 'd ago';
 }
 
+// Cash-outs and refunds: threshold is the shares paid out, price is per share.
+function payoutText(n){
+  const shares = Number(n.threshold), price = Number(n.price);
+  const total = (shares * price).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const paid = shares.toLocaleString() + ' shares ' + (n.kind === 'cashout' ? 'paid out' : 'refunded') + ' at ' + price.toFixed(2) + ' each (+<span class="up">' + total + '</span> coins)';
+  return n.kind === 'cashout' ? 'Champions League winners! ' + paid : "Not in this season's Champions League: " + paid;
+}
+
 async function loadNotifications(){
   if(!sb || !currentSession) return;
   document.getElementById('notifWrap').style.display = '';
@@ -3068,7 +3104,8 @@ async function loadNotifications(){
     '<div class="notif-item'+(n.read?'':' unread')+'" data-id="'+n.id+'" data-team="'+(n.team_id||'')+'">'+
       '<div class="notif-team">'+escapeHtml(n.team_name)+'</div>'+
       '<div class="notif-detail">'+
-        (n.kind === 'below'
+        (n.kind === 'cashout' || n.kind === 'refund' ? payoutText(n)
+          : n.kind === 'below'
           ? 'Fell below your level — now <span class="dn">'+Number(n.price).toFixed(2)+'</span>, alert at '+Number(n.threshold).toFixed(2)
           : 'Rose above your level — now <span class="up">'+Number(n.price).toFixed(2)+'</span>, alert at '+Number(n.threshold).toFixed(2))+
       '</div>'+
@@ -3408,7 +3445,13 @@ let teamsJson = '';
 async function loadTeamsFromDB(){
   if(!sb) return;
   if(!teamsLoaded){ const saved = cacheGet('teams'); if(saved) applyTeams(saved); }
-  const { data, error } = await sb.from('teams').select('id,name,tier,price,chg,league,league_label,league_order').order('league_order').order('price', { ascending:false });
+  const fetchTeams = (cols)=> sb.from('teams').select(cols).order('league_order').order('price', { ascending:false });
+  const cols = 'id,name,tier,price,chg,league,league_label,league_order';
+  let { data, error } = await fetchTeams(cols + ',closed,ucl_stage');
+  // Before supabase-ucl-stages.sql has run those columns don't exist: load
+  // without them and every club counts as open.
+  if(error && (['PGRST204','42703'].includes(error.code) || /closed|ucl_stage/.test(error.message || '')))
+    ({ data, error } = await fetchTeams(cols));
   if(error || !data || data.length === 0) return;
   cacheSet('teams', data);
   applyTeams(data);
@@ -3423,12 +3466,20 @@ function applyTeams(data){
   // the admin dashboard actually show up as a tab here, not just patch
   // prices onto tabs that already existed in this file.
   const grouped = {};
+  const byId = new Map();
   data.forEach(t=>{
     if(!grouped[t.league]) grouped[t.league] = { label: t.league_label, teams: [] };
-    grouped[t.league].teams.push({ id:t.id, name:t.name, tier:t.tier, price:t.price, chg:t.chg });
+    const team = { id:t.id, name:t.name, tier:t.tier, price:t.price, chg:t.chg, closed:!!t.closed, ucl_stage:t.ucl_stage || null };
+    grouped[t.league].teams.push(team);
+    byId.set(String(t.id), team);
   });
+  const closedKey = (m)=> [...m.values()].filter(closedLabel).map(t=>t.id+':'+t.ucl_stage).join(',');
+  const closedChanged = closedKey(byId) !== closedKey(teamById);
   leagues = grouped;
+  teamById = byId;
   teamsLoaded = true;
+  // Portfolio and watchlist may have drawn before the clubs' closed state arrived.
+  if(closedChanged && currentSession){ loadPortfolio(); loadWatchlist(); }
 
   // keep whichever tab was active (by key) if it still exists, else first tab
   const activeKey = tabBar.querySelector('.tab-btn.active')?.dataset.key;
@@ -4071,6 +4122,7 @@ const tradeOverlay = document.getElementById('tradeOverlay');
 let tradeHeldShares = 0;
 
 async function openTrade(id, name, price){
+  if(closedLabel(teamFor(id))) return;   // trading on this club has closed
   if(!currentSession){ openAuth(); return; }
   tradeTeam = { id, name, price: parseFloat(price) };
   tradeSide = 'buy';
