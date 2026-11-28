@@ -28,6 +28,11 @@
 --   * apply_overdue_stage_events (service role only) applies stage events
 --     left pending for 12 hours.
 --   * trade() refuses closed clubs.
+--   * approve_match_event checks the admin with is_admin(), so a call
+--     with no email claim is refused too.
+--   * log_manual_price_change skips its "Manual adjustment" row while
+--     pm.history_written is on (set by apply_match_event_core around its
+--     teams update, which has already written the match's history row).
 
 begin;
 
@@ -166,7 +171,7 @@ as $function$
 declare
   ev record;
 begin
-  if auth.jwt() ->> 'email' <> 'pitchmarketadmin@gmail.com' then
+  if not is_admin() then
     raise exception 'Not authorized';
   end if;
 
@@ -309,11 +314,14 @@ begin
       from teams where id = v_team for update;
     end if;
 
-    -- History first, so log_manual_price_change sees it and doesn't add a
-    -- "Manual adjustment" row for the same move.
+    -- History first, then the update with pm.history_written on, so
+    -- log_manual_price_change doesn't add a "Manual adjustment" row for
+    -- the same move (the row is dated at kickoff, too old for its
+    -- 5-second check).
     insert into price_history (team_id, price, delta_pct, source, match_event_id, label, result, changed_at)
     values (v_team, v_new_price, v_pct, 'match', ev.id, v_label, v_result, coalesce(ev.match_date, now()));
 
+    perform set_config('pm.history_written', 'on', true);
     update teams set
       price = v_new_price,
       chg = v_pct,
@@ -321,6 +329,7 @@ begin
       ucl_stage = case when p_use_stage and v_stage is not null then v_stage else ucl_stage end,
       closed = case when p_use_stage and v_stage = 'out' then true else closed end
     where id = v_team;
+    perform set_config('pm.history_written', 'off', true);
 
     if p_use_stage and v_stage = 'winners' then
       perform ucl_cash_out(v_team, 'cashout');
@@ -368,5 +377,33 @@ $function$;
 
 revoke execute on function public.apply_overdue_stage_events() from public, anon, authenticated;
 grant execute on function public.apply_overdue_stage_events() to service_role;
+
+-- ---------- History ----------
+
+-- Record admin price edits in price_history.
+create or replace function public.log_manual_price_change()
+ returns trigger
+ language plpgsql
+ security definer
+ set search_path = public
+as $function$
+begin
+  if new.price is distinct from old.price then
+    -- Skip if the caller has already logged this change: it sets
+    -- pm.history_written for the update (see apply_match_event_core), or
+    -- logged it a moment ago, so an approved match does not produce two
+    -- history rows.
+    if coalesce(current_setting('pm.history_written', true), '') <> 'on'
+       and not exists (
+      select 1 from price_history
+      where team_id = new.id and changed_at > now() - interval '5 seconds'
+    ) then
+      insert into price_history (team_id, price, delta_pct, source, label)
+      values (new.id, new.price, new.chg, 'admin', 'Manual adjustment');
+    end if;
+  end if;
+  return new;
+end;
+$function$;
 
 commit;

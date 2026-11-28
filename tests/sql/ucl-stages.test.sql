@@ -34,10 +34,37 @@ $$ insert into public.match_events (source_match_id, competition, home_team_name
 
 set local request.jwt.claims = '{"email":"pitchmarketadmin@gmail.com"}';
 
+-- ---------- Only the admin can review ----------
+
+do $$ declare v_ev uuid; e text; begin
+  v_ev := pg_temp.event('auth', pg_temp.club(1), null, null, null, 5);
+  perform set_config('request.jwt.claims', '{}', true);
+  e := pg_temp.err(format('select public.approve_match_event(%L, true)', v_ev));
+  assert e = 'Not authorized', 'no email claim: ' || e;
+  perform set_config('request.jwt.claims', '{"sub":"c1000000-0000-0000-0000-000000000001","email":"holder@example.com"}', true);
+  e := pg_temp.err(format('select public.approve_match_event(%L, false)', v_ev));
+  assert e = 'Not authorized', 'player claims: ' || e;
+  assert (select status from public.match_events where id = v_ev) = 'pending', 'still pending';
+  delete from public.match_events where id = v_ev;
+  perform set_config('request.jwt.claims', '{"email":"pitchmarketadmin@gmail.com"}', true);
+end $$;
+
+set local role anon;
+set local request.jwt.claims = '{}';
+do $$ declare e text; begin
+  e := pg_temp.err(format('select public.approve_match_event(%L, true)', gen_random_uuid()));
+  assert e = 'Not authorized', 'anon: ' || e;
+end $$;
+reset role;
+set local request.jwt.claims = '{"email":"pitchmarketadmin@gmail.com"}';
+
 -- ---------- Boosted stage result ----------
 
 do $$ declare v_ev uuid; r record; begin
   v_ev := pg_temp.event('q1', pg_temp.club(1), 'quarters', 10, 1.5, 15);
+  -- Kickoff hours ago, as the price job writes it: the history row is
+  -- dated then, so only the pm.history_written flag stops a second row.
+  update public.match_events set match_date = now() - interval '3 hours' where id = v_ev;
   perform public.approve_match_event(v_ev, true);
   select * into r from public.teams where id = pg_temp.club(1);
   assert r.price = 57.50, 'boosted price: ' || r.price;
@@ -53,6 +80,7 @@ end $$;
 
 do $$ declare v_ev uuid; r record; begin
   v_ev := pg_temp.event('o2', pg_temp.club(2), 'out', -5, 1, -100);
+  update public.match_events set match_date = now() - interval '3 hours' where id = v_ev;
   perform public.approve_match_event(v_ev, true);
   select * into r from public.teams where id = pg_temp.club(2);
   assert r.price = 0 and r.chg = -100, 'out club goes to 0: ' || r.price;
