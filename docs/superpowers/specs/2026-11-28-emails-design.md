@@ -1,6 +1,6 @@
 # Emails: design
 
-_28 Nov 2026. Agreed with the organiser in conversation; calls the builder made are marked "(builder's call)". Achievements (an achievements tab with coin rewards) were raised in the same conversation and are a separate project, designed next._
+_28 Nov 2026. Agreed in conversation; calls the builder made are marked "(builder's call)". Achievements (an achievements tab with coin rewards) were raised in the same conversation and are a separate project, designed next._
 
 ## Why
 
@@ -32,7 +32,7 @@ PitchMarket is played by groups of friends who drift away between visits. Today 
 - **An email that arrives after the player can still act.** A player who gets a "last chance" or preview email and finds the club already locked for kickoff has been let down. Trading on a club locks at kickoff (`team_lock_reason`, using `fixtures.kickoff`).
 - **A made-up number.** The AI never produces prices, percentages, positions or odds; it only writes words around numbers it is given. If its text contains a figure that wasn't supplied, the email falls back to the plain template.
 - **Spammy volume.** Too many emails make players unsubscribe or mark them as spam, which also hurts password resets on the same domain.
-- **Emailing anyone who hasn't agreed** to the recap and preview (UK rules for marketing email).
+- **Sending the recap or preview to anyone who hasn't said yes** (UK rules for marketing email). Service emails (alerts, last chance) are the exception, see Consent.
 - **Paying for an edge.** Plan extras are information only; nothing changes trading, coins or leaderboards.
 - **Leaking one player's data to another**, beyond what leagues already show to their members.
 
@@ -130,9 +130,13 @@ Thresholds (what counts as "big", "several days", milestone levels) are the buil
 
 ## Consent and settings
 
-- **Existing players:** a one-time banner on the site: "Get your Monday recap and Thursday preview by email?" Yes / No thanks. No answer means no emails.
-- **New sign-ups:** an unticked checkbox on the sign-up form for the same thing.
-- **Email settings** (in the account area): toggles for Monday recap, Thursday preview, Champions League last chance, price alerts (Pro and Ultimate only). Last chance and price alerts default to on once a player has said yes (they protect the player's own holdings); recap and preview follow their answer.
+Two kinds of email, decided with the organiser:
+
+- **Weekly emails (Monday recap, Thursday preview) need a yes.**
+  - **Existing players:** a one-time banner on the site: "Get your Monday recap and Thursday preview by email?" Yes / No thanks. No answer means no weekly emails.
+  - **New sign-ups:** an unticked checkbox on the sign-up form for the same thing.
+- **Service emails (price alerts, Champions League last chance) go to everyone who has them, whatever their banner answer**, because they are about the player's own holdings and protect their coins. Price alerts go to Pro and Ultimate players who set an alert; last chance goes to anyone holding a club in danger. Both are on by default, and every one has a one-click unsubscribe link.
+- **Email settings** (in the account area): toggles for Monday recap, Thursday preview, Champions League last chance, and price alerts (Pro and Ultimate only). Consent is stored per type.
 - **One-click unsubscribe** from any email turns off that type; the settings page can turn everything off.
 - Addresses that bounce or are reported as spam (Resend webhook to the Edge Function) stop receiving emails, and admin shows them.
 - The organiser's accounts get emails like anyone else (useful for checking), and admin can **send a test email** of each type to themselves.
